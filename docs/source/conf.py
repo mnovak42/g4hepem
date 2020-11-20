@@ -86,7 +86,7 @@ html_static_path = ['_static']
 #def setup(app):
 #   app.add_css_file("style.css")
    
-html_logo = "logo_HepEm3.png"
+html_logo = "logo_HepEM3.png"
 html_show_sourcelink = False
 #html_show_copyright = False
 #html_show_sphinx = False
@@ -121,7 +121,7 @@ latex_elements = {
           \vspace*{20mm}
           \begin{figure}[!h]
              \centering
-             \includegraphics[scale=1.1]{logo_HepEm3.png}
+             \includegraphics[scale=1.1]{logo_HepEM3.png}
           \end{figure}
        %% add some space
        %% add space till the bottom
@@ -135,4 +135,4 @@ latex_elements = {
     \pagenumbering{arabic}
 ''',
 }
-latex_logo = "logo_HepEm3.png"
+latex_logo = "logo_HepEM3.png"
