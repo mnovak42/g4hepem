@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/g4hepem/badge/?version=latest)](https://g4hepem.readthedocs.io/en/latest/?badge=latest)
+
 # The G4HepEm R&D Project Documentation
 
 
