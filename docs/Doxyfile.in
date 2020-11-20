@@ -1,0 +1,26 @@
+PROJECT_NAME         = "G4HepEm"
+OUTPUT_DIRECTORY     = "doxygen"
+XML_OUTPUT           = "xml"
+INPUT                = ../G4HepEm ../G4HepEm/G4HepEmData/include
+CITE_BIB_FILES       = source/bibfile
+FILE_PATTERNS        = *.cc *.hh *.cu
+GENERATE_LATEX       = NO
+GENERATE_MAN         = NO
+GENERATE_RTF         = NO
+CASE_SENSE_NAMES     = NO
+ENABLE_PREPROCESSING = NO
+GENERATE_HTML        = YES
+GENERATE_XML         = YES
+RECURSIVE            = YES
+QUIET                = YES
+JAVADOC_AUTOBRIEF    = YES
+EXTRACT_PRIVATE      = YES
+EXTRACT_STATIC       = YES
+SHOW_FILES           = YES
+SHOW_NAMESPACES      = YES
+WARN_IF_UNDOCUMENTED = NO
+EXTRA_PACKAGES       = amsmath xr amsfonts
+ALIASES = "rst=\verbatim embed:rst"
+ALIASES += "endrst=\endverbatim"
+ALIASES += "rststar=\verbatim embed:rst:leading-asterisk"
+ALIASES += "endrststar=\endverbatim"

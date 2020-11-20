@@ -1,0 +1,34 @@
+##
+## Simple CMake configuration file for the G4HepEm extensions
+##
+
+## G4HepEm_INCLUDE_DIR to the include directory
+## G4HepEm_LIBRARIES contains all the 4 libraries
+##
+
+
+set(G4HepEm_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@")
+
+set(G4HepEm_LIB_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+
+find_path(G4HepEm_INCLUDE_DIR NAMES G4HepEmRunManager.hh HINTS "@CMAKE_INSTALL_PREFIX@/includes" NO_DEFAULT_PATH)
+
+find_library(G4HepEm_LIB     NAMES libg4HepEm.a     g4HepEm     PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
+find_library(G4HepEmData_LIB NAMES libg4HepEmData.a g4HepEmData PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
+find_library(G4HepEmInit_LIB NAMES libg4HepEmInit.a g4HepEmInit PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
+find_library(G4HepEmRun_LIB  NAMES libg4HepEmRun.a  g4HepEmRun  PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
+
+set (G4HepEm_LIBRARIES
+  ${G4HepEm_LIB}
+  ${G4HepEmData_LIB}
+  ${G4HepEmInit_LIB}
+  ${G4HepEmRun_LIB}
+)
+
+set (G4HepEm_CMAKE_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+
+set (G4HepEm_CUDA_LIBRARIES "@CUDA_LIBRARIES@;@CUDA_cudart_static_LIBRARY@")
+set (G4HepEm_CUDA_INCLUDE_DIR "@CUDA_INCLUDE_DIRS@")
+set (G4HepEm_CUDA_NVCC_FLAGS "@CUDA_NVCC_FLAGS@")
+set (G4HepEm_CUDA_BUILD "@G4HepEm_CUDA_BUILD@")
+

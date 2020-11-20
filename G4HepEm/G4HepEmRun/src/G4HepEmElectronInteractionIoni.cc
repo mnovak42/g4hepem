@@ -1,0 +1,123 @@
+
+#include "G4HepEmElectronInteractionIoni.hh"
+
+#include "G4HepEmTLData.hh"
+#include "G4HepEmData.hh"
+#include "G4HepEmMatCutData.hh"
+
+#include "G4HepEmElectronTrack.hh"
+#include "G4HepEmConstants.hh"
+#include "G4HepEmRunUtils.hh"
+
+
+
+#include <iostream>
+
+
+void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {  
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+  double    thePrimEkin = thePrimaryTrack->GetEKin();
+  const int   theMCIndx = thePrimaryTrack->GetMCIndex();
+  const double theElCut = hepEmData->fTheMatCutData->fMatCutData[theMCIndx].fSecElProdCutE;
+  
+  const double maxETransfer = (iselectron) ? 0.5*thePrimEkin : thePrimEkin;
+  if (maxETransfer <= theElCut) return;
+  
+  //
+  // sample energy transfer and compute direction
+  const double elInitETot = thePrimEkin + kElectronMassC2;
+  const double elInitPTot = std::sqrt(thePrimEkin * (elInitETot + kElectronMassC2));
+  const double  deltaEkin = (iselectron) 
+                            ? SampleETransferMoller(theElCut, thePrimEkin, tlData) 
+                            : SampleETransferBhabha(theElCut, thePrimEkin, tlData);
+  const double deltaPTot = std::sqrt(deltaEkin * (deltaEkin + 2.0 * kElectronMassC2));
+  const double      cost = deltaEkin * (elInitETot + kElectronMassC2) / (deltaPTot * elInitPTot);
+  // check cosTheta limit
+  const double  cosTheta = std::max(-1.0, std::min(cost, 1.0));
+  const double  sinTheta = std::sqrt((1.0 - cosTheta) * (1.0 + cosTheta));
+  // spherical symmetry
+  const double  phi      = k2Pi * tlData->GetRNGEngine()->flat();
+  // create the secondary partcile i.e. the delta e-
+  G4HepEmElectronTrack* secElTrack = tlData->AddSecondaryElectronTrack();
+  G4HepEmTrack*           secTrack = secElTrack->GetTrack();
+  secTrack->SetDirection(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
+  double* theSecondaryDirection  = secTrack->GetDirection();
+  double* thePrimaryDirection    = thePrimaryTrack->GetDirection();
+  // rotate back to refernce frame (G4HepEmRunUtils function)
+  RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
+  secTrack->SetEKin(deltaEkin);
+  secTrack->SetParentID(thePrimaryTrack->GetID()); 
+  //
+  // compute the primary e-/e+ post interaction kinetic energy and direction: from momentum vector conservation
+  // final momentum of the primary e-/e+ in the lab frame
+  double elDirX = elInitPTot * thePrimaryDirection[0] - deltaPTot * theSecondaryDirection[0];
+  double elDirY = elInitPTot * thePrimaryDirection[1] - deltaPTot * theSecondaryDirection[1];
+  double elDirZ = elInitPTot * thePrimaryDirection[2] - deltaPTot * theSecondaryDirection[2];
+  // normalisation
+  const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
+  // update primary track direction
+  thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
+  // update primary track kinetic energy
+  thePrimaryTrack->SetEKin(thePrimEkin - deltaEkin);
+}
+
+
+double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmTLData* tlData) {
+  const double tmin    = elCut;
+  const double tmax    = 0.5*primEkin;
+  const double xmin    = tmin / primEkin;
+  const double xmax    = tmax / primEkin;
+  const double gamma   = primEkin / kElectronMassC2 + 1.0;
+  const double gamma2  = gamma * gamma;
+  const double xminmax = xmin * xmax;
+  // Moller (e-e-) scattering
+  const double gg      = (2.0 * gamma - 1.0) / gamma2;
+  const double y       = 1. - xmax;
+  const double gf      = 1.0 - gg * xmax + xmax * xmax * (1.0 - gg + (1.0 - gg * y) / (y * y));
+  //
+  double dum;
+  double rndArray[2];
+  double deltaEkin  = 0.;
+  do {
+    tlData->GetRNGEngine()->flatArray(2, rndArray);
+    deltaEkin       = xminmax / (xmin * (1.0 - rndArray[0]) + xmax * rndArray[0]);
+    const double xx = 1.0 - deltaEkin;
+    dum             = 1.0 - gg * deltaEkin + deltaEkin * deltaEkin * (1.0 - gg + (1.0 - gg * xx) / (xx * xx));
+  } while (gf * rndArray[1] > dum);
+  return deltaEkin * primEkin;
+}
+
+double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmTLData* tlData) {
+  const double tmin    = elCut;
+  const double tmax    = primEkin;
+  const double xmin    = tmin / primEkin;
+  const double xmax    = tmax / primEkin;
+  const double gamma   = primEkin / kElectronMassC2 + 1.0;
+  const double gamma2  = gamma * gamma;
+  const double beta2   = 1. - 1. / gamma2;
+  const double xminmax = xmin * xmax;
+  // Bhabha (e+e-) scattering
+  const double y       = 1.0 / (1.0 + gamma);
+  const double y2      = y * y;
+  const double y12     = 1.0 - 2.0 * y;
+  const double b1      = 2.0 - y2;
+  const double b2      = y12 * (3.0 + y2);
+  const double y122    = y12 * y12;
+  const double b4      = y122 * y12;
+  const double b3      = b4 + y122;
+  const double xmax2   = xmax * xmax;
+  const double gf      = 1.0 + (xmax2 * b4 - xmin * xmin * xmin * b3 + xmax2 * b2 - xmin * b1) * beta2;
+  //
+  double dum;
+  double rndArray[2];
+  double deltaEkin  = 0.;
+  do {
+    tlData->GetRNGEngine()->flatArray(2, rndArray);
+    deltaEkin       = xminmax / (xmin * (1.0 - rndArray[0]) + xmax * rndArray[0]);
+    const double xx = deltaEkin * deltaEkin;
+    dum             = 1.0 + (xx * xx * b4 - deltaEkin * xx * b3 + xx * b2 - deltaEkin * b1) * beta2;
+  } while (gf * rndArray[1] > dum);
+  return deltaEkin * primEkin;  
+}
+

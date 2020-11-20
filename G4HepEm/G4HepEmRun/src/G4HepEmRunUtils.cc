@@ -1,0 +1,189 @@
+
+#include "G4HepEmRunUtils.hh"
+
+#include <cmath>
+#include <algorithm>
+
+
+// Roate the direction [u,v,w] given in the scattering frame to the lab frame.
+// Details: scattering is described relative to the [0,0,1] direction (i.e. scattering 
+// frame). Therefore, after the new direction is computed relative to this [0,0,1]
+// original direction, the real original direction [u1,u2,u3] in the lab frame 
+// needs to be accounted and the final new direction, i.e. in the lab frame is 
+// computed.
+void RotateToReferenceFrame(double &u, double &v, double &w, double* refDir) {
+  double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
+  if (up>0.) {
+    up = std::sqrt(up);
+    const double px = u;
+    const double py = v;
+    const double pz = w;
+    u = (refDir[0]*refDir[2]*px - refDir[1]*py)/up + refDir[0]*pz;
+    v = (refDir[1]*refDir[2]*px + refDir[0]*py)/up + refDir[1]*pz;
+    w =    -up*px +             refDir[2]*pz;
+  } else if (refDir[2]<0.) {       // phi=0  teta=pi
+    u = -u;
+    w = -w;
+  }
+}
+
+void RotateToReferenceFrame(double* dir, double* refDir) {
+  double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
+  if (up>0.) {
+    up = std::sqrt(up);
+    const double px = dir[0];
+    const double py = dir[1];
+    const double pz = dir[2];
+    dir[0] = (refDir[0]*refDir[2]*px - refDir[1]*py)/up + refDir[0]*pz;
+    dir[1] = (refDir[1]*refDir[2]*px + refDir[0]*py)/up + refDir[1]*pz;
+    dir[2] =    -up*px +             refDir[2]*pz;
+  } else if (refDir[2]<0.) {       // phi=0  teta=pi
+    dir[0] = -dir[0];
+    dir[2] = -dir[2];
+  }
+}
+
+
+// use the improved, robust spline interpolation that I put in G4 10.6
+double GetSplineLog(int ndata, double* xdata, double* ydata, double* secderiv, double x, double logx, double logxmin, double invLDBin) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = std::max(xdata[0], std::min(xdata[ndata-1], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
+  // perform the interpolation
+  const double x1 = xdata[idx];
+  const double x2 = xdata[idx+1];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*secderiv[idx];
+  const double c1 = (b*b*b-b)*secderiv[idx+1];
+  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;  
+}
+
+// same as above but both ydata and secderiv are stored in ydata array
+double GetSplineLog(int ndata, double* xdata, double* ydata, double x, double logx, double logxmin, double invLDBin) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = std::max(xdata[0], std::min(xdata[ndata-1], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx2 = 2*idx;
+  // perform the interpolation
+  const double x1 = xdata[idx];
+  const double x2 = xdata[idx+1];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*ydata[idx2+1];
+  const double c1 = (b*b*b-b)*ydata[idx2+3];
+  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;  
+}
+
+
+// same as above but all xdata, ydata and secderiv are stored in data array
+double GetSplineLog(int ndata, double* data, double x, double logx, double logxmin, double invLDBin) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = std::max(data[0], std::min(data[3*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx3 = 3*idx;
+  // perform the interpolation
+  const double x1 = data[idx3];
+  const double x2 = data[idx3+3];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*data[idx3+2];
+  const double c1 = (b*b*b-b)*data[idx3+5];
+  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;  
+}
+
+
+
+
+
+// this is used for getting inverse-range on host
+double GetSpline(double* xdata, double* ydata, double* secderiv, double x, int idx, int step) {
+  // perform the interpolation
+  const double x1 = xdata[step*idx];
+  const double x2 = xdata[step*(idx+1)];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (x - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*secderiv[idx];
+  const double c1 = (b*b*b-b)*secderiv[idx+1];
+  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;  
+}
+
+// same as above but both ydata and secderiv are stored in ydata array
+double GetSpline(double* xdata, double* ydata, double x, int idx) {
+  const int  idx2 = 2*idx;
+  // perform the interpolation
+  const double x1 = xdata[idx];
+  const double x2 = xdata[idx+1];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (x - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*ydata[idx2+1];
+  const double c1 = (b*b*b-b)*ydata[idx2+3];
+  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;  
+}
+
+// same as above but both xdata, ydata and secderiv are stored in data array
+double GetSpline(double* data, double x, int idx) {
+  const int  idx3 = 3*idx;
+  // perform the interpolation
+  const double x1 = data[idx3];
+  const double x2 = data[idx3+3];
+  const double dl = x2-x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (x - x1)/dl));
+  //
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*data[idx3+2];
+  const double c1 = (b*b*b-b)*data[idx3+5];
+  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;  
+}
+
+// this is used to get index for inverse range on host
+// NOTE: it is assumed that x[0] <= x and x < x[step*(num-1)]
+// step: the delta with which   the x values are located in xdata (i.e. =1 by default)
+int    FindLowerBinIndex(double* xdata, int num, double x, int step) {
+  // Perform a binary search to find the interval val is in
+  int ml = -1;
+  int mu = num-1;
+  while (std::abs(mu-ml)>1) {
+    int mav = 0.5*(ml+mu);
+    if (x<xdata[step*mav]) {  mu = mav; }
+    else                   {  ml = mav; }
+  }
+  return mu-1;
+}

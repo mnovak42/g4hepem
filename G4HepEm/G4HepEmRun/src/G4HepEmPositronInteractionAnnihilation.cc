@@ -1,0 +1,104 @@
+
+#include "G4HepEmPositronInteractionAnnihilation.hh"
+
+#include "G4HepEmTLData.hh"
+
+#include "G4HepEmElectronTrack.hh"
+#include "G4HepEmGammaTrack.hh"
+#include "G4HepEmConstants.hh"
+#include "G4HepEmRunUtils.hh"
+
+//#include <iostream>
+
+
+void PerformPositronAnnihilation(G4HepEmTLData* tlData, bool isatrest) {  
+   if (isatrest) {
+     AnnihilateAtRest(tlData);
+   } else {
+     AnnihilateInFlight(tlData);
+   }
+}
+
+void AnnihilateAtRest(G4HepEmTLData* tlData) {
+  // compute kinematics of the first gamma (isotropic direction)
+  const double cost = 2. * tlData->GetRNGEngine()->flat() - 1.;
+  const double sint = std::sqrt((1. - cost)*(1. + cost));
+  const double  phi = k2Pi * tlData->GetRNGEngine()->flat();
+  // get 2 secondary gamma track
+  G4HepEmTrack*    secGamma1 = tlData->AddSecondaryGammaTrack()->GetTrack();
+  double*       secGamma1Dir = secGamma1->GetDirection();
+  G4HepEmTrack*    secGamma2 = tlData->AddSecondaryGammaTrack()->GetTrack();
+  double*       secGamma2Dir = secGamma2->GetDirection();
+  secGamma1Dir[0]  = sint*std::cos(phi);
+  secGamma1Dir[1]  = sint*std::sin(phi);
+  secGamma1Dir[2]  = cost;
+  // compute the kinematics of the second gamma (conservation==> -first)
+  secGamma2Dir[0]  = -secGamma1Dir[0];
+  secGamma2Dir[1]  = -secGamma1Dir[1];
+  secGamma2Dir[2]  = -secGamma1Dir[2];
+  //G4HepEmTrack* thePrimaryTrack = tlData->GetPrimaryElectronTrack()->GetTrack(); 
+  //const int theParentID = thePrimaryTrack->GetID();
+  // ekin should have been set by the caller
+  //thePrimaryTrack->SetEKin(0.0);
+  const int theParentID = tlData->GetPrimaryElectronTrack()->GetTrack()->GetID();
+  secGamma1->SetEKin(kElectronMassC2);
+  secGamma1->SetParentID(theParentID); 
+  secGamma2->SetEKin(kElectronMassC2);
+  secGamma2->SetParentID(theParentID); 
+}
+  
+void AnnihilateInFlight(G4HepEmTLData* tlData) {
+  // get the primary e+ track  
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+  double            thePrimEkin = thePrimaryTrack->GetEKin();
+  double*            thePrimDir = thePrimaryTrack->GetDirection();
+  // compute kinetic limits
+  const double tau     = thePrimEkin/kElectronMassC2;
+  const double gam     = tau + 1.0;
+  const double tau2    = tau + 2.0;
+  const double sqgrate = std::sqrt(tau/tau2)*0.5;
+  //
+  const double epsmin  = 0.5 - sqgrate;
+  const double epsmax  = 0.5 + sqgrate;
+  const double epsqot  = epsmax/epsmin;
+  // sampling of the energy rate of the gammas
+  const double tau4    = tau2*tau2;
+  double eps   = 0.0; 
+  double rfunc = 0.0;
+  double rndArray[2];  
+  do {
+    tlData->GetRNGEngine()->flatArray(2, rndArray);
+    eps   = epsmin*std::exp(std::log(epsqot)*rndArray[0]);
+    rfunc = 1. - eps + (2.*gam*eps-1.)/(eps*tau4);
+  } while( rfunc < rndArray[1]);
+  // compute direction of the gammas
+  const double sqg2m1 = std::sqrt(tau*tau2);
+  const double   cost = std::min(1., std::max(-1., (eps*tau2-1.)/(eps*sqg2m1)));
+  const double   sint = std::sqrt((1.+cost)*(1.-cost));
+  const double    phi = k2Pi * tlData->GetRNGEngine()->flat();
+  // kinematics of the first gamma
+  const double initEt = thePrimEkin + 2.*kElectronMassC2;
+  const double gamE1  = eps*initEt; 
+  G4HepEmTrack*  gTr1 = tlData->AddSecondaryGammaTrack()->GetTrack();
+  gTr1->SetEKin(gamE1);
+  gTr1->SetDirection(sint*std::cos(phi), sint*std::sin(phi), cost);
+  // use the G4HepEmRunUtils function
+  RotateToReferenceFrame(gTr1->GetDirection(), thePrimDir);
+  const int theParentID = tlData->GetPrimaryElectronTrack()->GetTrack()->GetID();
+  gTr1->SetParentID(theParentID);
+  // kinematics of the second gamma (direction <== conservation)
+  const double initPt = std::sqrt(thePrimEkin*(thePrimEkin+2*kElectronMassC2));
+  G4HepEmTrack*  gTr2 = tlData->AddSecondaryGammaTrack()->GetTrack();
+  const double* gDir1 = gTr1->GetDirection();
+  const double     px = initPt*thePrimDir[0] - gDir1[0];
+  const double     py = initPt*thePrimDir[1] - gDir1[1];
+  const double     pz = initPt*thePrimDir[2] - gDir1[2]; 
+  const double   norm = 1.0 / std::sqrt(px*px + py*py + pz*pz);
+  gTr2->SetDirection(px*norm, py*norm, pz*norm);
+  gTr2->SetEKin(initEt-gamE1);
+  gTr2->SetParentID(theParentID);  
+  //
+  // set primary e+ track kinetic energy to zero ==> killed
+  thePrimaryTrack->SetEKin(0.0);
+}

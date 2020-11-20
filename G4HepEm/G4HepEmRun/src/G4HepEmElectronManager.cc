@@ -1,0 +1,286 @@
+
+#include "G4HepEmElectronManager.hh"
+
+#include "G4HepEmData.hh"
+#include "G4HepEmParameters.hh"
+#include "G4HepEmTLData.hh"
+
+#include "G4HepEmConstants.hh"
+#include "G4HepEmMatCutData.hh"
+#include "G4HepEmMaterialData.hh"
+#include "G4HepEmElectronData.hh"
+
+#include "G4HepEmRunUtils.hh"
+#include "G4HepEmElectronTrack.hh"
+#include "G4HepEmGammaTrack.hh"
+#include "G4HepEmElectronInteractionIoni.hh"
+#include "G4HepEmElectronInteractionBremSB.hh"
+#include "G4HepEmPositronInteractionAnnihilation.hh"
+
+// tlData GetPrimaryElectronTrack needs to be set needs to be set based on the G4Track;
+
+
+// Note: pStepLength will be set here i.e. this is the first access to it that
+//       will clear the previous step value.
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+  int indxWinnerProcess = -1;  // init to continous
+  // === 1. Continuous energy loss limit    
+  double pStepLength    = kALargeValue;
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack(); 
+  G4HepEmTrack* theTrack = theElTrack->GetTrack(); 
+  const double   theEkin = theTrack->GetEKin();
+  const double  theLEkin = theTrack->GetLogEKin();   
+  const int       theIMC = theTrack->GetMCIndex();
+  const bool  isElectron = (theTrack->GetCharge() < 0.0);
+
+  const G4HepEmElectronData* theElectronData = isElectron 
+                                               ? hepEmData->fTheElectronData
+                                               : hepEmData->fThePositronData;
+  //
+  const double range  = GetRestRange(theElectronData, theIMC, theEkin, theLEkin);
+  theElTrack->SetRange(range);
+  const double frange = hepEmPars->fFinalRange;
+  const double drange = hepEmPars->fDRoverRange;
+  pStepLength = (range > frange) 
+                ? range*drange + frange*(1.0-drange)*(2.0-frange/range) 
+                : range; 
+//  std::cout << " pStepLength = " << pStepLength << " range = " << range << " frange = " << frange << std::endl;                
+  // === 2. Discrete limits due to eestricted Ioni and Brem (accounting e-loss)
+  double mxSecs[3];
+  // ioni, brem and annihilation to 2 gammas (only for e+)
+  mxSecs[0] = GetRestMacXSecForStepping(theElectronData, theIMC, theEkin, theLEkin, true);
+  mxSecs[1] = GetRestMacXSecForStepping(theElectronData, theIMC, theEkin, theLEkin, false);
+  mxSecs[2] = (isElectron) 
+              ? 0.0 
+              : ComputeMacXsecAnnihilationForStepping(theEkin, hepEmData->fTheMaterialData->fMaterialData[hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex].fElectronDensity);
+  // compute mfp and see if we need to sample the `number-of-interaction-left` 
+  // before we use it to get the current discrete proposed step length
+  for (int ip=0; ip<3; ++ip) {
+    const double mxsec = mxSecs[ip];
+    const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
+    if (theTrack->GetNumIALeft(ip)<=0.) {
+      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+    }
+    // save the mac-xsec for the update of the `number-of-intercation-left`:
+    // the `number-of-intercation-left` should be updated in the along-step-action
+    // after the MSC has changed the step.
+    theTrack->SetMFP(mfp, ip);
+    // sample the proposed step length
+    const double dStepLimit = mfp*theTrack->GetNumIALeft(ip);
+//    std::cout << " ip = " << ip << " mxsec = " << mxsec << " dStepLimit = " << dStepLimit << std::endl;
+    if (dStepLimit<pStepLength) {
+      pStepLength = dStepLimit;
+      indxWinnerProcess = ip;
+    }    
+  }
+  //
+  // Now MSC should be called to see if ot limits the step 
+  //
+  theElTrack->SetPStepLength(pStepLength);
+  theTrack->SetGStepLength(pStepLength);
+  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
+  //
+  // 
+}
+
+// Here I can have my own transportation to be called BUT at the moment I cannot 
+// skip the G4Transportation if I do it by myself !!!
+
+// Note: energy deposit will be set here i.e. this is the first access to it that
+//       will clear the previous step value.
+void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+  //
+  // === 1. MSC should be invoked to obtain the physics step lenght
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack(); 
+  G4HepEmTrack*   theTrack = theElTrack->GetTrack(); 
+  const double gStepLength = theTrack->GetGStepLength();
+  const double pStepLength = gStepLength;
+  // P-STEP LENGTH SHOUDL BE SET IN EL-TRACK
+  if (pStepLength<=0.0) {     
+    return;
+  }
+  //
+  // === 2. The `number-of-interaction-left` needs to be updated based on the actual
+  //        physical step lenght
+  double*    numInterALeft = theTrack->GetNumIALeft();
+  double*       preStepMFP = theTrack->GetMFP();
+  numInterALeft[0] -= pStepLength/preStepMFP[0];
+  numInterALeft[1] -= pStepLength/preStepMFP[1];
+  numInterALeft[2] -= pStepLength/preStepMFP[2];
+  //
+  // === 3. Continuous energy loss needs to be computed
+  const bool isElectron = (theTrack->GetCharge() < 0.0);
+  const double theRange = theElTrack->GetRange();
+  double       theEkin  = theTrack->GetEKin();
+  // 3./1. stop tracking when reached the end (i.e. it has been ranged out by the limit)
+  // @TODO: actually the tracking cut is around 1 keV and the min-table energy is 100 eV so the second should never
+  //        under standard EM constructor configurations
+  if (pStepLength >= theRange || theEkin <= hepEmPars->fMinLossTableEnergy) { 
+    // stop and deposit the remaining energy
+    theTrack->SetEnergyDeposit(theEkin);
+    theTrack->SetEKin(0.0);
+    // call annihilation for e+ !!!
+    if (!isElectron) {
+      PerformPositronAnnihilation(tlData, true);
+    }
+    return;
+  }
+  // 3/1. try linear energy loss approximation:
+  const G4HepEmElectronData* elData = isElectron 
+                                      ? hepEmData->fTheElectronData
+                                      : hepEmData->fThePositronData;    
+  int      theIMC = theTrack->GetMCIndex();
+  double theLEkin = theTrack->GetLogEKin();
+  double eloss = pStepLength*GetRestDEDX(elData, theIMC, theEkin, theLEkin);
+  // 3/2. use integral if linear energy loss is over the limit fraction
+  if (eloss > theEkin*hepEmPars->fLinELossLimit) {
+    const double postStepRange = theRange - pStepLength;
+    eloss = theEkin - GetInvRange(elData, theIMC, postStepRange);
+  }
+  // 3/3. check if final kinetic energy drops below the tracking cut and stop
+  double finalEkin = theEkin - eloss;
+  if (finalEkin <= hepEmPars->fElectronTranckingCut) {
+    eloss     = theEkin; 
+    finalEkin = 0.0;
+    // call annihilation for e+ !!!
+    eloss = std::max(eloss, 0.0);
+    theTrack->SetEKin(finalEkin);
+    theTrack->SetEnergyDeposit(eloss);
+    if (!isElectron) {
+      PerformPositronAnnihilation(tlData, true);
+    }
+    return;
+  }
+  eloss = std::max(eloss, 0.0);
+  theTrack->SetEKin(finalEkin);
+  theTrack->SetEnergyDeposit(eloss);
+  //
+  // === 4. Discrete part of the interaction (if any)
+  // 4/1. check if discrete process limited the step return otherwise (i.e. if 
+  //      continous or boundary process limited the step)
+  const int iDProc = theTrack->GetWinnerProcessIndex();
+  if (iDProc < 0 || theTrack->GetOnBoundary()) {
+    return;
+  }
+  // reset number of interaction left for the winner discrete process 
+  theTrack->SetNumIALeft(-1.0, iDProc);
+  // 4/2. check if delta interaction happens instead of the real discrete process
+  // reset here the number of intercation left for the iDProcess
+  theEkin  = theTrack->GetEKin();
+  theLEkin = theTrack->GetLogEKin();
+  const double mxsec = (iDProc<2) 
+                      ? GetRestMacXSec(hepEmData->fTheElectronData, theIMC, theEkin, theLEkin, iDProc==0)
+                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex].fElectronDensity);
+  if (mxsec <= 0.0 || tlData->GetRNGEngine()->flat() > mxsec*theTrack->GetMFP(iDProc)) {
+    // delta interaction happens
+    return;
+  }  
+  // 4/3. perform the discrete part of the winner interaction
+  switch (iDProc) {
+    case 0: // invoke ioni (for e-/e+):    
+            PerformElectronIoni(tlData, hepEmData, isElectron);    
+            break;
+    case 1: // invoke brem (for e-/e+): either SB- or Rel-Brem 
+            if (theEkin < hepEmPars->fElectronBremModelLim) {
+              PerformElectronBremSB(tlData, hepEmData, isElectron);
+            } else {
+              // nothing at the moemnt
+            }
+            break;
+    case 2: // invoke annihilation (in-flight) for e+
+            PerformPositronAnnihilation(tlData, false);
+            break;        
+  }
+}
+
+
+double  G4HepEmElectronManager::GetRestRange(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin) {
+  const int numELossData = elData->fELossEnergyGridSize;
+  const int iRangeStarts = 5*numELossData*imc; 
+  // use the G4HepEmRunUtils function for interpolation
+  const double     range = GetSplineLog(numELossData, elData->fELossEnergyGrid, &(elData->fELossData[iRangeStarts]), ekin, lekin, elData->fELossLogMinEkin, elData->fELossEILDelta);
+  return std::max(0.0, range);
+}
+
+
+double  G4HepEmElectronManager::GetRestDEDX(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin) {
+  const int numELossData = elData->fELossEnergyGridSize;
+  const int  iDEDXStarts = numELossData*(5*imc + 2); // 5*imc*numELossData is where range-start + 2*numELossData
+  // use the G4HepEmRunUtils function for interpolation
+  const double      dedx = GetSplineLog(numELossData, elData->fELossEnergyGrid, &(elData->fELossData[iDEDXStarts]), ekin, lekin, elData->fELossLogMinEkin, elData->fELossEILDelta);
+  return std::max(0.0, dedx);
+}
+
+
+double  G4HepEmElectronManager::GetInvRange(const struct G4HepEmElectronData* elData, int imc, double range) {
+  const int numELossData = elData->fELossEnergyGridSize;
+  const int iRangeStarts = 5*numELossData*imc;
+  // low-energy approximation
+  const double minRange = elData->fELossData[iRangeStarts];
+  if (range<minRange) {
+    const double dum = range/minRange;
+    return std::max(0.0, elData->fELossEnergyGrid[0]*dum*dum);
+  }
+  // use the G4HepEmRunUtils function for finding the range bin index and for interpolation
+  // find `i`, lower index of the range such that R_{i} <= r < R_{i+1}
+  const int     iRlow = FindLowerBinIndex(&(elData->fELossData[iRangeStarts]), numELossData, range, 2);
+  // interpolate: x,y and sd
+  const double energy = GetSpline(&(elData->fELossData[iRangeStarts]), elData->fELossEnergyGrid, &(elData->fELossData[iRangeStarts+4*numELossData]), range, iRlow, 2); 
+  return std::max(0.0, energy);
+}
+
+
+double  G4HepEmElectronManager::GetRestMacXSec(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, bool isioni) {
+  const int iIoniStarts = elData->fResMacXSecStartIndexPerMatCut[imc];
+  const int numIoniData = elData->fResMacXSecData[iIoniStarts]; // x3 for the 3 values and +5 at the beginning 
+  const int      iStart = (isioni) ? iIoniStarts : iIoniStarts + 3*numIoniData + 5;
+  const int     numData = elData->fResMacXSecData[iStart];
+  const double  minEKin = elData->fResMacXSecData[iStart+5];
+  if (ekin<minEKin) {return 0.0; }  
+  // use the G4HepEmRunUtils function for interpolation
+  const double    mxsec = GetSplineLog(numData, &(elData->fResMacXSecData[iStart+5]), ekin, lekin, elData->fResMacXSecData[iStart+3],elData->fResMacXSecData[iStart+4]);   
+  return std::max(0.0, mxsec);
+}
+
+
+
+double  G4HepEmElectronManager::GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin, double lekin, bool isioni) {
+  constexpr double log08 = -0.22314355131420971;
+  const int  iIoniStarts = elData->fResMacXSecStartIndexPerMatCut[imc];
+  const int  numIoniData = elData->fResMacXSecData[iIoniStarts]; // x3 for the 3 values and +5 at the beginning 
+  const int       iStart = (isioni) ? iIoniStarts : iIoniStarts + 3*numIoniData + 5;
+  const int      numData = elData->fResMacXSecData[iStart];
+  const double mxsecMinE = elData->fResMacXSecData[iStart+5];
+  const double mxsecMaxE = elData->fResMacXSecData[iStart+1];
+  const double mxsecMaxV = elData->fResMacXSecData[iStart+2];
+  if (ekin > mxsecMaxE) {
+    // compute reduced energy: we assume that 1/lambda is higher at lower energy so we provide an overestimate
+    const double ekinReduced = 0.8 * ekin;
+    if (ekinReduced < mxsecMaxE) {
+      return std::max(0.0, mxsecMaxV);
+    } else {
+      // otherwise we are still on the right side of the maximum so provide 1/lambda at this reduced energy
+      ekin   = ekinReduced;
+      lekin += log08;
+    }
+  }
+  if (ekin<mxsecMinE) {return 0.0; }  
+  // use the G4HepEmRunUtils function for interpolation
+  const double mxsec = GetSplineLog(numData, &(elData->fResMacXSecData[iStart+5]), ekin, lekin, elData->fResMacXSecData[iStart+3], elData->fResMacXSecData[iStart+4]);   
+  return std::max(0.0, mxsec);  
+}
+
+double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, const double electronDensity) {
+  // Heitler model for e+e- -> 2g annihilation
+  const double tau   = ekin/kElectronMassC2;
+  const double gam   = tau + 1.0;
+  const double gam2  = gam*gam;
+  const double bg2   = tau * (tau+2.0);
+  const double bg    = std::sqrt(bg2);
+  return electronDensity*kPir02*((gam2+4.*gam+1.)*std::log(gam+bg) - (gam+3.)*bg) / (bg2*(gam+1.));
+}
+
+double G4HepEmElectronManager::ComputeMacXsecAnnihilationForStepping(const double ekin, const double electronDensity) {
+  // compute mxsec for the reduced energy (assuming that the mac-xsec decreasing with ekin)
+  return ComputeMacXsecAnnihilation(0.8*ekin, electronDensity);
+}
