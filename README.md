@@ -2,6 +2,9 @@
 
 # The G4HepEm R&D Project Documentation
 
+<p align="center">
+  <img src="./docs/source/logo_HepEM3.png">
+</p>
 
 
 A one lin dscription comes here 
