@@ -11,10 +11,11 @@
 // test cases. The required data are stored in the EnergyLoss data part of the 
 // G4HepEmElectronData structrue. Note: it's only for testing the device side 
 // data.
+template <bool TisRange>
 __global__
 void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
      int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
-     double* tsOutRes_d, int numTestCases, const bool isRange ) {
+     double* tsOutRes_d, int numTestCases ) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < numTestCases) {
       // compute lower index of the discrete kinetic energy bin:
@@ -23,8 +24,8 @@ void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElect
       int i0           = tsInImc_d[tid] * numELossData;
       // set the kinetic energy, range and second derivative arrays as `x`, `y` and `sd`
       double* xdata    = theElectronData_d->fELossEnergyGrid;
-      double* ydata    = (isRange) ? theElectronData_d->fELossDataRange   : theElectronData_d->fELossDataDEDX;
-      double* sdData   = (isRange) ? theElectronData_d->fELossDataRangeSD : theElectronData_d->fELossDataDEDXSD;
+      double* ydata    = (TisRange) ? theElectronData_d->fELossDataRange   : theElectronData_d->fELossDataDEDX;
+      double* sdData   = (TisRange) ? theElectronData_d->fELossDataRangeSD : theElectronData_d->fELossDataDEDXSD;
       // make sure that $x \in  [x[0],x[ndata-1]]$
       double xv        = max ( xdata[0], min( xdata[numELossData-1], tsInEkin_d[tid] ) );
       // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
@@ -130,8 +131,8 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
 //  std::cout << " N = " << numTestCases << " numBlocks = " << numBlocks << " numThreads = " << numThreads << " x = " << numBlocks*numThreads << std::endl;
   struct G4HepEmElectronDataOnDevice* elData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
-  TestElossDataRangeDEDXKernel <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases, true  );
-  TestElossDataRangeDEDXKernel <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases, false );
+  TestElossDataRangeDEDXKernel <  true > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases );
+  TestElossDataRangeDEDXKernel < false > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases );
   // range data need to be ready before calling the inverse range kernel ==> sync here
   cudaDeviceSynchronize();
   TestElossDataInvRangeKernel  <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsOutResRange_d, tsOutResInvRange_d,  numTestCases );

@@ -23,10 +23,11 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron=true )
 #include <device_launch_parameters.h>
 
   // kernel to evaluate the Range and dE/dx data (they stored in the same way)
+  template <bool TisRange>
   __global__
   void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
                                       int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
-                                      double* tsOutRes_d, int numTestCases, const bool isRange );
+                                      double* tsOutRes_d, int numTestCases );
 
   // kernels to evaluate the inverse Range data:
   //  - the lower index of the discrete range value bin in which the give test
