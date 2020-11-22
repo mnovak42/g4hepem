@@ -35,9 +35,9 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   // clean previous G4HepEmElectronData (if any)
   // 
   // create G4Models for e- or for e+
-  const G4ParticleDefinition* g4PartDef = G4Positron::Positron();
+  G4ParticleDefinition* g4PartDef = G4Positron::Positron();
   if (iselectron) {
-    g4PartDef      = G4Electron::Electron(); 
+    g4PartDef = G4Electron::Electron(); 
   }
   std::cout << " == InitElectronData " << std::endl;  
   // Min/Max energies of the EM model (same as for the loss-tables)

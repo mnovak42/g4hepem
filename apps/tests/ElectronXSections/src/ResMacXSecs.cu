@@ -18,7 +18,7 @@
 
 template <bool TIsIoni>
 __global__
-void TestResMacXSecDataKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
+void TestResMacXSecDataKernel ( const struct G4HepEmElectronDataOnDevice* theElectronData_d, 
      int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d, double* tsOutRes_d, 
      int numTestCases) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -45,20 +45,20 @@ void TestResMacXSecDataKernel ( struct G4HepEmElectronDataOnDevice* theElectronD
       double x1  = xdata[idxEkin];
       double x2  = xdata[idxEkin+1];
       double dl  = x2-x1;
-      double  b  = max( 0., min( 1., (xv - x1) / dl ) );
+      double  b  = max( 0.0, min( 1.0, (xv - x1) / dl ) );
       //
       double os  = 0.166666666667; // 1./6.
       double  a  = 1.0 - b;
       double c0  = (a*a*a-a)*sdData[idxEkin];
       double c1  = (b*b*b-b)*sdData[idxEkin+1];
-      tsOutRes_d[tid] = a*ydata[idxEkin] + b*ydata[idxEkin+1] + (c0+c1)*dl*dl*os; 
+      tsOutRes_d[tid] = max(0.0, a*ydata[idxEkin] + b*ydata[idxEkin+1] + (c0+c1)*dl*dl*os); 
   }
 }  
 
 
 void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h, 
      double* tsInEkinIoni_h, double* tsInLogEkinIoni_h, double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
-     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, int numTestCases ) {
+     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, int numTestCases, bool iselectron ) {
   //                                   
   // --- Allocate device side memory for the input/output data and copy all input
   //     data from host to device
@@ -89,8 +89,9 @@ void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsIn
   int numThreads = 512;
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
   //  std::cout << " N = " << numTestCases << " numBlocks = " << numBlocks << " numThreads = " << numThreads << " x = " << numBlocks*numThreads << std::endl;
-  TestResMacXSecDataKernel <  true > <<< numBlocks, numThreads >>> (hepEmData->fTheElectronData_gpu, tsInImc_d, tsInEkinIoni_d, tsInLogEkinIoni_d, tsOutResMXIoni_d, numTestCases );
-  TestResMacXSecDataKernel < false > <<< numBlocks, numThreads >>> (hepEmData->fTheElectronData_gpu, tsInImc_d, tsInEkinBrem_d, tsInLogEkinBrem_d, tsOutResMXBrem_d, numTestCases );
+  const G4HepEmElectronDataOnDevice* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
+  TestResMacXSecDataKernel <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinIoni_d, tsInLogEkinIoni_d, tsOutResMXIoni_d, numTestCases );
+  TestResMacXSecDataKernel < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinBrem_d, tsInLogEkinBrem_d, tsOutResMXBrem_d, numTestCases );
   //  
   // --- Synchronize to make sure that completed on the device
   cudaDeviceSynchronize();

@@ -30,7 +30,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron=tru
   //  the .cu file in the TestResMacXSecDataOnDevice function.
   template <bool TIsIoni>
   __global__
-  void TestResMacXSecDataKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
+  void TestResMacXSecDataKernel ( const struct G4HepEmElectronDataOnDevice* theElectronData_d, 
                                   int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
                                   double* tsOutRes_d, int numTestCases );
  
@@ -40,7 +40,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron=tru
                                     double* tsInEkinIoni_h, double* tsInLogEkinIoni_h,
                                     double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
                                     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, 
-                                    int numTestCases );
+                                    int numTestCases, bool iselectron );
 
 #endif // G4HepEm_CUDA_BUILD 
 

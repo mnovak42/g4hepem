@@ -39,6 +39,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <iomanip>
 
 
 // builds a fake Geant4 geometry just to be able to produce material-cuts couple
@@ -123,7 +124,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   gen.seed(0); // fix seed
   std::uniform_real_distribution<> dis(0, 1.0);
   // get ptr to the G4HepEmElectronData and G4HepEmMatCutData structures
-  const G4HepEmElectronData* theElectronData = hepEmData->fTheElectronData;
+  const G4HepEmElectronData* theElectronData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   const int numELossData = theElectronData->fELossEnergyGridSize;
   const G4HepEmMatCutData*   theMatCutData   = hepEmData->fTheMatCutData;
   const int numMCData    = theMatCutData->fNumMatCutData;  
@@ -177,17 +178,17 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   // Perform the test case evaluations on the device
   double* tsOutResOnDeviceMXIoni = new double[numTestCases]; 
   double* tsOutResOnDeviceMXBrem = new double[numTestCases]; 
-  TestResMacXSecDataOnDevice (hepEmData, tsInImc, tsInEkinIoni, tsInLogEkinIoni, tsInEkinBrem, tsInLogEkinBrem, tsOutResOnDeviceMXIoni, tsOutResOnDeviceMXBrem, numTestCases);
+  TestResMacXSecDataOnDevice (hepEmData, tsInImc, tsInEkinIoni, tsInLogEkinIoni, tsInEkinBrem, tsInLogEkinBrem, tsOutResOnDeviceMXIoni, tsOutResOnDeviceMXBrem, numTestCases, iselectron);
   for (int i=0; i<numTestCases; ++i) { 
 //    std::cout << tsInEkinIoni[i] << " "<<tsOutResMXIoni[i] << " " << tsOutResOnDeviceMXIoni[i] << " " <<tsInEkinBrem[i] << " " << tsOutResMXBrem[i] << " " << tsOutResOnDeviceMXBrem[i] << std::endl;
     if ( std::abs( 1.0 - tsOutResMXIoni[i]/tsOutResOnDeviceMXIoni[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Ioni) mismatch: " << tsOutResMXIoni[i] << " != " << tsOutResOnDeviceMXIoni[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinIoni[i] << ") " << std::endl; 
+      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Ioni) mismatch: " << std::setprecision(16) << tsOutResMXIoni[i] << " != " << tsOutResOnDeviceMXIoni[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinIoni[i] << ") " << std::endl; 
       break;
     }
     if ( std::abs( 1.0 - tsOutResMXBrem[i]/tsOutResOnDeviceMXBrem[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Brem) mismatch: " << tsOutResMXBrem[i] << " != " << tsOutResOnDeviceMXBrem[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinIoni[i] << ") " << std::endl; 
+      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Brem) mismatch: " <<  std::setprecision(16) << tsOutResMXBrem[i] << " != " << tsOutResOnDeviceMXBrem[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinBrem[i] << ") " << std::endl; 
       break;
     }
   }
