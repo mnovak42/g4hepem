@@ -15,7 +15,7 @@ void FakeG4Setup ( G4double prodCutInLength,  G4int verbose=1 );
 
 
 // checks the EnergyLoss related parts of the G4HepEmElectronData (host/device)
-bool TestElossData ( const struct G4HepEmData* hepEmData );
+bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron=true );
 
 
 #ifdef G4HepEm_CUDA_BUILD 
@@ -23,10 +23,11 @@ bool TestElossData ( const struct G4HepEmData* hepEmData );
 #include <device_launch_parameters.h>
 
   // kernel to evaluate the Range and dE/dx data (they stored in the same way)
+  template <bool TisRange>
   __global__
   void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
                                       int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
-                                      double* tsOutRes_d, int numTestCases, const bool isRange );
+                                      double* tsOutRes_d, int numTestCases );
 
   // kernels to evaluate the inverse Range data:
   //  - the lower index of the discrete range value bin in which the give test
@@ -34,7 +35,7 @@ bool TestElossData ( const struct G4HepEmData* hepEmData );
   //  - the devie side fuction does this (more efficient solutions can be given
   //    is more information is available on the access pattern)
   __device__ 
-  int   TestElossDataInvRangeFindBinKernel ( double* theRangeArray_d, int itsSize, double theRangeVal );
+  int   TestElossDataInvRangeFindBin ( double* theRangeArray_d, int itsSize, double theRangeVal );
 
   __global__
   void TestElossDataInvRangeKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
@@ -47,7 +48,7 @@ bool TestElossData ( const struct G4HepEmData* hepEmData );
   void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData, 
                                int* tsInImc_h, double* tsInEkin_h, double* tsInLogEkin_h,
                                double* tsOutResRange_h, double* tsOutResDEDX_h, double* tsOutResInvRange_h,  
-                               int numTestCases );
+                               int numTestCases, bool iselectron );
 
 
 

@@ -11,10 +11,11 @@
 // test cases. The required data are stored in the EnergyLoss data part of the 
 // G4HepEmElectronData structrue. Note: it's only for testing the device side 
 // data.
+template <bool TisRange>
 __global__
 void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
      int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
-     double* tsOutRes_d, int numTestCases, const bool isRange ) {
+     double* tsOutRes_d, int numTestCases ) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid < numTestCases) {
       // compute lower index of the discrete kinetic energy bin:
@@ -23,8 +24,8 @@ void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElect
       int i0           = tsInImc_d[tid] * numELossData;
       // set the kinetic energy, range and second derivative arrays as `x`, `y` and `sd`
       double* xdata    = theElectronData_d->fELossEnergyGrid;
-      double* ydata    = (isRange) ? theElectronData_d->fELossDataRange   : theElectronData_d->fELossDataDEDX;
-      double* sdData   = (isRange) ? theElectronData_d->fELossDataRangeSD : theElectronData_d->fELossDataDEDXSD;
+      double* ydata    = (TisRange) ? theElectronData_d->fELossDataRange   : theElectronData_d->fELossDataDEDX;
+      double* sdData   = (TisRange) ? theElectronData_d->fELossDataRangeSD : theElectronData_d->fELossDataDEDXSD;
       // make sure that $x \in  [x[0],x[ndata-1]]$
       double xv        = max ( xdata[0], min( xdata[numELossData-1], tsInEkin_d[tid] ) );
       // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
@@ -49,7 +50,7 @@ void TestElossDataRangeDEDXKernel ( struct G4HepEmElectronDataOnDevice* theElect
 
 
 __device__
-int   TestElossDataInvRangeFindBinKernel ( double* theRangeArray_d, int itsSize, double theRangeVal ) {
+int   TestElossDataInvRangeFindBin ( double* theRangeArray_d, int itsSize, double theRangeVal ) {
   int ml = -1;
   int mu = itsSize-1;    
   while (abs(mu-ml)>1) {
@@ -79,7 +80,7 @@ void TestElossDataInvRangeKernel ( struct G4HepEmElectronDataOnDevice* theElectr
       // make sure that $x \in  [x[0],x[ndata-1]]$
       double xv        = max ( xdata[0], min( xdata[numELossData-1]*(1.0-1.0E-15), tsInRange_d[tid] ) );
       // find lower index of the discrete range bin (each threds will perform a small b-search)
-      int    ilower    = TestElossDataInvRangeFindBinKernel ( xdata, numELossData, xv );
+      int    ilower    = TestElossDataInvRangeFindBin ( xdata, numELossData, xv );
       // interpolate
       double x1  = xdata[ilower];
       double x2  = xdata[ilower+1];
@@ -102,7 +103,7 @@ void TestElossDataInvRangeKernel ( struct G4HepEmElectronDataOnDevice* theElectr
 void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData, 
      int* tsInImc_h, double* tsInEkin_h, double* tsInLogEkin_h,
      double* tsOutResRange_h, double* tsOutResDEDX_h, double* tsOutResInvRange_h, 
-     int numTestCases ) {
+     int numTestCases, bool iselectron ) {
   //                                   
   // --- Allocate device side memory for the input/output data and copy all input
   //     data from host to device
@@ -126,14 +127,15 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   gpuErrchk ( cudaMemcpy ( tsInLogEkin_d, tsInLogEkin_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
   //
   // --- Launch the kernels
-  int numThreads = 1024;
+  int numThreads = 512;
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
 //  std::cout << " N = " << numTestCases << " numBlocks = " << numBlocks << " numThreads = " << numThreads << " x = " << numBlocks*numThreads << std::endl;
-  TestElossDataRangeDEDXKernel <<< numBlocks, numThreads >>> (hepEmData->fTheElectronData_gpu, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases, true  );
-  TestElossDataRangeDEDXKernel <<< numBlocks, numThreads >>> (hepEmData->fTheElectronData_gpu, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases, false );
+  struct G4HepEmElectronDataOnDevice* elData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
+  TestElossDataRangeDEDXKernel <  true > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases );
+  TestElossDataRangeDEDXKernel < false > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases );
   // range data need to be ready before calling the inverse range kernel ==> sync here
   cudaDeviceSynchronize();
-  TestElossDataInvRangeKernel  <<< numBlocks, numThreads >>> (hepEmData->fTheElectronData_gpu, tsInImc_d, tsOutResRange_d, tsOutResInvRange_d,  numTestCases );
+  TestElossDataInvRangeKernel  <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsOutResRange_d, tsOutResInvRange_d,  numTestCases );
   //  
   // --- Synchronize to make sure that completed on the device
   cudaDeviceSynchronize();

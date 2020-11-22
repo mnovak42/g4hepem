@@ -39,6 +39,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <iomanip>
 
 
 // builds a fake Geant4 geometry just to be able to produce material-cuts couple
@@ -113,97 +114,98 @@ void FakeG4Setup ( G4double prodCutInLength, G4int verbose) {
 
 
 
-bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
+bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   bool isPassed     = true;
   // number of mat-cut and kinetic energy pairs go generate and test
   int  numTestCases = 32768;
-  // number of mat-cut data i.e. G4HepEm mat-cut indices are in [0,numMCData)
-  int  numMCData    = hepEmData->fTheMatCutData->fNumMatCutData;  
   // set up an rng to get mc-indices on [0,numMCData)
   std::random_device rd;
   std::mt19937 gen(rd());
   gen.seed(0); // fix seed
   std::uniform_real_distribution<> dis(0, 1.0);
-  // get ptr to the G4HepEmElectronData structure
+  // get ptr to the G4HepEmElectronData and G4HepEmMatCutData structures
   const G4HepEmElectronData* theElectronData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
-  // for the generation of test particle kinetic energy values:
-  // - get the min/max values of the energy loss (related data) kinetic energy grid
-  // - also the number of discrete kinetic energy grid points (used later)
-  // - test particle kinetic energies will be generated uniformly random, on log 
-  //   kinetic energy scale, between +- 5 percent of the limits (in order to test 
-  //   below above grid limits cases as well)
-  const int     numELossData = theElectronData->fELossEnergyGridSize;
-  const double  minELoss     = 0.95*theElectronData->fELossEnergyGrid[0];
-  const double  maxELoss     = 1.05*theElectronData->fELossEnergyGrid[numELossData-1];
+  const int numELossData = theElectronData->fELossEnergyGridSize;
+  const G4HepEmMatCutData*   theMatCutData   = hepEmData->fTheMatCutData;
+  const int numMCData    = theMatCutData->fNumMatCutData;  
   // allocate memory (host) to store the generated test cases:
   //  - the numTestCases, material-cut index and kinetic energy combinations
   // and the results:
-  //  - the numTestCases, restricted dEdx, range and inverse-range values for the 
-  //    test cases.
-  int*    tsInImc           = new int[numTestCases];
-  double* tsInEkin          = new double[numTestCases];
-  double* tsInLogEkin       = new double[numTestCases];
-  double* tsOutResRange     = new double[numTestCases];  
-  double* tsOutResDEDX      = new double[numTestCases];  
-  double* tsOutResInvRange  = new double[numTestCases];  
-  // generate the test cases: mat-cut indices and kinetic energy combinations
-  const double lMinELoss   = std::log(minELoss);
-  const double lELossDelta = std::log(maxELoss/minELoss);
+  //  - the numTestCases, restricted macroscopic cross sction for ionisation, bremsstrahlung 
+  //    evaluated at test cases.
+  int*    tsInImc         = new int[numTestCases];
+  double* tsInEkinIoni    = new double[numTestCases];
+  double* tsInLogEkinIoni = new double[numTestCases];
+  double* tsInEkinBrem    = new double[numTestCases];
+  double* tsInLogEkinBrem = new double[numTestCases];
+  double* tsOutResMXIoni  = new double[numTestCases];  
+  double* tsOutResMXBrem  = new double[numTestCases];  
+  // the maximum (+2%) primary particle kinetic energy that is covered by the simulation (100 TeV by default)
+  const double    maxEKin = 1.02*theElectronData->fELossEnergyGrid[numELossData-1];
   for (int i=0; i<numTestCases; ++i) { 
-    tsInImc[i]     = (int)(dis(gen)*numMCData);
-    tsInLogEkin[i] = dis(gen)*lELossDelta+lMinELoss;  
-    tsInEkin[i]    = std::exp(tsInLogEkin[i]);
+    int imc            = (int)(dis(gen)*numMCData);
+    tsInImc[i]         = imc;
+    // == Ionisation: 
+    // get the min/max of the possible prirmary e-/e+ kinetic energies at which
+    // the restricted interacton can happen in this material-cuts (use +- 2% out of range)
+    double secElCutE   = theMatCutData->fMatCutData[imc].fSecElProdCutE;
+    double minEKin     = iselectron ? 0.98*2.0*secElCutE : 0.98*secElCutE;
+    // generate a unifomly random kinetic energy point in the allowed (+- 2%) primary 
+    // particle kinetic energy range on logarithmic scale
+    double lMinEkin    = std::log(minEKin);
+    double lEkinDelta  = std::log(maxEKin/minEKin);    
+    tsInLogEkinIoni[i] = dis(gen)*lEkinDelta+lMinEkin;
+    tsInEkinIoni[i]    = std::exp(tsInLogEkinIoni[i]);
+    // == Bremsstrahlung: (the same with different limits)
+    minEKin            = 0.98*theMatCutData->fMatCutData[imc].fSecGamProdCutE;
+    lMinEkin           = std::log(minEKin);
+    lEkinDelta         = std::log(maxEKin/minEKin);    
+    tsInLogEkinBrem[i] = dis(gen)*lEkinDelta+lMinEkin;  
+    tsInEkinBrem[i]    = std::exp(tsInLogEkinBrem[i]);      
   }
   //
-  // Use a G4HepEmElectronManager object to evaluate the range, dedx and inverse-range 
-  // values for the test cases.
+  // Use a G4HepEmElectronManager object to evaluate the restricted macroscopic
+  // cross sections for ionisation and bremsstrahlung for the test cases.
   G4HepEmElectronManager theElectronMgr;
   for (int i=0; i<numTestCases; ++i) { 
-    tsOutResRange[i]    = theElectronMgr.GetRestRange(theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
-    tsOutResDEDX[i]     = theElectronMgr.GetRestDEDX (theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
-    tsOutResInvRange[i] = theElectronMgr.GetInvRange (theElectronData, tsInImc[i], tsOutResRange[i]);    
+    tsOutResMXIoni[i] = theElectronMgr.GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinIoni[i], tsInLogEkinIoni[i], true);
+    tsOutResMXBrem[i] = theElectronMgr.GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinBrem[i], tsInLogEkinBrem[i], false);
   }
 
 
 #ifdef G4HepEm_CUDA_BUILD  
   //
   // Perform the test case evaluations on the device
-  double* tsOutResOnDeviceRange    = new double[numTestCases]; 
-  double* tsOutResOnDeviceDEDX     = new double[numTestCases]; 
-  double* tsOutResOnDeviceInvRange = new double[numTestCases]; 
-  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRange, tsOutResOnDeviceDEDX, tsOutResOnDeviceInvRange, numTestCases, iselectron);
+  double* tsOutResOnDeviceMXIoni = new double[numTestCases]; 
+  double* tsOutResOnDeviceMXBrem = new double[numTestCases]; 
+  TestResMacXSecDataOnDevice (hepEmData, tsInImc, tsInEkinIoni, tsInLogEkinIoni, tsInEkinBrem, tsInLogEkinBrem, tsOutResOnDeviceMXIoni, tsOutResOnDeviceMXBrem, numTestCases, iselectron);
   for (int i=0; i<numTestCases; ++i) { 
-    if ( std::abs( 1.0 - tsOutResRange[i]/tsOutResOnDeviceRange[i] ) > 1.0E-14 ) {
+//    std::cout << tsInEkinIoni[i] << " "<<tsOutResMXIoni[i] << " " << tsOutResOnDeviceMXIoni[i] << " " <<tsInEkinBrem[i] << " " << tsOutResMXBrem[i] << " " << tsOutResOnDeviceMXBrem[i] << std::endl;
+    if ( std::abs( 1.0 - tsOutResMXIoni[i]/tsOutResOnDeviceMXIoni[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device RANGE mismatch: " << tsOutResRange[i] << " != " << tsOutResOnDeviceRange[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
+      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Ioni) mismatch: " << std::setprecision(16) << tsOutResMXIoni[i] << " != " << tsOutResOnDeviceMXIoni[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinIoni[i] << ") " << std::endl; 
       break;
     }
-    if ( std::abs( 1.0 - tsOutResDEDX[i]/tsOutResOnDeviceDEDX[i] ) > 1.0E-14 ) {
+    if ( std::abs( 1.0 - tsOutResMXBrem[i]/tsOutResOnDeviceMXBrem[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device dE/dx mismatch: "  << tsOutResDEDX[i] << " != " << tsOutResOnDeviceDEDX[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
-      break;
-    }
-    if ( std::abs( 1.0 - tsOutResInvRange[i]/tsOutResOnDeviceInvRange[i] ) > 1.0E-14 ) {
-      isPassed = false;
-      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device Inverse-RANGE mismatch: "  << tsOutResInvRange[i] << " != " << tsOutResOnDeviceInvRange[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << " range =  " << tsOutResRange[i]<< ") " << std::endl; 
+      std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Brem) mismatch: " <<  std::setprecision(16) << tsOutResMXBrem[i] << " != " << tsOutResOnDeviceMXBrem[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinBrem[i] << ") " << std::endl; 
       break;
     }
   }
   // 
-  delete [] tsOutResOnDeviceRange;
-  delete [] tsOutResOnDeviceDEDX;
-  delete [] tsOutResOnDeviceInvRange;  
+  delete [] tsOutResOnDeviceMXIoni;
+  delete [] tsOutResOnDeviceMXBrem;
 #endif // G4HepEm_CUDA_BUILD  
-
 
   //
   // delete allocatd memeory
   delete [] tsInImc;
-  delete [] tsInEkin;
-  delete [] tsInLogEkin;
-  delete [] tsOutResRange;
-  delete [] tsOutResDEDX;
-  delete [] tsOutResInvRange;
+  delete [] tsInEkinIoni;
+  delete [] tsInLogEkinIoni;
+  delete [] tsInEkinBrem;
+  delete [] tsInLogEkinBrem;
+  delete [] tsOutResMXIoni;
+  delete [] tsOutResMXBrem;
 
   return isPassed;
 }

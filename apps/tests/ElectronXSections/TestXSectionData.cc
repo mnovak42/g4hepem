@@ -37,7 +37,7 @@ int main() {
   // 
   //     Therefore, here we create a `master` G4HepEmRunManager and call its Initialize() 
   //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
-  int g4HepEmParticleIndx = 0; // e-
+  int g4HepEmParticleIndx = 0; // e-: 0; e+: 1;  
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
   runMgr->Initialize ( G4Random::getTheEngine(), g4HepEmParticleIndx );
   
@@ -51,14 +51,14 @@ int main() {
 
   
   //
-  // --- Invoke the test for EnergyLoss structure test(s):
-  if ( !TestElossData ( runMgr->GetHepEmData(), g4HepEmParticleIndx==0 ) ) {
+  // --- Invoke the test for Restricted Macroscopic Cross Section structure test(s):
+  if ( !TestXSectionData ( runMgr->GetHepEmData(), g4HepEmParticleIndx==0 ) ) {
     return 1;
   } else if ( verbose > 0 ) {
 #ifdef G4HepEm_CUDA_BUILD    
-    std::cout << " === ELossData Test: PASSING (HepEm HOST v.s. DEVICE) \n" << std::endl;
+    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST v.s. DEVICE) \n" << std::endl;
 #else   // G4HepEm_CUDA_BUILD    
-    std::cout << " === ELossData Test: PASSING (HepEm HOST) \n" << std::endl;
+    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST) \n" << std::endl;
 #endif  // G4HepEm_CUDA_BUILD    
   }
 
