@@ -192,7 +192,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 
 
 // should be called only for mat-cuts with more than one elements in their material
-int SelectTargetAtomBrem(struct G4HepEmElectronData* elData, int imc, double ekin, double lekin, double urndn, bool isbremSB) {
+int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, int imc, double ekin, double lekin, double urndn, bool isbremSB) {
   // start index for this mat-cut and this model (-1 is no elememnt selector i.e. single element material) 
   const int   indxStart = isbremSB 
                           ? elData->fElemSelectorBremSBStartIndexPerMatCut[imc] 

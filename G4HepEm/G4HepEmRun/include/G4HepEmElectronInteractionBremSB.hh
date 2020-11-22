@@ -25,7 +25,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 
 // Target atom selector for the above bremsstrahlung intercations in case of 
 // materials composed from multiple elements.
-int SelectTargetAtomBrem(struct G4HepEmElectronData* elData, int imc, double ekin, double lekin, double urndn, bool isbremSB);
+int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, int imc, double ekin, double lekin, double urndn, bool isbremSB);
 
 // Simple linear search (with step of 3!) used in the photon energy sampling part 
 // of the SB (Seltzer-Berger) brem model.
