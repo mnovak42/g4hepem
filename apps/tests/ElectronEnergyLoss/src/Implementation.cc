@@ -113,7 +113,7 @@ void FakeG4Setup ( G4double prodCutInLength, G4int verbose) {
 
 
 
-bool TestElossData ( const struct G4HepEmData* hepEmData ) {
+bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   bool isPassed     = true;
   // number of mat-cut and kinetic energy pairs go generate and test
   int  numTestCases = 32768;
@@ -123,9 +123,9 @@ bool TestElossData ( const struct G4HepEmData* hepEmData ) {
   std::random_device rd;
   std::mt19937 gen(rd());
   gen.seed(0); // fix seed
-  std::uniform_real_distribution<>    dis(0, 1.0);
+  std::uniform_real_distribution<> dis(0, 1.0);
   // get ptr to the G4HepEmElectronData structure
-  const G4HepEmElectronData* theElectronData = hepEmData->fTheElectronData;
+  const G4HepEmElectronData* theElectronData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   // for the generation of test particle kinetic energy values:
   // - get the min/max values of the energy loss (related data) kinetic energy grid
   // - also the number of discrete kinetic energy grid points (used later)
@@ -151,8 +151,8 @@ bool TestElossData ( const struct G4HepEmData* hepEmData ) {
   const double lELossDelta = std::log(maxELoss/minELoss);
   for (int i=0; i<numTestCases; ++i) { 
     tsInImc[i]     = (int)(dis(gen)*numMCData);
-    tsInEkin[i]    = std::exp(dis(gen)*lELossDelta+lMinELoss);
-    tsInLogEkin[i] = std::log(tsInEkin[i]);  
+    tsInLogEkin[i] = dis(gen)*lELossDelta+lMinELoss;  
+    tsInEkin[i]    = std::exp(tsInLogEkin[i]);
   }
   //
   // Use a G4HepEmElectronManager object to evaluate the range, dedx and inverse-range 
@@ -171,7 +171,7 @@ bool TestElossData ( const struct G4HepEmData* hepEmData ) {
   double* tsOutResOnDeviceRange    = new double[numTestCases]; 
   double* tsOutResOnDeviceDEDX     = new double[numTestCases]; 
   double* tsOutResOnDeviceInvRange = new double[numTestCases]; 
-  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRange, tsOutResOnDeviceDEDX, tsOutResOnDeviceInvRange, numTestCases);
+  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRange, tsOutResOnDeviceDEDX, tsOutResOnDeviceInvRange, numTestCases, iselectron);
   for (int i=0; i<numTestCases; ++i) { 
     if ( std::abs( 1.0 - tsOutResRange[i]/tsOutResOnDeviceRange[i] ) > 1.0E-14 ) {
       isPassed = false;

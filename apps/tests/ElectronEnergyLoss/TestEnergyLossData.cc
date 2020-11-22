@@ -52,7 +52,7 @@ int main() {
   
   //
   // --- Invoke the test for EnergyLoss structure test(s):
-  if ( !TestElossData ( runMgr->GetHepEmData() ) ) {
+  if ( !TestElossData ( runMgr->GetHepEmData(), g4HepEmParticleIndx==0 ) ) {
     return 1;
   } else if ( verbose > 0 ) {
 #ifdef G4HepEm_CUDA_BUILD    
