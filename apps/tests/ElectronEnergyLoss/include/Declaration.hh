@@ -34,7 +34,7 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron=true )
   //  - the devie side fuction does this (more efficient solutions can be given
   //    is more information is available on the access pattern)
   __device__ 
-  int   TestElossDataInvRangeFindBinKernel ( double* theRangeArray_d, int itsSize, double theRangeVal );
+  int   TestElossDataInvRangeFindBin ( double* theRangeArray_d, int itsSize, double theRangeVal );
 
   __global__
   void TestElossDataInvRangeKernel ( struct G4HepEmElectronDataOnDevice* theElectronData_d, 
