@@ -1,0 +1,42 @@
+## =============================================================================
+## Geant4 macro for modelling simplified sampling calorimeters
+## =============================================================================
+##
+/control/verbose 0
+/run/numberOfThreads 4
+/run/verbose 0
+##
+## -----------------------------------------------------------------------------
+## Setup the ATLASbar simplified sampling calorimeter: 
+##   = 50 Layers of:
+##     - Absorber 1 (gap) : 2.3 mm Lead 
+##     - Absorber 2 (abs.): 5.7 mm liquid-Argon
+## -----------------------------------------------------------------------------
+/testem/det/setSizeYZ 40 cm
+/testem/det/setNbOfLayers 50
+/testem/det/setNbOfAbsor 2
+/testem/det/setAbsor 1 G4_Pb 2.3 mm
+/testem/det/setAbsor 2 G4_lAr 5.7 mm
+##
+## -----------------------------------------------------------------------------
+## Set the physics list (more exactly, the EM physics constructor): 
+##  = 'HepEm'           : the G4HepEm EM physics c.t.r.
+##  =  'G4Em'           : the G4 EM physics c.t.r. that corresponds to G4HepEm
+##  = 'emstandard_opt0' : the original, G4 EM-Opt0 physics c.t.r.
+## -----------------------------------------------------------------------------
+/testem/phys/addPhysics   HepEm
+##/testem/phys/addPhysics   G4Em
+##
+## -----------------------------------------------------------------------------
+## Set secondary production threshold, init. the run and set primary properties  
+## -----------------------------------------------------------------------------
+/run/setCut 0.7 mm
+/run/initialize
+/gun/particle e-
+/gun/energy 9999 MeV
+##
+## -----------------------------------------------------------------------------
+## Run the simulation with the given number of events and print list of processes
+## -----------------------------------------------------------------------------
+/run/beamOn 1000
+/process/list
