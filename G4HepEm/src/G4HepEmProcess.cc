@@ -16,6 +16,7 @@
 #include "G4Threading.hh"
 #include "G4Track.hh"
 #include "G4Step.hh"
+#include "G4StepPoint.hh"
 #include "G4StepStatus.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4ParticleChangeForLoss.hh"
@@ -44,14 +45,6 @@ void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
   G4cout << " G4HepEmProcess::BuildPhysicsTable for Particle = " << partDef.GetParticleName() << G4endl;    
   StreamInfo(G4cout, partDef);
 
-  // Extracts EM and other configuration parameters, builds all the elememnt, 
-  // matrial and material-production-cuts related data structures shared by all 
-  // workers and all processes (read-only) at run time.
-  // Action is done only for the master runmanager and only if it was not done 
-  // yet: in case of re-init, first the G4HepEmRunManager::Clear() method needs 
-  // to be invoked.
-//  fTheG4HepEmRunManager->InitializeGlobal();  
-  
   // The ptr-s to global data structures created and filled in InitializeGlobal() 
   // will be copied to the workers and the TL-data structure will be created.
   //fTheG4HepEmRunManager->Initialize(G4Random::getTheEngine());
@@ -88,9 +81,9 @@ void     G4HepEmProcess::StartTracking(G4Track* track) {
 
 G4double G4HepEmProcess::AlongStepGetPhysicalInteractionLength ( 
                                                const G4Track& track,
-                                               G4double  previousStepSize,
-                                               G4double  currentMinimumStep,
-                                               G4double& proposedSafety,
+                                               G4double  /*previousStepSize*/,
+                                               G4double  /*currentMinimumStep*/,
+                                               G4double& /*proposedSafety*/,
                                                G4GPILSelection* selection) {
   *selection = CandidateForSelection;   
   G4HepEmTLData*            theTLData = fTheG4HepEmRunManager->GetTheTLData();  
@@ -100,13 +93,15 @@ G4double G4HepEmProcess::AlongStepGetPhysicalInteractionLength (
                                         ? theTLData->GetPrimaryGammaTrack()->GetTrack()
                                         : theTLData->GetPrimaryElectronTrack()->GetTrack();
   thePrimaryTrack->SetCharge(partDef->GetPDGCharge());
-  thePrimaryTrack->SetEKin(track.GetDynamicParticle()->GetKineticEnergy());
-  thePrimaryTrack->SetLEKin(track.GetDynamicParticle()->GetLogKineticEnergy());
+  const G4DynamicParticle* theG4DPart = track.GetDynamicParticle();
+  thePrimaryTrack->SetEKin(theG4DPart->GetKineticEnergy());
+  thePrimaryTrack->SetLEKin(theG4DPart->GetLogKineticEnergy());
   const int    g4IMC = track.GetMaterialCutsCouple()->GetIndex();
   const int hepEmIMC = fTheG4HepEmRunManager->GetHepEmData()->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4IMC];
   thePrimaryTrack->SetMCIndex(hepEmIMC);
-  thePrimaryTrack->SetOnBoundary(track.GetStep()->GetPreStepPoint()->GetStepStatus()==G4StepStatus::fGeomBoundary);
-
+  const G4StepPoint* theG4PreStepPoint = track.GetStep()->GetPreStepPoint();
+  thePrimaryTrack->SetOnBoundary(theG4PreStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary);
+  //
   if (isGamma) {
     fTheG4HepEmRunManager->GetTheGammaManager()->HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   } else {
@@ -135,7 +130,9 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   const G4ThreeVector& primDir = track.GetDynamicParticle()->GetMomentumDirection();
   thePrimaryTrack->SetDirection(primDir[0], primDir[1], primDir[2]);
   thePrimaryTrack->SetGStepLength(track.GetStepLength());
-  thePrimaryTrack->SetOnBoundary(track.GetStep()->GetPostStepPoint()->GetStepStatus()==G4StepStatus::fGeomBoundary);
+  const G4StepPoint* theG4PostStepPoint = step.GetPostStepPoint();
+  thePrimaryTrack->SetOnBoundary(theG4PostStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary);
+  // invoke the physics interactions (all i.e. all along- and post-step as well as possible at rest)
   if (isGamma) {
     fTheG4HepEmRunManager->GetTheGammaManager()->Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   } else {
@@ -158,34 +155,33 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   const int numSecondaries = numSecElectron+numSecGamma;
   if (numSecondaries>0) {
     fParticleChangeForLoss->SetNumberOfSecondaries(numSecondaries);    
-    double time = track.GetGlobalTime();
+    const G4ThreeVector& theG4PostStepPointPosition = theG4PostStepPoint->GetPosition();
+    const G4double          theG4PostStepGlobalTime = theG4PostStepPoint->GetGlobalTime();
+    const G4TouchableHandle&   theG4TouchableHandle = track.GetTouchableHandle();
     for (int is=0; is<numSecElectron; ++is) {
       G4HepEmTrack* secTrack = theTLData->GetSecondaryElectronTrack(is)->GetTrack();
-      const double* dir = secTrack->GetDirection();
+      const double*      dir = secTrack->GetDirection();
       // MUST BE CHANGED WHEN e+ is added 
-      G4DynamicParticle* dp = secTrack->GetCharge() < 0.0 
-                              ? new G4DynamicParticle(G4Electron::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]), secTrack->GetEKin())
-                              : new G4DynamicParticle(G4Positron::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]), secTrack->GetEKin());
-      G4Track* t = new G4Track(dp, time, track.GetPosition());
-      t->SetTouchableHandle(track.GetTouchableHandle());
-      fParticleChangeForLoss->AddSecondary(t);
+      G4DynamicParticle*  dp = secTrack->GetCharge() < 0.0 
+                               ? new G4DynamicParticle( G4Electron::Definition(), G4ThreeVector( dir[0], dir[1], dir[2] ), secTrack->GetEKin() )
+                               : new G4DynamicParticle( G4Positron::Definition(), G4ThreeVector( dir[0], dir[1], dir[2] ), secTrack->GetEKin() );
+      G4Track*     aG4Track  = new G4Track( dp, theG4PostStepGlobalTime, theG4PostStepPointPosition );
+      aG4Track->SetTouchableHandle( theG4TouchableHandle );
+      fParticleChangeForLoss->AddSecondary( aG4Track );
     }
     theTLData->ResetNumSecondaryElectronTrack();
 
     for (int is=0; is<numSecGamma; ++is) {
       G4HepEmTrack* secTrack = theTLData->GetSecondaryGammaTrack(is)->GetTrack();
-      const double* dir = secTrack->GetDirection();
-      G4DynamicParticle* dp = new G4DynamicParticle(G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]), secTrack->GetEKin());
-      G4Track* t = new G4Track(dp, time, track.GetPosition());
-      t->SetTouchableHandle(track.GetTouchableHandle());
-      fParticleChangeForLoss->AddSecondary(t);
+      const double*      dir = secTrack->GetDirection();
+      G4DynamicParticle*  dp = new G4DynamicParticle( G4Gamma::Definition(), G4ThreeVector( dir[0], dir[1], dir[2] ), secTrack->GetEKin() );
+      G4Track*     aG4Track  = new G4Track(  dp, theG4PostStepGlobalTime, theG4PostStepPointPosition );
+      aG4Track->SetTouchableHandle( theG4TouchableHandle );
+      fParticleChangeForLoss->AddSecondary( aG4Track );
     }
-
     theTLData->ResetNumSecondaryGammaTrack();
- } 
-  
-  
-    
+  } 
+       
   return fParticleChangeForLoss;
 } 
 
