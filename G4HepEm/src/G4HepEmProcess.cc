@@ -81,9 +81,9 @@ void     G4HepEmProcess::StartTracking(G4Track* track) {
 
 G4double G4HepEmProcess::AlongStepGetPhysicalInteractionLength ( 
                                                const G4Track& track,
-                                               G4double  previousStepSize,
-                                               G4double  currentMinimumStep,
-                                               G4double& proposedSafety,
+                                               G4double  /*previousStepSize*/,
+                                               G4double  /*currentMinimumStep*/,
+                                               G4double& /*proposedSafety*/,
                                                G4GPILSelection* selection) {
   *selection = CandidateForSelection;   
   G4HepEmTLData*            theTLData = fTheG4HepEmRunManager->GetTheTLData();  
@@ -130,7 +130,7 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   const G4ThreeVector& primDir = track.GetDynamicParticle()->GetMomentumDirection();
   thePrimaryTrack->SetDirection(primDir[0], primDir[1], primDir[2]);
   thePrimaryTrack->SetGStepLength(track.GetStepLength());
-  const G4StepPoint* theG4PostStepPoint = track.GetStep()->GetPostStepPoint();
+  const G4StepPoint* theG4PostStepPoint = step.GetPostStepPoint();
   thePrimaryTrack->SetOnBoundary(theG4PostStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary);
   // invoke the physics interactions (all i.e. all along- and post-step as well as possible at rest)
   if (isGamma) {

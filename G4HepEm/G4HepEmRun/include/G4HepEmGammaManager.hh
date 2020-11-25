@@ -23,9 +23,9 @@ class G4HepEmGammaManager {
   
 public:
   // step length
-  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {}
+  void   HowFar(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/) {}
   // interactions
-  void   Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {}
+  void   Perform(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/) {}
 };
 
 #endif // G4HepEmGammaManager_HH
