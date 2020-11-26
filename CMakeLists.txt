@@ -50,6 +50,8 @@ if (G4HepEm_CUDA_BUILD)
 #    message (STATUS " ")
 ######
      enable_language(CUDA)
+     # suppress warnings
+     set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -w")
 #     set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} 
 #       -Xcompiler -fPIC -Xcudafe 
 #       --diag_suppress=boolean_controlling_expr_is_constant
