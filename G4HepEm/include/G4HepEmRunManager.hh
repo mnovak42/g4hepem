@@ -16,7 +16,7 @@ class  G4HepEmGammaManager;
 // Geant4 CLHEP::HepRandomEngine
 namespace CLHEP {
   class HepRandomEngine;
-};
+}
 
 
 #include <vector>
