@@ -64,7 +64,7 @@ endif (G4HepEm_CUDA_BUILD)
 
 #----------------------------------------------------------------------------
 # Build G4HepEm libraries
-add_subdirectory (G4HEPEM)
+add_subdirectory (G4HepEm)
 
 
 
