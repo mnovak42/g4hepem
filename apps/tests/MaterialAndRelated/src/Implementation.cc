@@ -122,7 +122,8 @@ bool TestElementData ( const struct G4HepEmData* hepEmData ) {
     const G4ElementVector*  elmVec = mat->GetElementVector();
     size_t            numOfElement = mat->GetNumberOfElements();
     for (size_t ie=0; ie<numOfElement && isPassed; ++ie) {
-      G4int izet = ((*elmVec)[ie])->GetZasInt();
+      const G4Element* g4Element = ((*elmVec)[ie]);
+      G4int izet = g4Element->GetZasInt();
       // get the corresonding G4HepEmElemData structure 
       izet       = std::min(izet, (G4int)hepEmData->fTheElementData->fMaxZet);
       const struct G4HepEmElemData& elData = hepEmData->fTheElementData->fElementData[izet];
@@ -137,6 +138,24 @@ bool TestElementData ( const struct G4HepEmData* hepEmData ) {
         std::cerr << "\n*** ERROR:\nElementData: G4HepEm-Geant4 mismatch: fZet13 != " << elData.fZet13 << " != "  << g4Z13 << std::endl; 
         break;             
       }
+      double g4Z23 = std::pow((double)izet, 2.0/3.0);
+      if (elData.fZet23 != g4Z23 ) {
+        isPassed = false;
+        std::cerr << "\n*** ERROR:\nElementData: G4HepEm-Geant4 mismatch: fZet23 != " << elData.fZet23 << " != "  << g4Z23 << std::endl; 
+        break;             
+      }
+      double fc = g4Element->GetfCoulomb();
+      if (elData.fCoulomb != fc ) {
+        isPassed = false;
+        std::cerr << "\n*** ERROR:\nElementData: G4HepEm-Geant4 mismatch: fc != " << elData.fCoulomb << " != "  << fc << std::endl; 
+        break;             
+      }
+      double logZ = std::log(izet);
+      if (elData.fLogZ != logZ ) {
+        isPassed = false;
+        std::cerr << "\n*** ERROR:\nElementData: G4HepEm-Geant4 mismatch: fLogZ != " << elData.fLogZ << " != "  << logZ << std::endl; 
+        break;             
+      }      
     } 
   }
   return isPassed;
@@ -175,6 +194,11 @@ bool TestMaterialData ( const struct G4HepEmData* hepEmData ) {
       std::cerr << "\n*** ERROR:\nMaterialData: G4HepEm-Geant4 mismatch: fNumOfElement != "    << heMat.fNumOfElement    << " != "  << g4Mat->GetNumberOfElements() << std::endl; 
       continue;
     }    
+    if ( heMat.fRadiationLength != g4Mat->GetRadlen() ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMaterialData: G4HepEm-Geant4 mismatch: fRadiationLength != " << heMat.fRadiationLength << " != "  << g4Mat->GetRadlen() << std::endl; 
+      continue;
+    }   
     // obtain the element composition of the g4 material and compare to those stored in hepEm
     const G4ElementVector*  elmVec = g4Mat->GetElementVector();
     const G4double* nbOfAtomPerVol = g4Mat->GetVecNbOfAtomsPerVolume();

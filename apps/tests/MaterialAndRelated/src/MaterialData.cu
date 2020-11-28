@@ -94,6 +94,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   int*     resNumElems_h = new    int[numTestCases];
   double*  resMassDens_h = new double[numTestCases];
   double*  resElecDens_h = new double[numTestCases];
+  double*    resRadLen_h = new double[numTestCases];
   //
   // --- Allocate memory on the device:
   //
@@ -106,6 +107,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   double* resCompADens_d = nullptr;
   double*  resMassDens_d = nullptr;
   double*  resElecDens_d = nullptr;
+  double*    resRadLen_d = nullptr;
   //
   gpuErrchk ( cudaMalloc ( &matIndices_d,   sizeof( int )    * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &indxStarts_d,   sizeof( int )    * numTestCases ) );
@@ -114,6 +116,8 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   gpuErrchk ( cudaMalloc ( &resCompADens_d, sizeof( double ) * cumIndx ) );
   gpuErrchk ( cudaMalloc ( &resMassDens_d,  sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &resElecDens_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &resRadLen_d,    sizeof( double ) * numTestCases ) );
+
   //
   // --- Copy the input data from host to device (test material index and start index arrays)
   // 
@@ -125,7 +129,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   //
   int numThreadsPerBlock = maxNumElems/32 + (maxNumElems % 32 != 0);
   TestMaterialDataKernel <<< numTestCases, 32*numThreadsPerBlock >>> (hepEmData->fTheMaterialData_gpu, matIndices_d, indxStarts_d, 
-    resCompADens_d, resCompElems_d, resNumElems_d, resMassDens_d, resElecDens_d, numTestCases);
+    resCompADens_d, resCompElems_d, resNumElems_d, resMassDens_d, resElecDens_d, resRadLen_d, numTestCases);
   //  
   // synchronize to make sure that completed on the device
   cudaDeviceSynchronize();
@@ -135,6 +139,8 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   gpuErrchk ( cudaMemcpy ( resCompADens_h, resCompADens_d, sizeof( double ) * cumIndx,      cudaMemcpyDeviceToHost ) );
   gpuErrchk ( cudaMemcpy ( resMassDens_h,  resMassDens_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
   gpuErrchk ( cudaMemcpy ( resElecDens_h,  resElecDens_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( cudaMemcpy ( resRadLen_h,    resRadLen_d,    sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+
   //
   // --- Check the results for each test cases by comparing to the corresponding 
   //     results obtained on the host side
@@ -161,6 +167,11 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
       std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fNumOfElement != "    << heMat.fNumOfElement    << " != "  << resNumElems_h[i] << std::endl; 
       continue;
     }    
+    if ( heMat.fRadiationLength != resRadLen_h[i] ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fRadiationLength != " << heMat.fRadiationLength << " != "  << resRadLen_d_h[i] << std::endl; 
+      continue;
+    }   
     // obtain the element composition of the host side HepEm material data and comare to that obtained from the device
     const int          indxStart = indxStarts_h[i];
     const int       numOfElement = heMat.fNumOfElement;
@@ -191,6 +202,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   delete []   resCompADens_h;
   delete []   resMassDens_h;
   delete []   resElecDens_h;
+  delete []   resRadLen_h;
   cudaFree (  matIndices_d   );
   cudaFree (  indxStarts_d   );
   cudaFree (  resNumElems_d  );
@@ -198,6 +210,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   cudaFree (  resCompADens_d );
   cudaFree (  resMassDens_d  );
   cudaFree (  resElecDens_d  );
+  cudaFree (  resRadLen_d    );
   //
   return isPassed;
 }
