@@ -14,7 +14,7 @@
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmGammaTrack.hh"
 #include "G4HepEmElectronInteractionIoni.hh"
-#include "G4HepEmElectronInteractionBremSB.hh"
+#include "G4HepEmElectronInteractionBrem.hh"
 #include "G4HepEmPositronInteractionAnnihilation.hh"
 
 // tlData GetPrimaryElectronTrack needs to be set needs to be set based on the G4Track;
@@ -184,7 +184,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
             if (theEkin < hepEmPars->fElectronBremModelLim) {
               PerformElectronBremSB(tlData, hepEmData, isElectron);
             } else {
-              // nothing at the moemnt
+              PerformElectronBremRB(tlData, hepEmData);
             }
             break;
     case 2: // invoke annihilation (in-flight) for e+

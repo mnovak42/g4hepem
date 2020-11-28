@@ -22,5 +22,5 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   
   // e-/e+ related auxilary parameters:
   // energy limit between the 2 models (Seltzer-Berger and RelBrem) used for e-/e+
-  hepEmPars->fElectronBremModelLim = 10.0*CLHEP::GeV; 
+  hepEmPars->fElectronBremModelLim = 1.0*CLHEP::GeV; 
 }
