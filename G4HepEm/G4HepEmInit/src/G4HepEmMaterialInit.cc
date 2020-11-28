@@ -57,6 +57,10 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
   AllocateMatCutData   (&(hepEmData->fTheMatCutData), numG4MatCuts, numUsedG4MatCuts);
   AllocateMaterialData (&(hepEmData->fTheMaterialData), numG4Mat, numUsedG4Mat);
   AllocateElementData  (&(hepEmData->fTheElementData));
+  //
+  // auxiliary arrays for screening: complete coherent and incoherent screening constant computed by using the DF model of the atom.
+  const double kFelLowZet  [] = { 0.0, 5.3104, 4.7935, 4.7402, 4.7112, 4.6694, 4.6134, 4.5520 };
+  const double kFinelLowZet[] = { 0.0, 5.9173, 5.6125, 5.5377, 5.4728, 5.4174, 5.3688, 5.3236 };
   // 2. Fill them in
   numUsedG4MatCuts = 0;
   numUsedG4Mat     = 0;
@@ -102,6 +106,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fDensity                 = mat->GetDensity();
       matData.fDensityCorFactor        = 4.0*CLHEP::pi*CLHEP::classic_electr_radius*CLHEP::electron_Compton_length*CLHEP::electron_Compton_length*mat->GetElectronDensity();
       matData.fElectronDensity         = mat->GetElectronDensity();
+      matData.fRadiationLength         = mat->GetRadlen();
       //
       for (size_t ie=0; ie<numOfElement; ++ie) {
         G4int izet = ((*elmVec)[ie])->GetZasInt();
@@ -111,8 +116,18 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
         izet = std::min ( izet, (G4int)hepEmData->fTheElementData->fMaxZet );
         struct G4HepEmElemData& elData = hepEmData->fTheElementData->fElementData[izet];
         if (elData.fZet<0) {
-          elData.fZet   = (double)izet;
-          elData.fZet13 = std::pow(elData.fZet, 1.0/3.0); 
+          double dZet         = (double)izet;
+          elData.fZet         = dZet;
+          elData.fZet13       = std::pow(dZet, 1.0/3.0); 
+          elData.fZet23       = std::pow(dZet, 2.0/3.0); 
+          elData.fCoulomb     = ((*elmVec)[ie])->GetfCoulomb();
+          elData.fLogZ        = std::log(dZet);           
+          double Fel          = (izet<5) ? kFelLowZet[izet]   : std::log(184.15) -     elData.fLogZ/3.0;         
+          double Finel        = (izet<5) ? kFinelLowZet[izet] : std::log(1194.0) - 2.0*elData.fLogZ/3.0;                
+          elData.fZFactor1    = (Fel-elData.fCoulomb) + Finel/dZet;
+          double varS1        = elData.fZet23/(184.15*184.15);
+          elData.fILVarS1Cond = 1./(std::log(std::sqrt(2.0)*varS1));
+          elData.fILVarS1     = 1./std::log(varS1);
         }        
       }
       //

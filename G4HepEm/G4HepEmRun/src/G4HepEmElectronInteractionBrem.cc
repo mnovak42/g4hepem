@@ -1,5 +1,5 @@
 
-#include "G4HepEmElectronInteractionBremSB.hh"
+#include "G4HepEmElectronInteractionBrem.hh"
 
 #include "G4HepEmTLData.hh"
 #include "G4HepEmData.hh"
@@ -27,10 +27,10 @@
 //       memory effcicient (tables only per Z and not per mat-cuts) sampling. 
 //       Rejection is used only to account dielectric supression and e+ correction. 
 void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) { 
-
+  //
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
-  
+  //
   double              thePrimEkin = thePrimaryTrack->GetEKin();
   const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
   const int             theMCIndx = thePrimaryTrack->GetMCIndex();
@@ -40,7 +40,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   // return if intercation is not possible (should not happen)
   if (thePrimEkin <= theGamCut) return;
   // get the material data
-  const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];  
+  const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];  
   // sample target element 
   const int elemIndx = (theMData.fNumOfElement > 1) 
                        ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin, 
@@ -48,6 +48,9 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
+  //
+  // == Sampling of the emitted photon energy
+  //
   // get the G4HepEmSBTableData structure
   const G4HepEmSBTableData* theSBTables = hepEmData->fTheSBTableData;
   // get the start index of sampling tables for this Z   
@@ -97,7 +100,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   const double primPTot = std::sqrt(thePrimEkin * (primETot + kElectronMassC2));
   const double dielSupConst = theMData.fDensityCorFactor*primETot*primETot;
   double suppression = 1.0;
-  double rndm[3];
+  double rndm[2];
   // rejection loop starts here (rejection only for the diel-supression)
   double eGamma = 0.0;
   do {
@@ -144,19 +147,19 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
    // end of rejection loop: the photon energy is `eGamma`
    //
    // sample photon direction (modified Tsai sampling): 
-   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);   
+   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
+   double rndm3[3];
    double u;
    do {
-     tlData->GetRNGEngine()->flatArray(3, rndm);
-     const double uu = -std::log(rndm[0]*rndm[1]);
-     u = (0.25 > rndm[2]) ? uu*1.6 : uu*0.533333333;  
-   } while(u > uMax);
+     tlData->GetRNGEngine()->flatArray(3, rndm3);
+     const double uu = -std::log(rndm3[0]*rndm3[1]);
+     u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;  
+   } while (u > uMax);
    const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
    const double sint = std::sqrt((1.0-cost)*(1.0+cost));
    const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
    // create secondary photon
-   G4HepEmGammaTrack* secGamTrack = tlData->AddSecondaryGammaTrack();
-   G4HepEmTrack*         secTrack = secGamTrack->GetTrack();
+   G4HepEmTrack*         secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
    secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
    double* theSecondaryDirection = secTrack->GetDirection();
    double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
@@ -184,15 +187,141 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 }
 
 
-// Bremsstrahlung interaction based on the Bethe-Heitler DCS with several, but 
-// most importantly, with LPM correction. 
+// Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
+// such as screening and Coulomb corrections, emission in the field of the atomic
+// electrons and LPM suppression.  
 // Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-//void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) { 
-//}
+void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) { 
+  //
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+  //
+  double              thePrimEkin = thePrimaryTrack->GetEKin();
+  const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
+  const int             theMCIndx = thePrimaryTrack->GetMCIndex();
+  const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
+  const double          theGamCut = theMCData.fSecGamProdCutE;
+//  const double       theLogGamCut = theMCData.fLogSecGamCutE;
+
+  // return if intercation is not possible (should not happen)
+  if (thePrimEkin <= theGamCut) return;
+  // get the material data
+  const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];  
+  // sample target element 
+  const int elemIndx = (theMData.fNumOfElement > 1) 
+                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin, 
+                                              theLogEkin, tlData->GetRNGEngine()->flat(), false)
+                       : 0;
+  const int     iZet = theMData.fElementVect[elemIndx];
+  const double  dZet = (double)iZet;
+  const G4HepEmElemData& theElemData = hepEmData->fTheElementData->fElementData[std::min(iZet, hepEmData->fTheElementData->fMaxZet)];
+  //
+  // == Sampling of the emitted photon energy
+  //
+  // - compute lpm energy
+  const double densityFactor = kMigdalConst * theMData.fElectronDensity;
+  const double     lpmEnergy = kLPMconstant * theMData.fRadiationLength;
+  // threshold for LPM effect (i.e. below which LPM hidden by density effect)
+  const double  lpmEnergyLim = std::sqrt(densityFactor) * lpmEnergy;
+  // compute the density, i.e. dielectric suppression correction factor
+  const double thePrimTotalE = thePrimEkin + kElectronMassC2;
+  const double   densityCorr = densityFactor * thePrimTotalE * thePrimTotalE;
+  // LPM effect is turned off if thePrimTotalE < lpmEnergyLim
+  const bool     isLPMActive = (thePrimTotalE > lpmEnergyLim) ;
+  // compute/set auxiliary variables used in the energy transfer sampling
+  const double      zFactor1 = theElemData.fZFactor1;
+  const double      zFactor2 = (1.+1./dZet)/12.;
+  const double    rejFuncMax = zFactor1 + zFactor2;
+  // min and range of the transformed variable: x(k) = ln(k^2+k_p^2) that is in [ln(k_c^2+k_p^2), ln(E_k^2+k_p^2)]
+  const double xmin   = std::log( theGamCut*theGamCut     + densityCorr );
+  const double xrange = std::log( thePrimEkin*thePrimEkin + densityCorr ) - xmin;
+  // sampling the emitted gamma energy
+  double rndm[2];
+  double eGamma, funcVal;
+  do {
+    tlData->GetRNGEngine()->flatArray(2, rndm);
+    eGamma = std::sqrt( std::max( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
+    // evaluate the DCS at this emitted gamma energy
+    const double y     = eGamma / thePrimTotalE;
+    const double onemy = 1.-y;
+    const double dum0  = 0.25*y*y;        
+    if ( isLPMActive ) { // DCS: Bethe-Heitler in complete screening and LPM suppression
+      // evaluate LPM functions (combined with the Ter-Mikaelian effect)
+      double funcGS, funcPhiS, funcXiS;
+      EvaluateLPMFunctions(funcXiS, funcGS, funcPhiS, eGamma, thePrimTotalE, lpmEnergy, theElemData.fZet23, theElemData.fILVarS1, theElemData.fILVarS1Cond, densityCorr);
+      const double term1 = funcXiS * ( dum0 * funcGS + (onemy+2.0*dum0) * funcPhiS );
+      funcVal = term1*zFactor1 + onemy*zFactor2;      
+    } else {  // DCS: Bethe-Heitler without LPM suppression and complete screening only if Z<5 (becaue TF screening is not vaild for low Z)
+      const double dum1 = onemy + 3.*dum0;
+      if ( iZet < 5 ) { // DCS: complete screening 
+        funcVal = dum1 * zFactor1 + onemy * zFactor2;
+      } else { // DCS: analytical approximations to the universal screening functions (based on TF model of atom)
+        const double dum2 = y / ( thePrimTotalE - eGamma );
+        const double gam  = dum2 * 100.*kElectronMassC2 / theElemData.fZet13;
+        const double eps  = gam / theElemData.fZet13;
+        // evaluate the screening functions (TF model of the atom, Tsai's aprx.):
+        
+        const double gam2 = gam*gam;
+        const double phi1 = 16.863-2.0*std::log(1.0+0.311877*gam2)+2.4*std::exp(-0.9*gam)+1.6*std::exp(-1.5*gam);
+        const double phi2 = 2.0/(3.0+19.5*gam+18.0*gam2);    // phi1-phi2
+        const double eps2 = eps*eps;
+        const double psi1 = 24.34-2.0*std::log(1.0+13.111641*eps2)+2.8*std::exp(-8.0*eps)+1.2*std::exp(-29.2*eps);
+        const double psi2 = 2.0/(3.0+120.0*eps+1200.0*eps2); //psi1-psi2
+        //
+        const double logZ = theElemData.fLogZ;
+        const double Fz   = logZ/3. + theElemData.fCoulomb;
+        const double invZ = 1./dZet;
+        funcVal = dum1*((0.25*phi1-Fz) + (0.25*psi1-2.*logZ/3.)*invZ) +  0.125*onemy*(phi2 + psi2*invZ);
+      }                  
+    }
+    funcVal = std::max( 0.0, funcVal);
+  } while ( funcVal < rejFuncMax * rndm[1] );
+  // end of rejection loop: the photon energy is `eGamma`
+  // 
+  // sample photon direction (modified Tsai sampling): 
+  const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
+  double rndm3[3];
+  double u;
+  do {
+    tlData->GetRNGEngine()->flatArray(3, rndm3);
+    const double uu = -std::log(rndm3[0]*rndm3[1]);
+    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;  
+  } while (u > uMax);
+  const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
+  const double sint = std::sqrt((1.0-cost)*(1.0+cost));
+  const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
+  // create secondary photon
+  G4HepEmTrack*        secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
+  secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
+  double* theSecondaryDirection = secTrack->GetDirection();
+  double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
+  // rotate back to refernce frame (G4HepEmRunUtils function)
+  RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
+  secTrack->SetEKin(eGamma);
+  secTrack->SetParentID(thePrimaryTrack->GetID()); 
+
+  //
+  //
+  // compute post-interaction kinematics of the primary e-/e+
+  const double primPTot = std::sqrt( thePrimEkin * (thePrimTotalE + kElectronMassC2) );
+  double elDirX = primPTot * thePrimaryDirection[0] - eGamma * theSecondaryDirection[0];
+  double elDirY = primPTot * thePrimaryDirection[1] - eGamma * theSecondaryDirection[1];
+  double elDirZ = primPTot * thePrimaryDirection[2] - eGamma * theSecondaryDirection[2];
+  // normalisation
+  const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
+  // update primary track direction
+  thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
+  // update primary track kinetic energy
+  thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
+  // NOTE: the following usually set to very high energy so I don't include this.
+  // if secondary gamma energy is higher than threshold(very high by default)
+  // then stop tracking the primary particle and create new secondary e-/e+
+  // instead of the primary
+}
 
 
 // should be called only for mat-cuts with more than one elements in their material
-int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, int imc, double ekin, double lekin, double urndn, bool isbremSB) {
+int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, const double urndn, const bool isbremSB) {
   // start index for this mat-cut and this model (-1 is no elememnt selector i.e. single element material) 
   const int   indxStart = isbremSB 
                           ? elData->fElemSelectorBremSBStartIndexPerMatCut[imc] 
@@ -243,4 +372,52 @@ int LinSearch(const double* vect, const int size, const double val) {
   }
   return i;
 }
+
+
+void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma, 
+     const double etotal, const double elpm, const double z23, const double ilVarS1, 
+     const double ilVarS1Cond, const double densityCor) {
+  const double     sqrt2 = 1.414213562373095;
+  const double redegamma = egamma / etotal;
+  const double varSprime = std::sqrt( 0.125 * redegamma * elpm / ( ( 1.0 - redegamma ) * etotal ) );
+  const double     varS1 = z23 / ( 184.15 * 184.15 );  
+  const double condition = sqrt2*varS1;
+  double funcXiSprime = 2.0;
+  if (varSprime > 1.0) {
+    funcXiSprime = 1.0;
+  } else if (varSprime > condition) {
+    const double funcHSprime = std::log(varSprime)*ilVarS1Cond;
+    funcXiSprime = 1.0 + funcHSprime - 0.08*(1.0-funcHSprime)*funcHSprime*(2.0-funcHSprime)*ilVarS1Cond;
+  }
+  const double    varS = varSprime / std::sqrt( funcXiSprime );
+  // - include dielectric suppression effect into s according to Migdal
+  const double varShat = varS * ( 1.0 + densityCor / (egamma*egamma) );
+  funcXiS = 2.0;
+  if (varShat > 1.0) {
+    funcXiS = 1.0;
+  } else if (varShat > varS1) {
+    funcXiS = 1.0 + std::log ( varShat ) * ilVarS1;
+  }
+  // avluate the LPM G(s) and Phi(s) function (approximations) at s = s-hat
+  const double lpmSLimit =  2.0;
+  const double lpmISDelt = 20.0;
+  if (varShat < lpmSLimit) {
+    double  val = varShat*lpmISDelt;
+    int    ilow = (int)val;
+    val        -= ilow;
+    ilow       *= 2;
+    funcGS      = ( kFuncLPM[ilow+2] - kFuncLPM[ilow]   ) * val + kFuncLPM[ilow];
+    funcPhiS    = ( kFuncLPM[ilow+3] - kFuncLPM[ilow+1] ) * val + kFuncLPM[ilow+1];
+  } else {
+    double ss = 1.0/(varShat*varShat);
+    ss *= ss;
+    funcGS   = 1.0-0.0230655*ss;
+    funcPhiS = 1.0-0.01190476*ss;
+  }
+  //MAKE SURE SUPPRESSION IS SMALLER THAN 1: due to Migdal's approximation on xi
+  if (funcXiS*funcPhiS > 1.0 || varShat > 0.57) {
+    funcXiS = 1.0/funcPhiS;
+  }
+}
+
 

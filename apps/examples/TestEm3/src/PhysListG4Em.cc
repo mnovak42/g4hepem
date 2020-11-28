@@ -119,11 +119,10 @@ void PhysListG4Em::ConstructProcess() {
 */      
      
 
-//      G4eIonisation* eIoni = new G4eIonisation();
-//      ph->RegisterProcess(eIoni, particle);
-//      ph->RegisterProcess(new G4eBremsstrahlung(), particle);
-      //
-//      ph->RegisterProcess(new G4eplusAnnihilation(), particle);
+      G4eIonisation* eIoni = new G4eIonisation();
+      ph->RegisterProcess(eIoni, particle);
+      ph->RegisterProcess(new G4eBremsstrahlung(), particle);
+      ph->RegisterProcess(new G4eplusAnnihilation(), particle);
     }
   }
 

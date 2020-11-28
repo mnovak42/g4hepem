@@ -106,6 +106,10 @@ latex_elements = {
     \usepackage{amssymb}
     \usepackage{bm}
     \usepackage{bbm}
+    \usepackage{booktabs}
+%    \usepackage[table,xcdraw]{xcolor}
+    \usepackage{rotating,tabularx}
+    \usepackage{multirow}
   """,
 #  'fncychap': '\\usepackage[Conny]{fncychap}',
 #    \usepackage{mathtools}

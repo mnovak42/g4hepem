@@ -28,7 +28,7 @@ bool TestMatCutData    ( const struct G4HepEmData* hepEmData );
   __global__
   void TestMaterialDataKernel   ( struct G4HepEmMaterialData* matData_d, int* matIndices_d, int* indxStarts_d, 
                                   double* resCompADens_d, int* resCompElems_d,  int* resNumElems_d, 
-                                  double* resMassDens_d, double* resElecDens_d, int numTestCases );
+                                  double* resMassDens_d, double* resElecDens_d, double* resRadLen_d, int numTestCases );
   bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData );
 
   __global__

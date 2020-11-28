@@ -56,6 +56,8 @@ struct G4HepEmMatData {
   double    fDensityCorFactor;
   /** Electron density (\f$\rho_{e^-}\f$) of the material in Geant4 internal units.*/
   double    fElectronDensity;
+  /** Radiation length. */
+  double    fRadiationLength;
 };
 
 // Data for all materials used in the current geometry.

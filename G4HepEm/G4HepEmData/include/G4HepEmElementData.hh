@@ -34,10 +34,31 @@
 
 /** Data that describes a single element in ``G4HepEm``. */
 struct G4HepEmElemData {
+
   /** The atomic number (Z) of the element. */
   double  fZet;
+
   /** \f$Z^{1/3}\f$ */
-  double  fZet13;
+  double  fZet13;  
+
+  /** \f$Z^{2/3}\f$ */
+  double  fZet23;  
+
+  /** Coulomb correction */
+  double  fCoulomb;
+
+  /** \f$ \ln(Z) \f$  */
+  double  fLogZ;
+
+  /** \f$ ((Fel-fc)+Finel*invZ)\f$  */
+  double  fZFactor1;
+
+  /** LPM variable $1/log(\sqrt{2}S1)$ */
+  double  fILVarS1;
+
+  /** LPM variable $1/log(S1)$ */
+  double  fILVarS1Cond;
+
 };
 
 // Data for all elements that are used by G4HepEm.
