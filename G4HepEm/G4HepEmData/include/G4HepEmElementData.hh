@@ -50,13 +50,13 @@ struct G4HepEmElemData {
   /** \f$ \ln(Z) \f$  */
   double  fLogZ;
 
-  /** \f$ ((Fel-fc)+Finel*invZ)\f$  */
+  /** \f$ F_{\text{e}l}-f_c+F_{\text{inel}}/Z \f$  */
   double  fZFactor1;
 
-  /** LPM variable $1/log(\sqrt{2}S1)$ */
+  /** LPM variable \f$ 1/ln [ \sqrt{2}s1 ] \f$ */
   double  fILVarS1;
 
-  /** LPM variable $1/log(S1)$ */
+  /** LPM variable \f$ 1/ln[s1] \f$ */
   double  fILVarS1Cond;
 
 };
