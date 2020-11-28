@@ -141,7 +141,7 @@ to the ``Geant4`` `EM-Standard Physics Option0 physics constructor` i.e.
                                    \cline{2-6}
                                    &  \multirow{2}{*}{Bremsstrahlung} & Seltzer-Berger            & \texttt{\scriptsize G4SeltzerBergerModel}      &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 keV -   1 GeV          \\
                                                                       \cline{3-6}  
-                                   &                                  & Rel. model\footnotemark    & \texttt{\scriptsize G4eBremsstrahlungRelModel} &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 GeV - 100 TeV          \\                               
+                                   &                                  & Rel. model                & \texttt{\scriptsize G4eBremsstrahlungRelModel} &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 GeV - 100 TeV          \\                               
                                    \cline{2-6}
                                    &  Coulomb scat.                   & Urban/GS                   & \texttt{\scriptsize G4UrbanMscModel}            &  \scriptsize under development ...                      & 1 keV - 100 TeV          \\
                                    \cline{2-6}
@@ -149,7 +149,7 @@ to the ``Geant4`` `EM-Standard Physics Option0 physics constructor` i.e.
        \hline                                   
        \multirow{4}{*}{$\gamma$}   &  Photoelectric                   & Livermore                  & \texttt{\scriptsize G4LivermorePhotoElectricModel} &  \scriptsize under development ...                        & 0\footnotemark - 100 TeV  \\
                                    \cline{2-6}
-                                   &  Compton scat.                   & Klein - Nishina            & \texttt{\scriptsize G4KleinNishinaCompton}         &    \scriptsize under development ...              & 100 eV -   100 TeV        \\
+                                   &  Compton scat.                   & Klein - Nishina\footnotemark  & \texttt{\scriptsize G4KleinNishinaCompton}         &    \scriptsize under development ...              & 100 eV -   100 TeV        \\
                                    \cline{2-6}  
                                    &  Pair production                 & Bethe - Heitler\footnotemark    & \texttt{\scriptsize G4PairProductionRelModel}     &  \scriptsize under development ...                      & $2m_0c^2$ - 100 TeV          \\                               
                                    \cline{2-6}
