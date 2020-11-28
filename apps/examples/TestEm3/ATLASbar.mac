@@ -3,7 +3,7 @@
 ## =============================================================================
 ##
 /control/verbose 0
-/run/numberOfThreads 4
+/run/numberOfThreads 6
 /run/verbose 0
 ##
 ## -----------------------------------------------------------------------------
@@ -33,7 +33,7 @@
 /run/setCut 0.7 mm
 /run/initialize
 /gun/particle e-
-/gun/energy 9999 MeV
+/gun/energy 10 GeV
 ##
 ## -----------------------------------------------------------------------------
 ## Run the simulation with the given number of events and print list of processes
