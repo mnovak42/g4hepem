@@ -31,6 +31,7 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
     dataHtoD_h->fDensity          = mData_h.fDensity;
     dataHtoD_h->fDensityCorFactor = mData_h.fDensityCorFactor;
     dataHtoD_h->fElectronDensity  = mData_h.fElectronDensity;
+    dataHtoD_h->fRadiationLength  = mData_h.fRadiationLength;
     //
     gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fElementVect), sizeof( int )*numElem ) );
     gpuErrchk ( cudaMemcpy ( dataHtoD_h->fElementVect, mData_h.fElementVect, sizeof( int )*numElem, cudaMemcpyHostToDevice ) );
