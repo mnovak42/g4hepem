@@ -92,11 +92,12 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   //
   // allocate array to store the [range, sec-deriv, dedx, sec-deriv, in-range-sec-deriv]
   // (numELoss values each) for all matrial-cuts couple
-  std::cerr << " ==== Allocating " << 5.0*numELoss*numHepEmMCCData*sizeof(double)/1024/1024
-            << " [MB] memory in G4HepEmELossTableBuilder::BuildELossTables \n" 
-            << " for Range, dE/dx and inv-Range for the " << numHepEmMCCData 
-            << "\n material-cuts couples used in the geometry. ( 5x " << numELoss  
-            << " `double` value for each)." << std::endl;
+//  
+//  std::out << " ==== Allocating " << 5.0*numELoss*numHepEmMCCData*sizeof(double)/1024/1024
+//            << " [MB] memory in G4HepEmELossTableBuilder::BuildELossTables \n" 
+//            << " for Range, dE/dx and inv-Range for the " << numHepEmMCCData 
+//            << "\n material-cuts couples used in the geometry. ( 5x " << numELoss  
+//            << " `double` value for each)." << std::endl;
   elData->fELossData = new double[5*numELoss*numHepEmMCCData];
   //
   // starts the computations for all mat-cut couples
@@ -350,11 +351,11 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   if (elData->fResMacXSecData) {
     delete[] elData->fResMacXSecData;
   } 
-  std::cerr << " ==== Allocating " << indxCont*sizeof(double)/1024./1024.
-            << " [MB] memory in G4HepEmELossTableBuilder::BuildLambdaTables \n" 
-            << " for Ioni and Brem macroscopic scross secion for the " << numHepEmMCCData 
-            << "\n material-cuts couples used in the geometry. " 
-            << std::endl;  
+//  std::cerr << " ==== Allocating " << indxCont*sizeof(double)/1024./1024.
+//            << " [MB] memory in G4HepEmELossTableBuilder::BuildLambdaTables \n" 
+//            << " for Ioni and Brem macroscopic scross secion for the " << numHepEmMCCData 
+//            << "\n material-cuts couples used in the geometry. " 
+//            << std::endl;  
   elData->fResMacXSecData = new double[indxCont];
   for (int i=0; i<indxCont; ++i) {    
     elData->fResMacXSecData[i] = xsecData[i];

@@ -39,7 +39,7 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   if (iselectron) {
     g4PartDef = G4Electron::Electron(); 
   }
-  std::cout << " == InitElectronData " << std::endl;  
+  std::cout << "     ---  InitElectronData ... " << std::endl;  
   // Min/Max energies of the EM model (same as for the loss-tables)
   G4double emModelEMin = G4EmParameters::Instance()->MinKinEnergy();
   G4double emModelEMax = G4EmParameters::Instance()->MaxKinEnergy();  
@@ -91,13 +91,13 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
     AllocateElectronData(&(hepEmData->fThePositronData));
   }
   // build energy loss data
-  std::cout << " == BuildELossTables " << std::endl;
+  std::cout << "     ---  BuildELossTables ..." << std::endl;
   BuildELossTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
   // build macroscopic cross section data 
-  std::cout << " == BuildLambdaTables " << std::endl;
+  std::cout << "     ---  BuildLambdaTables ... " << std::endl;
   BuildLambdaTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
   // build element selectors 
-  std::cout << " == BuildElementSelectorTables... " << std::endl;
+  std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
   BuildElementSelectorTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
   //
   // === Initialize the interaction description part of all models
@@ -108,7 +108,7 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   //       the G4HepEmSBTables data structure (SB-table are the same fo -e and e+
   //       so we should build them only once)
   if (!hepEmData->fTheSBTableData) {
-    std::cout << " == BuildSBBremTables... " << std::endl;
+    std::cout << "     ---  BuildSBBremTables ... " << std::endl;
     BuildSBBremSTables(hepEmData, hepEmPars, modelSB);
   }
 

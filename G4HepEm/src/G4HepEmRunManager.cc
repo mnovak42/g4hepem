@@ -32,10 +32,8 @@ G4HepEmRunManager::G4HepEmRunManager(bool ismaster) {
     fIsInitialisedForParticle[1] = false;
     fIsInitialisedForParticle[2] = false;
     // all these above initialisation will be done and filled with data at InitializeGlobal()    
-    std::cout << " ------- Master is created ismaster = " << ismaster << std::endl;
   } else {        
     fIsMaster = false;
-    std::cout << " ------- Worker is created ismaster = " << ismaster << std::endl;
   }
   fTheG4HepEmParameters          = nullptr;
   fTheG4HepEmData                = nullptr;
@@ -63,7 +61,6 @@ void G4HepEmRunManager::InitializeGlobal() {
 //  std::cout << "  ---- InitializeGlobal() is called for fIsMaster = " << fIsMaster << " "
   if (fIsMaster) {// && !fIsMasterGlobalInitialized) {
     //
-    std::cout << "  **** G4HepEmRunManager::InitializeGlobal() is called for Master" << std::endl;
     // create HepEmParameters structure shared by all workers
     fTheG4HepEmParameters = new G4HepEmParameters();
     // create the top level HepEmData structure shared by all workers and init
@@ -100,15 +97,14 @@ void G4HepEmRunManager::Initialize(CLHEP::HepRandomEngine* theRNGEngine, int hep
     if (!fTheG4HepEmParameters || fIsInitialisedForParticle[hepEmParticleIndx]) {
       // clear all previously created data structures and create the new global data
       ClearAll();
-      std::cout << "  ******** Cleared "<< std::endl;
-      InitializeGlobal();
+      std::cout << " === G4HepEm global init ... " << std::endl;
+      InitializeGlobal();      
     }
-    //
-    std::cout << "  ==== G4HepEmRunManager::Initialize() is called for Master" << std::endl;
     //
     // Build tables: e-loss tables for e/e+, macroscopic cross section and element
     //   selectors that are used/shared by all workers at run time as read-only.
-    switch (hepEmParticleIndx) {      
+    std::cout << " === G4HepEm init for particle index = " << hepEmParticleIndx << " ..."<< std::endl;
+    switch (hepEmParticleIndx) {  
       // === e- : use the G4HepEmElementInit::InitElectronData() method for e- initialization.
       case 0 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, true);
                fTheG4HepEmElectronManager = new G4HepEmElectronManager;
@@ -130,22 +126,15 @@ void G4HepEmRunManager::Initialize(CLHEP::HepRandomEngine* theRNGEngine, int hep
       fTheG4HepEmTLData = new G4HepEmTLData;
       fTheG4HepEmTLData->SetRandomEngine(theRNGEngine); 
     }
-    std::cout << " master = " << fTheG4HepEmData->fTheMatCutData << std::endl;        
   } else {
-    //
-    std::cout << "  ==== G4HepEmRunManager::Initialize() is called for Worker" << std::endl;  
     //
     // Worker: 1. copy the pointers to members that are shared by all workers 
     //            from the master-RM if it has not been done yet.
     if (!fTheG4HepEmParameters) { 
-      std::cout << " --- setting it for workers " << std::endl;
       fTheG4HepEmParameters = G4HepEmRunManager::GetMasterRunManager()->GetHepEmParameters();
       fTheG4HepEmData       = G4HepEmRunManager::GetMasterRunManager()->GetHepEmData(); 
       fTheG4HepEmElectronManager = G4HepEmRunManager::GetMasterRunManager()->GetTheElectronManager(); 
     }
-    std::cout << " worker = " << fTheG4HepEmData->fTheMatCutData << std::endl;
-    std::cout << " w-master = " << G4HepEmRunManager::GetMasterRunManager()->GetHepEmData()->fTheMatCutData << std::endl;
-
     // Worker: 2. create a worker local data structure for this worker and set 
     //            its RNG engine part if it has not been done yet.
     if  (!fTheG4HepEmTLData) {
@@ -153,7 +142,6 @@ void G4HepEmRunManager::Initialize(CLHEP::HepRandomEngine* theRNGEngine, int hep
       fTheG4HepEmTLData->SetRandomEngine(theRNGEngine); 
     }
   }
-  std::cout << " ====== Completed init call ==== " << std::endl;
 }
 
 

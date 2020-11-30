@@ -35,7 +35,7 @@
 #include "G4HepEmElectronData.hh"
 
 // the brem target element selector is implemented here
-#include "G4HepEmElectronInteractionBremSB.hh"
+#include "G4HepEmElectronInteractionBrem.hh"
 
 // don't worry it's just for testing
 #define private public

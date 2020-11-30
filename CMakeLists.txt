@@ -1,24 +1,24 @@
 #----------------------------------------------------------------------------
 # Setup the project
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
-project(TestEm3)
+project( G4HepEm )
 
 #----------------------------------------------------------------------------
 # Find Geant4 and set G4 libraries, include directories, etc... 
 #
 find_package(Geant4 REQUIRED)
-message (STATUS "Geant4_INCLUDE_DIRS = ${Geant4_INCLUDE_DIRS}")
-message (STATUS "Geant4_LIBRARIES    = ${Geant4_LIBRARIES}")
-message (STATUS "Geant4_CXX_FLAGS    = ${Geant4_CXX_FLAGS}")
-message (STATUS "Geant4_BUILD_TYPE   = ${Geant4_BUILD_TYPE}")
-message (STATUS "Geant4_static_FOUND = ${Geant4_static_FOUND}")
+#message (STATUS "Geant4_INCLUDE_DIRS = ${Geant4_INCLUDE_DIRS}")
+#message (STATUS "Geant4_LIBRARIES    = ${Geant4_LIBRARIES}")
+#message (STATUS "Geant4_CXX_FLAGS    = ${Geant4_CXX_FLAGS}")
+#message (STATUS "Geant4_BUILD_TYPE   = ${Geant4_BUILD_TYPE}")
+#message (STATUS "Geant4_static_FOUND = ${Geant4_static_FOUND}")
 
 # set the same configuration that was used to build G4 
 set (CMAKE_CXX_FLAGS "${Geant4_CXX_FLAGS}")
 #set (CMAKE_CXX_FLAGS "-g -O0 -fno-inline -std=c++11")
 set (CMAKE_BUILD_TYPE "${Geant4_BUILD_TYPE}")
 
-message(STATUS "${CMAKE_CXX_FLAGS}")
+#message(STATUS "${CMAKE_CXX_FLAGS}")
 
 set (BUILD_SHARED_LIBS ON)
 set (BUILD_STATIC_LIBS OFF)
@@ -69,7 +69,12 @@ endif (G4HepEm_CUDA_BUILD)
 add_subdirectory (G4HepEm)
 
 
-
-#----------------------------------------------------------------------------
-# Build the example applications
-
+## ----------------------------------------------------------------------------
+## Add testing option (OFF by default)
+##
+option (BUILD_TESTS "Build test programs" OFF)
+if (BUILD_TESTS)
+  message (STATUS "Building test programs is enabled!")
+  enable_testing ()
+  add_subdirectory (testing)
+endif ()
