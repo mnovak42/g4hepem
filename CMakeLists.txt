@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Setup the project
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
-project(TestEm3)
+project( G4HepEm )
 
 #----------------------------------------------------------------------------
 # Find Geant4 and set G4 libraries, include directories, etc... 
@@ -69,7 +69,12 @@ endif (G4HepEm_CUDA_BUILD)
 add_subdirectory (G4HepEm)
 
 
-
-#----------------------------------------------------------------------------
-# Build the example applications
-
+## ----------------------------------------------------------------------------
+## Add testing option (OFF by default)
+##
+option (BUILD_TESTS "Build test programs" OFF)
+if (BUILD_TESTS)
+  message (STATUS "Building test programs is enabled!")
+  enable_testing ()
+  add_subdirectory (testing)
+endif ()

@@ -41,3 +41,18 @@ install (FILES
     DESTINATION lib/cmake/G4HepEm
 )
 
+
+
+###############################################################################
+##  Set some global properties for retrieving proper configuration at testing 
+###############################################################################
+
+# local directory in the build for the header files
+FILE ( GLOB G4HEPEMDATA_HEADERS "${G4HEPEMDATA_INC_DIR}/*")
+FILE ( GLOB G4HEPEMINIT_HEADERS "${G4HEPEMINIT_INC_DIR}/*")
+FILE ( GLOB G4HEPEMRUN_HEADERS "${G4HEPEMRUN_INC_DIR}/*")
+FILE ( COPY ${G4HEPEM_headers} ${G4HEPEMDATA_HEADERS} ${G4HEPEMINIT_HEADERS} ${G4HEPEMRUN_HEADERS} DESTINATION ${CMAKE_BINARY_DIR}/includes)
+set (G4HEPEM_TESTING_INCLUDE_DIR "${CMAKE_BINARY_DIR}/includes")
+
+# set G4HepEm include directory property used (only) property for testing 
+set_property ( GLOBAL PROPERTY G4HEPEM_TESTING_INCLUDE_DIR_PROP  "${G4HEPEM_TESTING_INCLUDE_DIR}" )
