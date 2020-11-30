@@ -1,4 +1,5 @@
-[![Documentation Status](https://readthedocs.org/projects/g4hepem/badge/?version=latest)](https://g4hepem.readthedocs.io/en/latest/?badge=latest)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/mnovak42/g4hepem/cpu-build?label=Tests%20%28CI%29&logo=github&logoColor=blue&style=plastic)
+![Read the Docs](https://img.shields.io/readthedocs/g4hepem?label=%20Building%20docs&logo=read%20the%20docs&logoColor=white&style=plastic)
 
 # The G4HepEm R&D Project
 
