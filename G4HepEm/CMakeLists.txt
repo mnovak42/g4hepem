@@ -12,7 +12,6 @@ include_directories (
  ${G4HEPEMRUN_INC_DIR}
 )
 
-message (STATUS "??? ${G4HEPEMINIT_INC_DIR}")
 
 file ( GLOB G4HEPEM_headers ${CMAKE_SOURCE_DIR}/G4HepEm/include/*.hh)
 file ( GLOB G4HEPEM_sources ${CMAKE_SOURCE_DIR}/G4HepEm/src/*.cc)

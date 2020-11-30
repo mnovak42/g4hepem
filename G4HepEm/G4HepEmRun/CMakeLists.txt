@@ -1,8 +1,6 @@
 
 set (G4HEPEMRUN_INC_DIR ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include PARENT_SCOPE)
 
-message(STATUS "=======> ${Geant4_INCLUDE_DIRS}")
-
 include_directories (
   ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include
   ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/include
