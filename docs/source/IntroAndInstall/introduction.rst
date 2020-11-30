@@ -13,7 +13,7 @@ Description and goals
 -----------------------
 
 The project (initially) targets the most performance critical part of the HEP detector 
-simulation applications, i.e. the EM shower generation covering :math:`\texttt{e-/e+}` 
+simulation applications, i.e. the EM shower generation covering :math:`e^-/e^+` 
 and :math:`\gamma` particle transport. By
 
   - starting from the EM physics modelling part, the project **isolates and extracts**
@@ -21,17 +21,23 @@ and :math:`\gamma` particle transport. By
     **in a clear, compact and well documented form**.
   
   - investigates the possible computing performance benefits of replacing the 
-    **current general** particle transport simulation *stepping-loop* in ``Geant4`` 
-    **by alternatives, highly specialised for particle types and** *the detector
-    simulation application area of the* **High Energy Physics(HEP)**. 
+    **current general** particle transport simulation **stepping-loop** of ``Geant4`` 
+    **by alternatives, highly specialised for particle types** and **tailored for HEP**
+    detector simulation applications. 
 
   - by providing a clear, compact and well documented environment for EM shower 
     generation (already connected to ``Geant4`` applications), the project also 
-    provides an excellent domain for further related R&D activities. Moreover, 
-    the **projects facilitates** R&D activities targeting **EM shower simulation on GPU** 
-    by providing the functionalities of making **all required physics data**
-    **available on** the main **device memory** together **with example kernels** 
-    for their run-time usage.
+    **provides an excellent domain for further** related **R&D activities**. 
+    
+  - especially, the **projects facilitates** R&D activities targeting **EM shower 
+    simulation on GPU** by providing:
+    
+    - functionalities of making **all required physics data**
+      **available on** the main **device memory**, together **with example kernels** 
+      for their run-time usage.
+      
+    - isolated, **self-contained** (i.e. `"single function"`) **implementations of both the**
+      physics related parts of the **stepping loop** and **all required physics interactions**
 
 
 Physics modelling capability
@@ -39,20 +45,14 @@ Physics modelling capability
  
 As mentioned above, the project initially targets the most performance critical 
 part of the HEP detector simulation applications which is the EM shower generation. 
-Therefore, the (initial) target particles are those taking the highest fraction of 
-the overall simulation steps such as :math:`\texttt{e-/e+}` and :math:`\gamma` 
-with their EM interactions
+Therefore, the project covers :math:`e^-/e^+` and :math:`\gamma` particle 
+transport simulation, i.e. those taking the highest fraction of the overall 
+simulation steps in a general HEP detector simulation, with their EM interactions.
 
-   - ``electron`` (:math:`e^-`): `Ionisation`, `Bremsstrahlung`, `Coulomb scattering`
-   - ``positron`` (:math:`e^+`): same as :math:`e^-` with the additional `Annihilation` into two    
-     :math:`\gamma`-s 
-   - ``gamma`` (:math:`\gamma`): :math:`e^+-e^-` `Pair production`, `Compton scattering`, `Photoelectric effect`
-
-Since the targets are HEP detector simulation applications, the above interactions 
-are described by those models used in this area. This means, that ``G4HepEm`` provides 
-EM modelling capability for the above particles and interactions that is equivalent 
-to the ``Geant4`` `EM-Standard Physics Option0 physics constructor` i.e. 
-:math:`\texttt{G4EmStandardPhysics}` (as the final goal with some possible differences).
+Since the targets are HEP detector simulation applications, these EM interactions 
+are described by those models used in this area. This means, that ``G4HepEm`` aims to provide 
+EM modelling capability that is equivalent to the ``Geant4`` EM-Standard Physics Option0 
+physics constructor` i.e. :math:`\texttt{G4EmStandardPhysics}`.
 
 .. only:: html
 
