@@ -11,3 +11,12 @@ The ``G4HepEmRunManager`` code documentauion
    :project: The G4HepEm R&D project
    :members:
    :private-members:
+
+
+The ``G4HepEmProcess`` code documentauion
+.............................................
+
+.. doxygenclass:: G4HepEmProcess
+   :project: The G4HepEm R&D project
+   :members:
+   :private-members:

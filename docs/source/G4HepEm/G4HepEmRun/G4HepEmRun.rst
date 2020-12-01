@@ -3,6 +3,7 @@ The ``G4HepEmRun`` library documentation
 
 Documentation of the **run-time** functionalities stored in the ``G4HepEmRun`` library.
 
+.. _ref-Particle-managers:
 
 Particle managers 
 ..................
