@@ -9,32 +9,41 @@ class  G4HepEmRunManager;
 
 class  G4ParticleChangeForLoss;
 
-//
-// The connection (first version) of the G4HepEm functionalities to Geant4 through
-// the implementation of the Geant4 G4VProcess interface.
-//
-// A single instance of this process needs to be assigned to the e- and/or to 
-// the e+ and/or the gamma particle in the G4 physics list of the G4 application.
-// Then when running the application, all the physics realted information for 
-// these partciles is provided to the Geant4 tracking by G4HepEm instead the 
-// native Geant4 processes. 
-//
-// The G4VProcess is implemented as pure continuous physics process. Since the 
-// the corresponding 'AlongStepDoIt' interface method is called in each step by
-// the G4 stepping loop (after the transporation), this ensures that all (continous, 
-// discrete and even at reast) interactions can be implemented in a single 
-// G4HepEm method. (`PostStep` and `AtRest` DoIt methods not called at each step!)
-//
-// This G4 process interface implementation has a G4HepEmRunManager member that 
-// is the top level interface to all G4HepEm functionalities. All the infomation, 
-// required by the G4 tracking, i.e. `physical interaction length` and `do it`,  
-// is provided through this G4HepEmRunManager member in the appropriate `AlongStep`
-// versions of these two above interafce methods.
-//
-// NOTE: one instance should be assigned to all particles (see the TestEm3 example 
-//       'PhysListHepEm:::ConstructProcess()' interface method for example)
-// NOTE: do not assigne the same process twise i.e. both normal G4 and G4HepEm.
-//
+
+/**
+ * @file    G4HepEmProcess.hh
+ * @class   G4HepEmProcess
+ * @author  M. Novak
+ * @date    2020
+ * 
+ * `G4HepEm` connection to `Geant4` through the implementation of the `Geant4` `G4VProcess` interface. 
+ * 
+ * A single instance of this process needs to be assigned to the \f$e^-\f$ and/or
+ * to the \f$e^+\f$ and/or the \f$\gamma\f$ particle in the `Geant4` physics list 
+ * of the `Geant4` application. Then, when running the application, all the physics 
+ * realted information for these particles is provided to the `Geant4` tracking 
+ * by `G4HepEm` instead the native `Geant4` processes.
+ *
+ * `G4VProcess` is implemented as pure continuous physics process. Since the 
+ * the corresponding `AlongStepDoIt` interface method is called in each step by
+ * the `Geant4` stepping loop (after the transporation), this ensures that all 
+ * (continous, discrete and even at reast) interactions can be implemented in a single 
+ * `G4HepEm` method. (`PostStep` and `AtRest` DoIt methods are not called in each step!)
+ *
+ * This `Geant4` process interface implementation has a `G4HepEmRunManager` member 
+ * that is the top level interface to all `G4HepEm` functionalities. All the infomation, 
+ * required by the G4 tracking (i.e. `physical interaction length` and `do it`) is 
+ * provided through this G4HepEmRunManager member in the appropriate `AlongStep`
+ * versions of these two above interafce methods.
+ *
+ * @note
+ * One instance should be assigned to all particles (see the `TestEm3` example 
+ * `PhysListHepEm::ConstructProcess()` interface method for example).
+ *
+ * @note
+ * Don't assigne the same process twise, i.e. both the native `Geant4` versions 
+ * and `G4HepEm`, since it leads to `double counting`.
+ */
 
 
 class G4HepEmProcess : public G4VProcess {
@@ -66,8 +75,7 @@ public:
    G4VParticleChange* AlongStepDoIt(const G4Track&, const G4Step&) override; 
 
    // Interface method called by G4 tracking before a new track (primary of popped 
-   // up from the secondary track stack) starts to be inserted into the stepping 
-   // loop.  
+   // up from the secondary track stack) starts to be inserted into the stepping loop 
    void StartTracking(G4Track*) override;
    
  

@@ -6,6 +6,7 @@ These data structures are **filled at initialisation time** by using the functio
 provided by the ``G4HepEmInit`` library and **used (read-only) at run-time** with the corresponding 
 functionalities arranged into the ``G4HepEmRun`` library.
 
+.. _ref-Global-data-structures:
 
 Global data structures
 .......................
