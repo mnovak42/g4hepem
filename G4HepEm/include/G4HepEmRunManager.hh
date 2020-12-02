@@ -80,7 +80,7 @@ public:
   void Initialize (CLHEP::HepRandomEngine* theRNGEngine, int hepEmParticleIndx);
 
    
-  /* 
+  /** 
    * Clears all data structures that has been created by calling the Initialize() 
    * method and re-sets the correspondig pointer members to null.
    */
@@ -103,7 +103,9 @@ public:
   
 private:
   
-  /* 
+  /** 
+   * Initialisation of all global data structures. 
+   *
    * Extracts EM and other configuration parameters, builds all the elememnt, 
    * matrial and material-production-cuts related data structures shared by all 
    * workers, all processes and all particles at run-time as read-only data. In 

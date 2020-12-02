@@ -36,4 +36,9 @@ Code documentation
 .. doxygenstruct:: G4HepEmGammaManager
    :project: The G4HepEm R&D project
    :members:
+   :private-members:
 
+.. doxygenclass:: G4HepEmTLData
+   :project: The G4HepEm R&D project
+   :members:
+   :private-members:

@@ -39,9 +39,17 @@ and :math:`\gamma` particle transport. By
     - isolated, **self-contained** (i.e. `"single function"`) **implementations of both the**
       physics related parts of the **stepping loop** and **all required physics interactions**
 
+.. _ref-Physics-modelling-capability:
 
 Physics modelling capability
 -----------------------------
+
+.. only:: latex 
+
+   .. raw:: latex 
+
+      \label{sec:Physics-modelling-capability} 
+
  
 As mentioned above, the project initially targets the most performance critical 
 part of the HEP detector simulation applications which is the EM shower generation. 
@@ -287,14 +295,54 @@ of the :cpp:class:`G4HepEmProcess` are utilised to propagate information between
 GPU support
 ------------
 
+``G4HepEm`` facilitates R&D activities targeting EM shower simulation on GPU in 
+several ways. 
+
+First of all, it **extracts from the large** ``Geant4`` **code base** 
+**the bare minimum** of functionalities **required for an EM shower simulation** 
+in the HEP detector simulation domain. It **makes** these functionalities, i.e. the physics 
+related part of **the simulation stepping-loop** (already specialised for particle types) 
+**as well as all** required **physics interactions available in form of** isolated, **self-contained**, 
+`"single function"` like **implementations**. **These** well isolated functions, 
+acting only on their input arguments, not only **defines the GPU kernels required** for the EM 
+shower simulation but they **can also be turned easily into the corresponding GPU kernel implementations**. 
+This **makes possible the GPU implementation** of the required functionalities even **without the 
+special knowledge** and expertise **required** otherwise **for** the corresponding **EM shower modelling**
+and particle transport simulation.
+
+While the **above** can be seen as **implicit support** of the GPU related EM shower simulation 
+developments, ``G4HepEm`` also provides **explicit supports** for CUDA capable GPU devices. This is realised by 
+making **all** the diverse and rich **physics related data**, required during the simulation 
+by the above-mentioned functions, **available on the main device memory**. Moreover, 
+special care is taken of **enhancing coalesced memory access** when the host side data structures 
+are transferred to the device memory (see more on this at the :ref:`ref-Host-vs-Device-memory` Section). 
+Furthermore, ``G4HepEm`` provides **example CUDA kernel implementations** for each of these device side 
+data structures as part of the corresponding unit tests (under ``g4hepem/apps/tests/``).
+
+These **explicit GPU support can be activated** by providing the ``-DG4HepEm_CUDA_BUILD=ON`` ``CMake`` configuration option.
+
+.. note::
+   The ``CUDA`` kernels, provided as part of the unit tests (under ``g4hepem/apps/tests/``) have been developed for:
+ 
+    - **testing** the consistency of the HOST and DEVICE side data
+    - providing **example kernels** to show how the corresponding device side data structures can be used to obtain the interpolated values
+
+   In case of a device side simulations, these kernels **should be used only as base lines** for the developments. This is due to the fact, that the final data access pattern, that strongly determines the final form and performance of the kernels are not known in advance. In other words, how much one can profit from *coalesced memory access*, utilisation of the available *shared memory* or reduction of *bank conflicts*, etc. when developing kernels depend on the final form of utilisation and  access of these data.
+ 
+
 
 Current state
 --------------
 
+.. only:: html
+   
+   The current state of the development, especially the physics modelling coverage 
+   of ``G4HepEm`` is summarised in the :numref:`table-physics` provided in the :ref:`Physics Modelling Capability <ref-Physics-modelling-capability>` Section.
 
-Example applications
-----------------------
+.. only:: latex
+   
+   .. raw:: latex
 
-
-
-
+      The current state of the development, especially the physics modelling coverage 
+      of \texttt{G4HepEm} is summarised in the Table~\ref{tb::table-physics} provided in the 
+      \nameref{sec:Physics-modelling-capability} Section.

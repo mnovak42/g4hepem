@@ -21,15 +21,15 @@ struct G4HepEmSBTableData;
  * @author  M. Novak
  * @date    2020
  *
- * @brief The top level, global data structure i.e. collection of global data 
+ * The top level, global data structure i.e. collection of global data 
  * structures used by all physics interactions covered by `G4HepEm`.
  *
- * There supposed to be a single instance of this data structure constructed and
- * stored by the Master ::G4HepEmRunManager: constructed in the InitializeGlobal()
- * method of G4HepEmRunManager called from its Initialise() method in case of the 
- * master run-manager and only at once.
- * Worker G4HepEmRunManager -s will have their pointer set to this master 
- * G4HepEmRunManager G4HepEmData member object.
+ * There supposed to be a single instance of this data structure constructed and 
+ * stored by the master `G4HepEmRunManager`. That single instance is 
+ * constructed when calling the `G4HepEmRunManager::InitializeGlobal()` method 
+ * wehn invoking the master `G4HepEmRunManager::Initialize()` method. 
+ * Worker `G4HepEmRunManager`-s will have their pointer set to this master 
+ * run-manager `G4HepEmData` member object. 
  *
  * Members of this data structure, represented by their pointers, are created 
  * individualy by invoking the dedicated intialisation methods one-by-one. 
@@ -37,13 +37,13 @@ struct G4HepEmSBTableData;
  * In case of CUDA build, the members, suffixed by `_gpu`, points do device memory 
  * locations where the corresponding data structures are located (after copying 
  * them). All the corresponding members can be (deep) copied from the host to 
- * device by calling the G4HepEmData::CopyG4HepEmDataToGPU function. This will invoke 
+ * device by calling the `CopyG4HepEmDataToGPU()` function. This will invoke 
  * the dedicated copy methods provided by the individual data structures. 
  *
  * The dynamically allocated memory, represented by all the members of this 
  * collection (including device side memeory as well in case of CUDA build), can 
  * be cleaned by calling the `FreeG4HepEmData()` function. This is done, in the 
- * G4HepEmRunManager::Clean() method.
+ * `G4HepEmRunManager::Clear()` method.
 */
 
 struct G4HepEmData {  
