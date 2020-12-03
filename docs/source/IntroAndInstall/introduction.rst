@@ -292,6 +292,8 @@ interface methods of the ``G4VProcess`` interface of ``Geant4``). In both cases,
 of the :cpp:class:`G4HepEmProcess` are utilised to propagate information between ``Geant4`` and ``G4HepEm``.
  
 
+.. _ref-GPU-support:
+
 GPU support
 ------------
 
