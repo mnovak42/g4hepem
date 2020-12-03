@@ -35,10 +35,36 @@ All details can be found in the **[documentation](https://g4hepem.readthedocs.io
 
 ## Requirements
 
-Only Geant4... 
+``G4HepEm`` is one of the ongoing developments, carried out within the EM physics working group of the ``Geant4`` collaboration. It **has been made available in order to facilitate and catalyse correlated R&D activities by providing and sharing the related expertise and specific knowledge**. Therefore, ``G4HepEm`` is tightly connected to and depends on the ``Geant4`` simulation toolkit. 
+
+The only requirement of ``G4HepEm`` is a recent ``Geant4`` version to be available on the system. The recommended version, ``Geant4-10.6.p03`` is available at the corresponding **[Geant4 Download](https://geant4.web.cern.ch/node/1837)** area. All information regarding the **[Prerequisites of Geant4](https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/gettingstarted.html)** as well as the detailed **[Geant4 Installation Instructions](https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/installguide.html)**  can be found in the related sections of the **[Geant4 Installation Guide](https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/index.html)**. 
 
 
 ## Quick start
 
-How to build and install ...
-How to use one of the example applications...
+More detailed instructions can be found in the **[Build and Install](https://g4hepem.readthedocs.io/en/latest/IntroAndInstall/install.html)** section of the documentation. 
+
+It is assumed in the followings, that the required version of the ``Geant4`` toolkit is installed on the system and the corresponding ``Geant4Config.cmake`` ``CMake`` configuration file is located under the ``G4_INSTALL`` directory. Then building and installing ``G4HepEm`` (under the ``G4HepEm_INSTALL`` directory) can be done by simple:
+
+    $ git clone https://github.com/mnovak42/g4hepem.git    
+    $ cd g4hepem/
+    $ mkdir build
+    $ cd build/
+    $ cmake ../ -DGeant4_DIR=G4_INSTALL -DCMAKE_INSTALL_PREFIX=G4HepEm_INSTALL
+    $ make install 
+
+<details>
+ <summary> <b>Example: build and execute an example application</b> </summary>
+  
+After building and installing G4HepEm under the `G4HepEm_INSTALL` directory, the `g4hepem/apps/examples/TestEm3` (general) simplified sampling calorimeter example application can be built and executed as:
+
+    $ cd g4hepem/apps/examples/TestEm3/
+    $ mkdir build
+    $ cd build/
+    $ cmake ../ -DGeant4_DIR=G4_INSTALL -DG4HepEm_DIR=G4HepEm_INSTALL/lib/cmake/G4HepEm/  
+    $ make 
+    $ ./TestEm3 -m ../ATLASbar.mac
+   
+Execute the application as `./TestEm3 --help` for more information and see the `g4hepem/apps/examples/TestEm3/ATLASbar.mac` example input macro file for more details. 
+
+</details>

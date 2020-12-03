@@ -128,7 +128,7 @@ application can be done by the following configuration, build and execute steps:
       $ cd g4hepem/apps/examples/TestEm3/
       $ mkdir build
       $ cd build/
-      $ cmake ../ -DGeant4_DIR=/home/mnovak/opt/Geant4-10.6p03-MT/lib64/Geant4-10.6.3/ -DG4HepEm_DIR=G4HepEm_INSTALL/lib/cmake/G4HepEm/
+      $ cmake ../ -DGeant4_DIR=G4_INSTALL -DG4HepEm_DIR=G4HepEm_INSTALL/lib/cmake/G4HepEm/
       -- The C compiler identification is GNU 8.3.1
       -- The CXX compiler identification is GNU 8.3.1
       -- Check for working C compiler: /usr/bin/cc
