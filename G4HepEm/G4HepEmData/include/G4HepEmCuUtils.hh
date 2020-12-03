@@ -6,10 +6,19 @@
 #include <cuda_runtime.h>
 #include <cstdio> 
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-  inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true){
+/**
+ * @file    G4HepEmCuUtils.hh
+ * @author  M. Novak
+ * @date    2020
+ *
+ * A simple macro for printing out  CUDA error strings.
+ */
+ 
+
+#define gpuErrchk(ans) { cuAssert((ans), __FILE__, __LINE__); }
+  inline void cuAssert(cudaError_t code, const char *file, int line, bool abort=true){
       if (code != cudaSuccess) {
-          fprintf(stderr,"GPUassert: %s %s %d\n",
+          fprintf(stderr,"CUAassert: %s %s %d\n",
           cudaGetErrorString(code), file, line);
           if (abort) exit(code);
       }   

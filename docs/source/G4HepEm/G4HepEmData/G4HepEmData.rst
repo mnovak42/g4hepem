@@ -48,9 +48,10 @@ phase and **used (read-only) during the run** of the simulation.
    primary and secondary track buffers. This :cpp:class:`G4HepEmTLData` is **not global** and **used only at run-time** so 
    it's defined in the ``G4HepEmRun`` library.
 
- 
 
-*Host* v.s. *Device* side memory layouts
+.. _ref-Host-vs-Device-memory: 
+
+Host v.s. Device side memory layouts
 ...........................................
 
 These global data structures, especially the integrated cross section related quantities such as the restricted energy loss or macroscopic 
