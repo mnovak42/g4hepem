@@ -33,7 +33,7 @@
 __global__ 
 void TestMaterialDataKernel (struct G4HepEmMaterialData* matData_d, int* matIndices_d, int* indxStarts_d, 
                              double* resCompADens_d, int* resCompElems_d,  int* resNumElems_d, 
-                             double* resMassDens_d, double* resElecDens_d, int numTestCases) {
+                             double* resMassDens_d, double* resElecDens_d, double* resRadLen_d, int numTestCases) {
   int tid = threadIdx.x;
   int bid = blockIdx.x;
   if (bid < numTestCases) {
@@ -49,6 +49,7 @@ void TestMaterialDataKernel (struct G4HepEmMaterialData* matData_d, int* matIndi
       resNumElems_d[bid] = numOfElement;
       resMassDens_d[bid] = matData_d->fMaterialData[imat].fDensity;
       resElecDens_d[bid] = matData_d->fMaterialData[imat].fElectronDensity;
+      resRadLen_d[bid] = matData_d->fMaterialData[imat].fRadiationLength;
     }
   }
 }
@@ -169,7 +170,7 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
     }    
     if ( heMat.fRadiationLength != resRadLen_h[i] ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fRadiationLength != " << heMat.fRadiationLength << " != "  << resRadLen_d_h[i] << std::endl; 
+      std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fRadiationLength != " << heMat.fRadiationLength << " != "  << resRadLen_h[i] << std::endl;
       continue;
     }   
     // obtain the element composition of the host side HepEm material data and comare to that obtained from the device
