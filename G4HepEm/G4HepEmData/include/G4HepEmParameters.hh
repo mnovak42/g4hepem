@@ -25,7 +25,7 @@ struct G4HepEmParameters {
     * \f$e^-/e^+\f$ tracks are stopped when their energy drops below this threshold, 
     * their kinetic energy is deposited and annihilation to two \f$\gamma\f$-s interaction
     * is invoked for in case of \f$e^+\f$.*/
-  double fElectronTranckingCut; 
+  double fElectronTrackingCut;
   
   // The configuration of the kinetic energy grid of the energy loss related tables:
   /** Minimum of the kinetic energy grid used to build the sub-(secondary-production)threshold 

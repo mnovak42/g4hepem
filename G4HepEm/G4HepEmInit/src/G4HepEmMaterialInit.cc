@@ -80,7 +80,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
 
     // NOTE: mccData.fHepEmMatIndex will be set below when it becomes known
     mccData.fG4MatCutIndex  = mcIndx;
-    mccData.fSecElProdCutE  = std::max(electronCutE, hepEmPars->fElectronTranckingCut);
+    mccData.fSecElProdCutE  = std::max(electronCutE, hepEmPars->fElectronTrackingCut);
     mccData.fSecGamProdCutE = gammaCutE;
     mccData.fLogSecGamCutE  = std::log(gammaCutE);
     ++numUsedG4MatCuts;
