@@ -1,6 +1,7 @@
 #----------------------------------------------------------------------------
-# Setup the project
-cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
+# Setup the project; take policies from up to CMake 3.18 to avoid warnings
+# concerning CMP0104.
+cmake_minimum_required(VERSION 3.3...3.18 FATAL_ERROR)
 project( G4HepEm )
 
 #----------------------------------------------------------------------------
