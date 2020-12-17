@@ -52,10 +52,11 @@ jobs:
         run: |
           # it's always gcc compiler in case of Linux so just protect for future
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+               sudo apt-get update
+               sudo apt-get upgrade
                sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
                echo "CC=/usr/bin/gcc-${{ matrix.version }}" >> $GITHUB_ENV
-               echo "CXX=/usr/bin/g++-${{ matrix.version }}" >> $GITHUB_ENV    
-               sudo apt-get update     
+               echo "CXX=/usr/bin/g++-${{ matrix.version }}" >> $GITHUB_ENV
                sudo apt-get install -y libxerces-c-dev
                sudo apt-get install -y qt5-default
                sudo apt-get install -y build-essential 
