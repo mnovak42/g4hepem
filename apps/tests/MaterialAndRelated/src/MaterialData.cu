@@ -176,8 +176,6 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
     // obtain the element composition of the host side HepEm material data and comare to that obtained from the device
     const int          indxStart = indxStarts_h[i];
     const int       numOfElement = heMat.fNumOfElement;
-    const int*            elmVec = heMat.fElementVect;
-    const double* nbOfAtomPerVol = heMat.fNumOfAtomsPerVolumeVect;
     for (size_t ie=0; ie<numOfElement && isPassed; ++ie) {
       const int izet = resCompElems_h[indxStart+ie];
       if ( heMat.fElementVect[ie] != izet ) {

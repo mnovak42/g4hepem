@@ -1,6 +1,7 @@
 #----------------------------------------------------------------------------
-# Setup the project
-cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
+# Setup the project; take policies from up to CMake 3.18 to avoid warnings
+# concerning CMP0104.
+cmake_minimum_required(VERSION 3.3...3.18 FATAL_ERROR)
 project( G4HepEm )
 
 #----------------------------------------------------------------------------
@@ -50,14 +51,9 @@ if (G4HepEm_CUDA_BUILD)
 #    message (STATUS " ")
 ######
      enable_language(CUDA)
-     # suppress warnings
-     set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -w")
-#     set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} 
-#       -Xcompiler -fPIC -Xcudafe 
-#       --diag_suppress=boolean_controlling_expr_is_constant
-#       --disable-warnings
-#       -lineinfo"
-#     )
+     # Disable -pedantic because nvcc uses GCC extensions for line directives;
+     # leave all other warnings enabled.
+     set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -Wno-pedantic")
   else (CUDA_FOUND)
     message(FATAL_ERROR "REQUIRED CUDA LIBRARIES WERE NOT FOUND")
   endif (CUDA_FOUND)  

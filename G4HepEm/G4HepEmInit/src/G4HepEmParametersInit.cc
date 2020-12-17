@@ -9,7 +9,7 @@
 
 void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   // e-/e+ tracking cut in kinetic energy
-  hepEmPars->fElectronTranckingCut = G4EmParameters::Instance()->LowestElectronEnergy(); 
+  hepEmPars->fElectronTrackingCut = G4EmParameters::Instance()->LowestElectronEnergy();
   
   // energy loss table (i.e. dE/dx) related paramaters
   hepEmPars->fMinLossTableEnergy   = G4EmParameters::Instance()->MinKinEnergy();

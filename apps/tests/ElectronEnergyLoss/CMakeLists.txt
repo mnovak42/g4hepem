@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------
 # Setup the project
-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.6...3.18 FATAL_ERROR)
 project (TestEnergyLossData)
 
 #-------------------------------------------------------------------------------
@@ -50,13 +50,7 @@ message(STATUS " BUILDING WITH CUDA")
   include_directories ( ${G4HepEm_CUDA_INCLUDE_DIR} 
                         ${CMAKE_SOURCE_DIR}/include
                        )
-  add_executable ( TestEnergyLossData ${CMAKE_SOURCE_DIR}/TestEnergyLossData.cc ${cxx_sources} ${cu_sources})  
-  target_compile_options (TestEnergyLossData PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-                         -Xcompiler -fPIC -Xcudafe 
-                         --diag_suppress=boolean_controlling_expr_is_constant
-                         --disable-warnings
-                         -lineinfo
-                         >)
+  add_executable ( TestEnergyLossData ${CMAKE_SOURCE_DIR}/TestEnergyLossData.cc ${cxx_sources} ${cu_sources})
   set_property ( TARGET TestEnergyLossData PROPERTY CUDA_SEPARABLE_COMPILATION ON )
   target_link_libraries( TestEnergyLossData ${Geant4_LIBRARIES} ${G4HepEm_LIBRARIES} )  
 else ( G4HepEm_CUDA_BUILD )

@@ -139,7 +139,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   }
   // 3/3. check if final kinetic energy drops below the tracking cut and stop
   double finalEkin = theEkin - eloss;
-  if (finalEkin <= hepEmPars->fElectronTranckingCut) {
+  if (finalEkin <= hepEmPars->fElectronTrackingCut) {
     eloss     = theEkin; 
     finalEkin = 0.0;
     // call annihilation for e+ !!!

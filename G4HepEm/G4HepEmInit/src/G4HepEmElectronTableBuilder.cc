@@ -356,6 +356,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
 //            << " for Ioni and Brem macroscopic scross secion for the " << numHepEmMCCData 
 //            << "\n material-cuts couples used in the geometry. " 
 //            << std::endl;  
+  elData->fResMacXSecNumData = indxCont;
   elData->fResMacXSecData = new double[indxCont];
   for (int i=0; i<indxCont; ++i) {    
     elData->fResMacXSecData[i] = xsecData[i];
@@ -552,7 +553,7 @@ int InitElementSelectorEnergyGrid(int binsperdecade, double* egrid, double mine,
 
 void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4SeltzerBergerModel* sbModel) {
   G4HepEmSBBremTableBuilder* sbTables = new G4HepEmSBBremTableBuilder();
-  sbTables->Initialize( std::max(hepEmPars->fElectronTranckingCut, sbModel->LowEnergyLimit()), sbModel->HighEnergyLimit());
+  sbTables->Initialize( std::max(hepEmPars->fElectronTrackingCut, sbModel->LowEnergyLimit()), sbModel->HighEnergyLimit());
     
   // we need the HepEm-MatCut data to convert G4-mc indices to hepEm-mc indices
   // we need the HepEm-element data to loop over the required Z values
