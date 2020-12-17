@@ -356,6 +356,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
 //            << " for Ioni and Brem macroscopic scross secion for the " << numHepEmMCCData 
 //            << "\n material-cuts couples used in the geometry. " 
 //            << std::endl;  
+  elData->fResMacXSecNumData = indxCont;
   elData->fResMacXSecData = new double[indxCont];
   for (int i=0; i<indxCont; ++i) {    
     elData->fResMacXSecData[i] = xsecData[i];
