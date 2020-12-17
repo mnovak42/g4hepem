@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.3...3.18 FATAL_ERROR)
 project( G4HepEm )
 
+
 #----------------------------------------------------------------------------
 # Find Geant4 and set G4 libraries, include directories, etc... 
 #
