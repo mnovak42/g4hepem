@@ -364,6 +364,8 @@ void FreeElectronDataOnDevice(struct G4HepEmElectronDataOnDevice** onDEVICE) {
     // free the remaining device side electron data and set the host side ptr to null
     cudaFree( *onDEVICE );
     *onDEVICE = nullptr;
+
+    delete onHostTo_d;
   }
 }
 
