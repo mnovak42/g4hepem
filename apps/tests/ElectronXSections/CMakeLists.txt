@@ -50,14 +50,7 @@ message(STATUS " BUILDING WITH CUDA")
   include_directories ( ${G4HepEm_CUDA_INCLUDE_DIR} 
                         ${CMAKE_SOURCE_DIR}/include
                        )
-  add_executable ( TestXSectionData ${CMAKE_SOURCE_DIR}/TestXSectionData.cc ${cxx_sources} ${cu_sources})  
-  target_compile_options (TestXSectionData PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-                         -Xcompiler -fPIC -Xcudafe 
-                         --diag_suppress=boolean_controlling_expr_is_constant
-                         --disable-warnings
-                         -lineinfo
-                         >)
-  set_property ( TARGET TestXSectionData PROPERTY CUDA_SEPARABLE_COMPILATION ON )
+  add_executable ( TestXSectionData ${CMAKE_SOURCE_DIR}/TestXSectionData.cc ${cxx_sources} ${cu_sources})
   target_link_libraries( TestXSectionData ${Geant4_LIBRARIES} ${G4HepEm_LIBRARIES} )  
 else ( G4HepEm_CUDA_BUILD )
   add_executable ( TestXSectionData ${CMAKE_SOURCE_DIR}/TestXSectionData.cc ${cxx_sources})
