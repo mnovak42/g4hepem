@@ -169,7 +169,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   theEkin  = theTrack->GetEKin();
   theLEkin = theTrack->GetLogEKin();
   const double mxsec = (iDProc<2) 
-                      ? GetRestMacXSec(hepEmData->fTheElectronData, theIMC, theEkin, theLEkin, iDProc==0)
+                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
                       : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex].fElectronDensity);
   if (mxsec <= 0.0 || tlData->GetRNGEngine()->flat() > mxsec*theTrack->GetMFP(iDProc)) {
     // delta interaction happens
