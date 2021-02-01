@@ -28,13 +28,13 @@ jobs:
       matrix:
         # populate the .name matrix 
         name: [
-          ubuntu-18.04-gcc-9,
+          ubuntu-20.04-gcc-9,
         ]
         # populate the .os matrix  
         include:
             ## Ubuntu + gcc
-          - name: ubuntu-18.04-gcc-9  
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-9  
+            os: ubuntu-20.04
             compiler: gcc
             version: 9
 
@@ -53,6 +53,7 @@ jobs:
           # it's always gcc compiler in case of Linux so just protect for future
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
                sudo apt-get update -y
+               sudo ACCEPT_EULA=Y apt-get install msodbcsql17
                sudo apt-get upgrade -y
                sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
                echo "CC=/usr/bin/gcc-${{ matrix.version }}" >> $GITHUB_ENV
