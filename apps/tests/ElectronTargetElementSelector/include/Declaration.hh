@@ -5,7 +5,6 @@
 // G4 include (for types)
 #include "globals.hh"
 
-
 struct G4HepEmData;
 struct G4HepEmParameters;
 struct G4HepEmElectronData;
