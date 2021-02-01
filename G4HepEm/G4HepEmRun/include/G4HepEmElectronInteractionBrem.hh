@@ -2,40 +2,43 @@
 #ifndef G4HepEmElectronInteractionBrem_HH
 #define G4HepEmElectronInteractionBrem_HH
 
+#include "G4HepEmMacros.hh"
+
 class  G4HepEmTLData;
 struct G4HepEmData;
 struct G4HepEmElectronData;
 
 
-// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the 
-// emitted photon energy. 
+// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the
+// emitted photon energy.
 // Used between 100 eV - 1 GeV primary e-/e+ kinetic energies.
-// NOTE: the core part i.e. sampling the emitted photon energy is different than 
+// NOTE: the core part i.e. sampling the emitted photon energy is different than
 //       that in the G4SeltzerBergerModel. I implemented here my rejection free,
-//       memory effcicient (tables only per Z and not per mat-cuts) sampling. 
-//       Rejection is used only to account dielectric supression and e+ correction. 
+//       memory effcicient (tables only per Z and not per mat-cuts) sampling.
+//       Rejection is used only to account dielectric supression and e+ correction.
 void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron);
 
 // Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
 // such as screening and Coulomb corrections, emission in the field of the atomic
-// electrons and LPM suppression.  
+// electrons and LPM suppression.
 // Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
 void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData);
 
 
 
-// Target atom selector for the above bremsstrahlung intercations in case of 
+// Target atom selector for the above bremsstrahlung intercations in case of
 // materials composed from multiple elements.
-int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin, 
+G4HepEmHostDevice
+int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
                          const double lekin, const double urndn, const bool isbremSB);
 
-// Simple linear search (with step of 3!) used in the photon energy sampling part 
+// Simple linear search (with step of 3!) used in the photon energy sampling part
 // of the SB (Seltzer-Berger) brem model.
 int LinSearch(const double* vect, const int size, const double val);
 
 
-void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma, 
-                     const double etotal, const double elpm, const double z23, 
+void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma,
+                     const double etotal, const double elpm, const double z23,
                      const double ilVarS1, const double ilVarS1Cond, const double densityCor);
 
 // LPM functions G(s) and Phi(s) over an s-value grid of: ds=0.05 on [0:2.0] (2x41)
@@ -54,7 +57,7 @@ const double kFuncLPM[] = {
   9.9710E-01, 9.9839E-01,  9.9741E-01, 9.9857E-01,  9.9767E-01, 9.9873E-01,
   9.9790E-01, 9.9887E-01,  9.9809E-01, 9.9898E-01,  9.9826E-01, 9.9909E-01,
   9.9840E-01, 9.9918E-01,  9.9856E-01, 9.9926E-01
-}; 
+};
 
 
 #endif // G4HepEmElectronInteractionBrem_HH

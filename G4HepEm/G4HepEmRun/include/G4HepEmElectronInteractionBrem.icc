@@ -14,22 +14,23 @@
 #include "G4HepEmConstants.hh"
 #include "G4HepEmRunUtils.hh"
 
+#include "G4HepEmMath.hh"
 
 #include <cmath>
 //#include <iostream>
 
 
-// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the 
-// emitted photon energy. 
+// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the
+// emitted photon energy.
 // Used between 1 keV - 1 GeV primary e-/e+ kinetic energies.
-// NOTE: the core part i.e. sampling the emitted photon energy is different than 
+// NOTE: the core part i.e. sampling the emitted photon energy is different than
 //       that in the G4SeltzerBergerModel. I implemented here my rejection free,
-//       memory effcicient (tables only per Z and not per mat-cuts) sampling. 
-//       Rejection is used only to account dielectric supression and e+ correction. 
-void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) { 
+//       memory effcicient (tables only per Z and not per mat-cuts) sampling.
+//       Rejection is used only to account dielectric supression and e+ correction.
+void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
   //
-  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
-  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
   //
   double              thePrimEkin = thePrimaryTrack->GetEKin();
   const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
@@ -40,10 +41,10 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   // return if intercation is not possible (should not happen)
   if (thePrimEkin <= theGamCut) return;
   // get the material data
-  const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];  
-  // sample target element 
-  const int elemIndx = (theMData.fNumOfElement > 1) 
-                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin, 
+  const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
+  // sample target element
+  const int elemIndx = (theMData.fNumOfElement > 1)
+                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
                                               theLogEkin, tlData->GetRNGEngine()->flat(), true)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
@@ -53,7 +54,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   //
   // get the G4HepEmSBTableData structure
   const G4HepEmSBTableData* theSBTables = hepEmData->fTheSBTableData;
-  // get the start index of sampling tables for this Z   
+  // get the start index of sampling tables for this Z
   const int iStart   = theSBTables->fSBTablesStartPerZ[iZet];
   // get the index of the gamma-cut cumulative in this Z data that corresponds to this mc
   const int iGamCut  = theSBTables->fGammaCutIndices[theSBTables->fGammaCutIndxStartIndexPerMC[theMCIndx]+elemIndx];
@@ -61,7 +62,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   // find lower e- energy bin
   bool      isCorner = false; // indicate that the lower edge e- energy < gam-gut
   bool      isSimply = false; // simply sampling: isCorner+lower egde is selected
-  int   elEnergyIndx = (int)(theSBTables->fSBTableData[iStart+2]);  // maxE-grid index for this Z  
+  int   elEnergyIndx = (int)(theSBTables->fSBTableData[iStart+2]);  // maxE-grid index for this Z
   // only if e- ekin is below the maximum value(use table at maximum otherwise)
   if (thePrimEkin < theSBTables->fElEnergyVect[elEnergyIndx]) {
     const double val = (theLogEkin-theSBTables->fLogMinElEnergy)*theSBTables->fILDeltaElEnergy;
@@ -112,7 +113,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
       // instead of binary search because it's faster in our case
       // note: every 3rd value of `stData` is the cumulative for the corresponding kappa grid values
       const int cumLIndx3 = LinSearch(stData, theSBTables->fNumKappa, cumRV) - 3;
-      const int  cumLIndx = cumLIndx3/3; 
+      const int  cumLIndx = cumLIndx3/3;
       const double   cumL = stData[cumLIndx3];
       const double     pA = stData[cumLIndx3+1];
       const double     pB = stData[cumLIndx3+2];
@@ -146,14 +147,14 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
    } while (rndm[1] > suppression);
    // end of rejection loop: the photon energy is `eGamma`
    //
-   // sample photon direction (modified Tsai sampling): 
+   // sample photon direction (modified Tsai sampling):
    const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
    double rndm3[3];
    double u;
    do {
      tlData->GetRNGEngine()->flatArray(3, rndm3);
      const double uu = -std::log(rndm3[0]*rndm3[1]);
-     u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;  
+     u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
    } while (u > uMax);
    const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
    const double sint = std::sqrt((1.0-cost)*(1.0+cost));
@@ -166,7 +167,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
    // rotate back to refernce frame (G4HepEmRunUtils function)
    RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
    secTrack->SetEKin(eGamma);
-   secTrack->SetParentID(thePrimaryTrack->GetID()); 
+   secTrack->SetParentID(thePrimaryTrack->GetID());
 
    //
    //
@@ -189,12 +190,12 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 
 // Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
 // such as screening and Coulomb corrections, emission in the field of the atomic
-// electrons and LPM suppression.  
+// electrons and LPM suppression.
 // Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) { 
+void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
   //
-  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
-  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
   //
   double              thePrimEkin = thePrimaryTrack->GetEKin();
   const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
@@ -206,15 +207,15 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   // return if intercation is not possible (should not happen)
   if (thePrimEkin <= theGamCut) return;
   // get the material data
-  const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];  
-  // sample target element 
-  const int elemIndx = (theMData.fNumOfElement > 1) 
-                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin, 
+  const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
+  // sample target element
+  const int elemIndx = (theMData.fNumOfElement > 1)
+                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
                                               theLogEkin, tlData->GetRNGEngine()->flat(), false)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
-  const G4HepEmElemData& theElemData = hepEmData->fTheElementData->fElementData[std::min(iZet, hepEmData->fTheElementData->fMaxZet)];
+  const G4HepEmElemData& theElemData = hepEmData->fTheElementData->fElementData[G4HepEmMin(iZet, hepEmData->fTheElementData->fMaxZet)];
   //
   // == Sampling of the emitted photon energy
   //
@@ -240,27 +241,27 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   double eGamma, funcVal;
   do {
     tlData->GetRNGEngine()->flatArray(2, rndm);
-    eGamma = std::sqrt( std::max( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
+    eGamma = std::sqrt( G4HepEmMax( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
     // evaluate the DCS at this emitted gamma energy
     const double y     = eGamma / thePrimTotalE;
     const double onemy = 1.-y;
-    const double dum0  = 0.25*y*y;        
+    const double dum0  = 0.25*y*y;
     if ( isLPMActive ) { // DCS: Bethe-Heitler in complete screening and LPM suppression
       // evaluate LPM functions (combined with the Ter-Mikaelian effect)
       double funcGS, funcPhiS, funcXiS;
       EvaluateLPMFunctions(funcXiS, funcGS, funcPhiS, eGamma, thePrimTotalE, lpmEnergy, theElemData.fZet23, theElemData.fILVarS1, theElemData.fILVarS1Cond, densityCorr);
       const double term1 = funcXiS * ( dum0 * funcGS + (onemy+2.0*dum0) * funcPhiS );
-      funcVal = term1*zFactor1 + onemy*zFactor2;      
+      funcVal = term1*zFactor1 + onemy*zFactor2;
     } else {  // DCS: Bethe-Heitler without LPM suppression and complete screening only if Z<5 (becaue TF screening is not vaild for low Z)
       const double dum1 = onemy + 3.*dum0;
-      if ( iZet < 5 ) { // DCS: complete screening 
+      if ( iZet < 5 ) { // DCS: complete screening
         funcVal = dum1 * zFactor1 + onemy * zFactor2;
       } else { // DCS: analytical approximations to the universal screening functions (based on TF model of atom)
         const double dum2 = y / ( thePrimTotalE - eGamma );
         const double gam  = dum2 * 100.*kElectronMassC2 / theElemData.fZet13;
         const double eps  = gam / theElemData.fZet13;
         // evaluate the screening functions (TF model of the atom, Tsai's aprx.):
-        
+
         const double gam2 = gam*gam;
         const double phi1 = 16.863-2.0*std::log(1.0+0.311877*gam2)+2.4*std::exp(-0.9*gam)+1.6*std::exp(-1.5*gam);
         const double phi2 = 2.0/(3.0+19.5*gam+18.0*gam2);    // phi1-phi2
@@ -272,20 +273,20 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
         const double Fz   = logZ/3. + theElemData.fCoulomb;
         const double invZ = 1./dZet;
         funcVal = dum1*((0.25*phi1-Fz) + (0.25*psi1-2.*logZ/3.)*invZ) +  0.125*onemy*(phi2 + psi2*invZ);
-      }                  
+      }
     }
-    funcVal = std::max( 0.0, funcVal);
+    funcVal = G4HepEmMax( 0.0, funcVal);
   } while ( funcVal < rejFuncMax * rndm[1] );
   // end of rejection loop: the photon energy is `eGamma`
-  // 
-  // sample photon direction (modified Tsai sampling): 
+  //
+  // sample photon direction (modified Tsai sampling):
   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
   double rndm3[3];
   double u;
   do {
     tlData->GetRNGEngine()->flatArray(3, rndm3);
     const double uu = -std::log(rndm3[0]*rndm3[1]);
-    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;  
+    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
   } while (u > uMax);
   const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
   const double sint = std::sqrt((1.0-cost)*(1.0+cost));
@@ -298,7 +299,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   // rotate back to refernce frame (G4HepEmRunUtils function)
   RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
   secTrack->SetEKin(eGamma);
-  secTrack->SetParentID(thePrimaryTrack->GetID()); 
+  secTrack->SetParentID(thePrimaryTrack->GetID());
 
   //
   //
@@ -322,11 +323,11 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
 
 // should be called only for mat-cuts with more than one elements in their material
 int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, const double urndn, const bool isbremSB) {
-  // start index for this mat-cut and this model (-1 is no elememnt selector i.e. single element material) 
-  const int   indxStart = isbremSB 
-                          ? elData->fElemSelectorBremSBStartIndexPerMatCut[imc] 
+  // start index for this mat-cut and this model (-1 is no elememnt selector i.e. single element material)
+  const int   indxStart = isbremSB
+                          ? elData->fElemSelectorBremSBStartIndexPerMatCut[imc]
                           : elData->fElemSelectorBremRBStartIndexPerMatCut[imc];
-  const double* theData = isbremSB 
+  const double* theData = isbremSB
                           ? &(elData->fElemSelectorBremSBData[indxStart])
                           : &(elData->fElemSelectorBremRBData[indxStart]);
   const int     numData = theData[0];
@@ -335,9 +336,9 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
   const double    invLD = theData[3];
   const double*   xdata = &(theData[4]);
   // make sure that $x \in  [x[0],x[ndata-1]]$
-  const double   xv = std::max(xdata[0], std::min(xdata[numElem*(numData-1)], ekin));
+  const double   xv = G4HepEmMax(xdata[0], G4HepEmMin(xdata[numElem*(numData-1)], ekin));
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
-  const int idxEkin = std::max(0.0, std::min((lekin-logE0)*invLD, numData-2.0)); 
+  const int idxEkin = G4HepEmMax(0.0, G4HepEmMin((lekin-logE0)*invLD, numData-2.0));
   // the real index position is idxEkin x numElem
   int   indx0 = idxEkin*numElem;
   int   indx1 = indx0+numElem;
@@ -345,10 +346,10 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
   const double   x1 = xdata[indx0++];
   const double   x2 = xdata[indx1++];
   const double   dl = x2-x1;
-  const double    b = std::max(0., std::min(1., (xv - x1)/dl));
+  const double    b = G4HepEmMax(0., G4HepEmMin(1., (xv - x1)/dl));
   int theElemIndex = 0;
   while (theElemIndex<numElem-1 && urndn > xdata[indx0+theElemIndex]+b*(xdata[indx1+theElemIndex]-xdata[indx0+theElemIndex])) { ++theElemIndex; }
-  return theElemIndex;      
+  return theElemIndex;
 }
 
 
@@ -374,13 +375,13 @@ int LinSearch(const double* vect, const int size, const double val) {
 }
 
 
-void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma, 
-     const double etotal, const double elpm, const double z23, const double ilVarS1, 
+void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma,
+     const double etotal, const double elpm, const double z23, const double ilVarS1,
      const double ilVarS1Cond, const double densityCor) {
   const double     sqrt2 = 1.414213562373095;
   const double redegamma = egamma / etotal;
   const double varSprime = std::sqrt( 0.125 * redegamma * elpm / ( ( 1.0 - redegamma ) * etotal ) );
-  const double     varS1 = z23 / ( 184.15 * 184.15 );  
+  const double     varS1 = z23 / ( 184.15 * 184.15 );
   const double condition = sqrt2*varS1;
   double funcXiSprime = 2.0;
   if (varSprime > 1.0) {
@@ -419,5 +420,3 @@ void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, con
     funcXiS = 1.0/funcPhiS;
   }
 }
-
-
