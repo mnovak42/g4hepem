@@ -7,7 +7,6 @@
 </p>
 
 
-
 # The G4HepEm R&D Project
 
 The ``G4HepEm`` R&D project was initiated by the `Electromagnetic Physics Working Group` of the ``Geant4`` collaboration as part of looking for solutions to reduce the computing performance bottleneck experienced by the `High Energy Physics` (HEP) detector simulation applications. 
