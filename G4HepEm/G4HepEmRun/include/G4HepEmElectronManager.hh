@@ -65,6 +65,22 @@ public:
     */
   void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
 
+  /** Function that provides the information regarding how far a given e-/e+ particle goes.
+    *
+    * This function provides the information regarding how far a given e-/e+ particle goes
+    * till it's needed to be stopped again because some physics interaction(s) needs to be performed.
+    * The input/primary e-/e+ particle track is provided as G4HepEmElectronTrack which must have sampled
+    * `number-of-interaction-left`. The computed physics step length is written directly into the input
+    * track. There is no local (state) variable used in the computation.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input information of the track. The data structure must have all entries
+    *   `number-of-interaction-left` sampled and is also used to deliver the results of the function call, i.e.
+    *   the computed physics step limit is written into its fGStepLength member.
+    */
+  G4HepEmHostDevice
+  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
 
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *

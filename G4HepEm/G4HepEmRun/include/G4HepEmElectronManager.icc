@@ -24,11 +24,22 @@
 
 // Note: pStepLength will be set here i.e. this is the first access to it that
 //       will clear the previous step value.
-void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmTLData* tlData) {
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* theTrack = theElTrack->GetTrack();
+  // Sample the `number-of-interaction-left`
+  for (int ip=0; ip<3; ++ip) {
+    if (theTrack->GetNumIALeft(ip)<=0.) {
+      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+    }
+  }
+  HowFar(hepEmData, hepEmPars, theElTrack);
+}
+
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
   int indxWinnerProcess = -1;  // init to continous
   // === 1. Continuous energy loss limit
   double pStepLength    = kALargeValue;
-  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* theTrack = theElTrack->GetTrack();
   const double   theEkin = theTrack->GetEKin();
   const double  theLEkin = theTrack->GetLogEKin();
@@ -60,10 +71,7 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
   for (int ip=0; ip<3; ++ip) {
     const double mxsec = mxSecs[ip];
     const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
-    if (theTrack->GetNumIALeft(ip)<=0.) {
-      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
-    }
-    // save the mac-xsec for the update of the `number-of-intercation-left`:
+    // save the mac-xsec for the update of the `number-of-interaction-left`:
     // the `number-of-intercation-left` should be updated in the along-step-action
     // after the MSC has changed the step.
     theTrack->SetMFP(mfp, ip);
