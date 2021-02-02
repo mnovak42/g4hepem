@@ -4,6 +4,7 @@
 #define G4HepEmElectronTrack_HH
 
 
+#include "G4HepEmMacros.hh"
 #include "G4HepEmTrack.hh"
 
 // A simple track structure for e-/e+ particles.
@@ -18,6 +19,7 @@
 class G4HepEmElectronTrack {
 
 public:
+  G4HepEmHostDevice
   G4HepEmElectronTrack() {     
     fTrack.ReSet(); 
     fTrack.SetCharge(-1.0);
@@ -25,6 +27,7 @@ public:
     fPStepLength   =  0.0;
   }
   
+  G4HepEmHostDevice
   G4HepEmElectronTrack(const G4HepEmElectronTrack& o) { 
     fTrack         = o.fTrack;
     fTrack.SetCharge(o.GetCharge());
@@ -32,17 +35,24 @@ public:
     fPStepLength   = o.fPStepLength;
   }
   
+  G4HepEmHostDevice
   G4HepEmTrack*  GetTrack()  { return &fTrack; }
 
+  G4HepEmHostDevice
   double  GetCharge() const { return fTrack.GetCharge(); }
   
+  G4HepEmHostDevice
   void    SetRange(double r) { fRange = r; }
+  G4HepEmHostDevice
   double  GetRange()         { return fRange; }
   
+  G4HepEmHostDevice
   void    SetPStepLength(double psl)   { fPStepLength = psl;  }
+  G4HepEmHostDevice
   double  GetPStepLength()             { return fPStepLength; }
   
   // Reset all member values
+  G4HepEmHostDevice
   void ReSet() {
     fTrack.ReSet();
     fTrack.SetCharge(-1.0);

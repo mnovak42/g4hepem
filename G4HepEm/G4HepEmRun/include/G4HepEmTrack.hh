@@ -2,6 +2,8 @@
 #ifndef G4HepEmTrack_HH
 #define G4HepEmTrack_HH
 
+#include "G4HepEmMacros.hh"
+
 // A simple track structure for neutral particles.
 //
 // This object stores all the basic information (e.g. position, directin, etc) 
@@ -17,8 +19,10 @@
 class G4HepEmTrack {
 
 public:
+  G4HepEmHostDevice
   G4HepEmTrack() { ReSet(); }
   
+  G4HepEmHostDevice
   G4HepEmTrack(const G4HepEmTrack& o) { 
     fPosition[0]   = o.fPosition[0];
     fPosition[1]   = o.fPosition[1];
@@ -56,44 +60,54 @@ public:
   }
   
   // Position
+  G4HepEmHostDevice
   void    SetPosition(double* posv) { 
     fPosition[0] = posv[0];
     fPosition[1] = posv[1];
     fPosition[2] = posv[2];
   }
 
+  G4HepEmHostDevice
   void    SetPosition(double x, double y, double z) { 
     fPosition[0] = x;
     fPosition[1] = y;
     fPosition[2] = z;
   }
   
+  G4HepEmHostDevice
   double* GetPosition() { return fPosition; }
   
   // Direction
+  G4HepEmHostDevice
   void    SetDirection(double* dirv) {
     fDirection[0] = dirv[0];
     fDirection[1] = dirv[1];
     fDirection[2] = dirv[2];
   }
 
+  G4HepEmHostDevice
   void    SetDirection(double x, double y, double z) {
     fDirection[0] = x;
     fDirection[1] = y;
     fDirection[2] = z;
   }
   
+  G4HepEmHostDevice
   double* GetDirection() {return fDirection; }
   
   // Kinetic energy
+  G4HepEmHostDevice
   void    SetEKin(double ekin)  { 
     fEKin    = ekin;
     fLogEKin = 100.0;
   }
   // !!! should be used only with special caution !!!
+  G4HepEmHostDevice
   void    SetLEKin(double lekin)  { fLogEKin = lekin; }
   
+  G4HepEmHostDevice
   double  GetEKin()    const { return fEKin; }
+  G4HepEmHostDevice
   double  GetLogEKin() {
     if (fLogEKin > 99.0) { 
       fLogEKin = (fEKin > 0.) ? std::log(fEKin) : -30;
@@ -102,49 +116,73 @@ public:
   }
     
   // Charge
+  G4HepEmHostDevice
   void    SetCharge(double ch) { fCharge = ch; }
   
+  G4HepEmHostDevice
   double  GetCharge() const { return fCharge; }
   
   //Energy deposit
+  G4HepEmHostDevice
   void    SetEnergyDeposit(double val) { fEDeposit  = val; }
+  G4HepEmHostDevice
   void    AddEnergyDeposit(double val) { fEDeposit += val; }
+  G4HepEmHostDevice
   double  GetEnergyDeposit()  const    { return fEDeposit; }
   
+  G4HepEmHostDevice
   void    SetGStepLength(double gsl)   { fGStepLength = gsl;  }
+  G4HepEmHostDevice
   double  GetGStepLength()    const    { return fGStepLength; }
   
   // Macroscopic cross section
+  G4HepEmHostDevice
   void    SetMFP(double val, int pindx) { fMFPs[pindx] = val; }
+  G4HepEmHostDevice
   double  GetMFP(int pindx)   const     { return fMFPs[pindx]; }
+  G4HepEmHostDevice
   double* GetMFP()                      { return fMFPs; }
   
   // Number of intercation left for the processes with mac-xsec above
+  G4HepEmHostDevice
   void    SetNumIALeft(double val, int pindx) {fNumIALeft[pindx] = val; }
+  G4HepEmHostDevice
   double  GetNumIALeft(int pindx) const       {return fNumIALeft[pindx]; }
+  G4HepEmHostDevice
   double* GetNumIALeft()                      {return fNumIALeft; }
   
   
   // ID 
+  G4HepEmHostDevice
   void    SetID(int id) { fID = id;   }
+  G4HepEmHostDevice
   int     GetID() const { return fID; }
   
   // Parent ID
+  G4HepEmHostDevice
   void    SetParentID(int id) { fIDParent = id;   }
+  G4HepEmHostDevice
   int     GetParentID() const { return fIDParent; }
   
   
+  G4HepEmHostDevice
   void    SetMCIndex(int imc) { fMCIndex = imc;  }
+  G4HepEmHostDevice
   int     GetMCIndex() const { return fMCIndex; }
   
   
+  G4HepEmHostDevice
   void    SetWinnerProcessIndex(int ip) { fPIndxWon = ip; }
+  G4HepEmHostDevice
   int     GetWinnerProcessIndex() const { return fPIndxWon; }   
   
+  G4HepEmHostDevice
   void    SetOnBoundary(bool val)  { fOnBoundary = val;  }
+  G4HepEmHostDevice
   bool    GetOnBoundary() const { return fOnBoundary; }
   
   // Reset all member values
+  G4HepEmHostDevice
   void ReSet() {
     fPosition[0]  = 0.0;
     fPosition[1]  = 0.0;
