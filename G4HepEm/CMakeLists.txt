@@ -1,57 +1,33 @@
+# - Build component libraries
+add_subdirectory(G4HepEmData)
+add_subdirectory(G4HepEmInit)
+add_subdirectory(G4HepEmRun)
 
+# - Now top level G4HepEm library
+file(GLOB G4HEPEM_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
+file(GLOB G4HEPEM_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 
-add_subdirectory (G4HepEmData)
-add_subdirectory (G4HepEmInit)
-add_subdirectory (G4HepEmRun)
+if(BUILD_STATIC_LIBS)
+  add_library(g4HepEm STATIC ${G4HEPEM_sources})
+else()
+  add_library(g4HepEm SHARED ${G4HEPEM_sources})
+endif()
 
+add_library(${PROJECT_NAME}::g4HepEm ALIAS g4HepEm)
 
-include_directories (
- ${CMAKE_CURRENT_SOURCE_DIR}/include
- ${G4HEPEMDATA_INC_DIR}
- ${G4HEPEMINIT_INC_DIR}
- ${G4HEPEMRUN_INC_DIR}
-)
+target_compile_features(g4HepEm PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
 
+target_include_directories(g4HepEm PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
 
-file ( GLOB G4HEPEM_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
-file ( GLOB G4HEPEM_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
-if (BUILD_STATIC_LIBS)
-  add_library (g4HepEm STATIC ${G4HEPEM_sources})
-else ()
-  add_library (g4HepEm SHARED ${G4HEPEM_sources})
-endif ()
-
-set_target_properties(g4HepEm PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS})
-target_link_libraries(g4HepEm g4HepEmData g4HepEmInit g4HepEmRun) # ${Geant4_LIBRARIES})
+target_link_libraries(g4HepEm PUBLIC g4HepEmData g4HepEmInit g4HepEmRun) # ${Geant4_LIBRARIES})
 
 ## ----------------------------------------------------------------------------
 ## Install G4HepEm libraries and headers
-install (FILES ${G4HEPEM_headers} DESTINATION includes)
-install (TARGETS g4HepEm DESTINATION lib)
-
-## ----------------------------------------------------------------------------
-## Create and install G4HepEm CMake Config file
-##
-configure_file (${PROJECT_SOURCE_DIR}/cmake/G4HepEmConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/G4HepEmConfig.cmake @ONLY)
-
-install (FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/G4HepEmConfig.cmake
-    DESTINATION lib/cmake/G4HepEm
-)
-
-
-
-###############################################################################
-##  Set some global properties for retrieving proper configuration at testing 
-###############################################################################
-
-# local directory in the build for the header files
-FILE ( GLOB G4HEPEMDATA_HEADERS "${G4HEPEMDATA_INC_DIR}/*")
-FILE ( GLOB G4HEPEMINIT_HEADERS "${G4HEPEMINIT_INC_DIR}/*")
-FILE ( GLOB G4HEPEMRUN_HEADERS "${G4HEPEMRUN_INC_DIR}/*")
-FILE ( COPY ${G4HEPEM_headers} ${G4HEPEMDATA_HEADERS} ${G4HEPEMINIT_HEADERS} ${G4HEPEMRUN_HEADERS} DESTINATION ${CMAKE_BINARY_DIR}/includes)
-set (G4HEPEM_TESTING_INCLUDE_DIR "${CMAKE_BINARY_DIR}/includes")
-
-# set G4HepEm include directory property used (only) property for testing 
-set_property ( GLOBAL PROPERTY G4HEPEM_TESTING_INCLUDE_DIR_PROP  "${G4HEPEM_TESTING_INCLUDE_DIR}" )
+install(FILES ${G4HEPEM_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
+install(TARGETS g4HepEm
+  EXPORT ${PROJECT_NAME}Targets
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
