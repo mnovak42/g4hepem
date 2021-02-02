@@ -68,11 +68,6 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut,  onHOST->fElemSelectorBremRBStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBData,                 onHOST->fElemSelectorBremRBData,                sizeof( double ) * numBremRBData,   cudaMemcpyHostToDevice ) );
   //
-  // === Sampling tables for the SB brem model:
-  //
-  // TODO:
-
-  //
   // Finaly copy the top level, i.e. the main struct with the already
   // appropriate pointers to device side memory locations but stored on the host
   gpuErrchk ( cudaMalloc (  onDEVICE,              sizeof(  struct G4HepEmElectronData ) ) );
@@ -101,7 +96,6 @@ void FreeElectronDataOnDevice(struct G4HepEmElectronData** onDEVICE) {
     cudaFree( onHostTo_d->fElemSelectorBremSBData                );
     cudaFree( onHostTo_d->fElemSelectorBremRBStartIndexPerMatCut );
     cudaFree( onHostTo_d->fElemSelectorBremRBData                );
-    // TODO: sampling tables for the SB brem
     //
     // free the remaining device side electron data and set the host side ptr to null
     cudaFree( *onDEVICE );
