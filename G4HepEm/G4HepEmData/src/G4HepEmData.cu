@@ -7,9 +7,10 @@
 #include "G4HepEmMaterialData.hh"
 #include "G4HepEmElementData.hh"
 #include "G4HepEmElectronData.hh"
+#include "G4HepEmSBTableData.hh"
 
 void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
-  // Deep copy each members represented by their pointers.  
+  // Deep copy each members represented by their pointers.
 
   // 1. Copy the G4HepEmMatCutData member and set the device ptr.
   CopyMatCutDataToGPU ( onCPU->fTheMatCutData, &(onCPU->fTheMatCutData_gpu) );
@@ -20,7 +21,7 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
   CopyMaterialDataToGPU ( onCPU->fTheMaterialData, &(onCPU->fTheMaterialData_gpu) );
 
 //  FreeMaterialDataOnGPU( &(onCPU->fTheMaterialData_gpu) );
-  
+
   // 3. Copy the G4HepEmElementData member and set the device ptr.
   CopyElementDataToGPU ( onCPU->fTheElementData, &(onCPU->fTheElementData_gpu) );
 
@@ -30,8 +31,10 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
   // 4. Copy electron data to the GPU
   CopyElectronDataToDevice( onCPU->fTheElectronData, &(onCPU->fTheElectronData_gpu));
 
-
   // 5. Copy positron data to the GPU
   CopyElectronDataToDevice( onCPU->fThePositronData, &(onCPU->fThePositronData_gpu));
+
+  // 6. Copy SB-brem sampling tables to the GPU
+  CopySBTableDataToDevice( onCPU->fTheSBTableData,   &(onCPU->fTheSBTableData_gpu));
 
 }
