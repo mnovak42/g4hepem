@@ -24,11 +24,22 @@
 
 // Note: pStepLength will be set here i.e. this is the first access to it that
 //       will clear the previous step value.
-void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmTLData* tlData) {
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* theTrack = theElTrack->GetTrack();
+  // Sample the `number-of-interaction-left`
+  for (int ip=0; ip<3; ++ip) {
+    if (theTrack->GetNumIALeft(ip)<=0.) {
+      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+    }
+  }
+  HowFar(hepEmData, hepEmPars, theElTrack);
+}
+
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
   int indxWinnerProcess = -1;  // init to continous
   // === 1. Continuous energy loss limit
   double pStepLength    = kALargeValue;
-  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* theTrack = theElTrack->GetTrack();
   const double   theEkin = theTrack->GetEKin();
   const double  theLEkin = theTrack->GetLogEKin();
@@ -60,10 +71,7 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
   for (int ip=0; ip<3; ++ip) {
     const double mxsec = mxSecs[ip];
     const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
-    if (theTrack->GetNumIALeft(ip)<=0.) {
-      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
-    }
-    // save the mac-xsec for the update of the `number-of-intercation-left`:
+    // save the mac-xsec for the update of the `number-of-interaction-left`:
     // the `number-of-intercation-left` should be updated in the along-step-action
     // after the MSC has changed the step.
     theTrack->SetMFP(mfp, ip);
@@ -90,16 +98,15 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
 
 // Note: energy deposit will be set here i.e. this is the first access to it that
 //       will clear the previous step value.
-void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack) {
   //
   // === 1. MSC should be invoked to obtain the physics step lenght
-  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack*   theTrack = theElTrack->GetTrack();
   const double gStepLength = theTrack->GetGStepLength();
   const double pStepLength = gStepLength;
   // P-STEP LENGTH SHOUDL BE SET IN EL-TRACK
   if (pStepLength<=0.0) {
-    return;
+    return false;
   }
   //
   // === 2. The `number-of-interaction-left` needs to be updated based on the actual
@@ -113,7 +120,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   // === 3. Continuous energy loss needs to be computed
   const bool isElectron = (theTrack->GetCharge() < 0.0);
   const double theRange = theElTrack->GetRange();
-  double       theEkin  = theTrack->GetEKin();
+  const double theEkin  = theTrack->GetEKin();
   // 3./1. stop tracking when reached the end (i.e. it has been ranged out by the limit)
   // @TODO: actually the tracking cut is around 1 keV and the min-table energy is 100 eV so the second should never
   //        under standard EM constructor configurations
@@ -121,11 +128,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
     // stop and deposit the remaining energy
     theTrack->SetEnergyDeposit(theEkin);
     theTrack->SetEKin(0.0);
-    // call annihilation for e+ !!!
-    if (!isElectron) {
-      PerformPositronAnnihilation(tlData, true);
-    }
-    return;
+    return true;
   }
   // 3/1. try linear energy loss approximation:
   const G4HepEmElectronData* elData = isElectron
@@ -144,19 +147,47 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   if (finalEkin <= hepEmPars->fElectronTrackingCut) {
     eloss     = theEkin;
     finalEkin = 0.0;
-    // call annihilation for e+ !!!
     eloss = G4HepEmMax(eloss, 0.0);
     theTrack->SetEKin(finalEkin);
     theTrack->SetEnergyDeposit(eloss);
+    return true;
+  }
+  eloss = G4HepEmMax(eloss, 0.0);
+  theTrack->SetEKin(finalEkin);
+  theTrack->SetEnergyDeposit(eloss);
+  return false;
+}
+
+bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, struct G4HepEmTrack* theTrack, double rand) {
+  const bool isElectron = (theTrack->GetCharge() < 0.0);
+  const G4HepEmElectronData* elData = isElectron
+                                      ? hepEmData->fTheElectronData
+                                      : hepEmData->fThePositronData;
+  const int iDProc      = theTrack->GetWinnerProcessIndex();
+  const int theIMC      = theTrack->GetMCIndex();
+  const int theMatIndex = hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex;
+  const double theEkin  = theTrack->GetEKin();
+  const double theLEkin = theTrack->GetLogEKin();
+  const double mxsec = (iDProc<2)
+                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
+                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[theMatIndex].fElectronDensity);
+  return mxsec <= 0.0 || rand > mxsec*theTrack->GetMFP(iDProc);
+}
+
+void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack*   theTrack = theElTrack->GetTrack();
+  const bool isElectron = (theTrack->GetCharge() < 0.0);
+
+  bool stopped = PerformContinuous(hepEmData, hepEmPars, theElTrack);
+  if (stopped) {
+    // call annihilation for e+ !!!
     if (!isElectron) {
       PerformPositronAnnihilation(tlData, true);
     }
     return;
   }
-  eloss = G4HepEmMax(eloss, 0.0);
-  theTrack->SetEKin(finalEkin);
-  theTrack->SetEnergyDeposit(eloss);
-  //
+
   // === 4. Discrete part of the interaction (if any)
   // 4/1. check if discrete process limited the step return otherwise (i.e. if
   //      continous or boundary process limited the step)
@@ -166,18 +197,14 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   }
   // reset number of interaction left for the winner discrete process
   theTrack->SetNumIALeft(-1.0, iDProc);
+
   // 4/2. check if delta interaction happens instead of the real discrete process
-  // reset here the number of intercation left for the iDProcess
-  theEkin  = theTrack->GetEKin();
-  theLEkin = theTrack->GetLogEKin();
-  const double mxsec = (iDProc<2)
-                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
-                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex].fElectronDensity);
-  if (mxsec <= 0.0 || tlData->GetRNGEngine()->flat() > mxsec*theTrack->GetMFP(iDProc)) {
-    // delta interaction happens
+  if (CheckDelta(hepEmData, theTrack, tlData->GetRNGEngine()->flat())) {
     return;
   }
+
   // 4/3. perform the discrete part of the winner interaction
+  const double theEkin = theTrack->GetEKin();
   switch (iDProc) {
     case 0: // invoke ioni (for e-/e+):
             PerformElectronIoni(tlData, hepEmData, isElectron);
