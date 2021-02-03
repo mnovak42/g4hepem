@@ -82,6 +82,22 @@ public:
   G4HepEmHostDevice
   void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
 
+  /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
+    *
+    * This functions can be invoked when the particle is propagated to its post-step point to perform all
+    * continuous physics interactions. The input/primary e-/e+ particle track is provided through as
+    * G4HepEmElectronTrack. There is no local (state) variable used in the computation.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input information of the track. All the results of this function call,
+    *   i.e. the primary particle's energy updated to its post-interaction(s), are also delivered through this
+    *   object.
+    * @return boolean whether the particle was stopped
+    */
+  G4HepEmHostDevice
+  bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
+
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *
     * This functions can be invoked when the particle is propagated to its post-step point to perform all
