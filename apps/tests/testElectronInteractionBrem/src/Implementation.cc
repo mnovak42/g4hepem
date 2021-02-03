@@ -1,0 +1,478 @@
+
+#include "Declaration.hh"
+
+// Geant4 includes
+#include "G4SystemOfUnits.hh"
+
+#include "G4NistManager.hh"
+#include "G4Material.hh"
+#include "G4String.hh"
+
+#include "G4Box.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4Region.hh"
+
+#include "G4ParticleDefinition.hh"
+#include "G4ParticleTable.hh"
+#include "G4Electron.hh"
+#include "G4Positron.hh"
+#include "G4Gamma.hh"
+#include "G4Proton.hh"
+
+#include "G4DataVector.hh"
+#include "G4ProductionCuts.hh"
+#include "G4MaterialCutsCouple.hh"
+#include "G4ProductionCutsTable.hh"
+#include "G4EmParameters.hh"
+
+#include "G4StateManager.hh"
+#include "G4TouchableHandle.hh"
+#include "G4TouchableHistory.hh"
+#include "G4SeltzerBergerModel.hh"
+#include "G4ParticleChangeForLoss.hh"
+
+#include "Hist.hh"
+#include "G4Timer.hh"
+
+
+
+// G4HepEm includes
+#include "G4HepEmData.hh"
+#include "G4HepEmTLData.hh"
+#include "G4HepEmMatCutData.hh"
+
+#include "G4HepEmRunManager.hh"
+#include "G4HepEmElectronInteractionBrem.hh"
+
+#include "G4HepEmTrack.hh"
+
+#include <vector>
+#include <cmath>
+#include <random>
+
+
+// builds a fake Geant4 geometry just to be able to produce material-cuts couple
+void FakeG4Setup ( G4double prodCutInLength, G4int verbose) {
+  //
+  // --- Geometry definition: create the word
+  G4double wDimX      = 0.6*mm;
+  G4double wDimY      = 0.6*mm;
+  G4double wDimZ      = 0.6*mm;
+  G4Material* wMat    = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+  G4Box*           sW = new G4Box ("Box",wDimX, wDimY, wDimZ);
+  G4LogicalVolume* lW = new G4LogicalVolume(sW,wMat,"Box",0,0,0);
+  G4PVPlacement*   pW = new G4PVPlacement(0,G4ThreeVector(),"Box",lW,0,false,0);
+  //
+  // --- Build all NIST materials and set a logical volume for each
+  const std::vector<G4String>& namesMat = G4NistManager::Instance()->GetNistMaterialNames();
+  const G4int     numMat = namesMat.size();
+  const G4double  halfX  =  0.5/numMat;  // half width of one material-box
+  const G4double     x0  = -0.5+halfX;   // start x-position of the first material-box
+  for (int im=0; im<numMat; ++im) {
+    G4Material*       mat = G4NistManager::Instance()->FindOrBuildMaterial(namesMat[im]);
+    G4Box*             ss = new G4Box ("Box", halfX, 0.5, 0.5);
+    G4LogicalVolume*   ll = new G4LogicalVolume(ss, mat, "Box", 0, 0, 0);
+    new G4PVPlacement(0, G4ThreeVector(x0+im*halfX , 0, 0), "Box", ll, pW, false, 0);
+  }
+  //
+  // --- Create particles that has secondary production threshold
+  G4Gamma::Gamma();
+  G4Electron::Electron();
+  G4Positron::Positron();
+  G4Proton::Proton();
+  G4ParticleTable* partTable = G4ParticleTable::GetParticleTable();
+  partTable->SetReadiness();
+  //
+  // --- Create production - cuts object and set the secondary production threshold
+  G4double prodCutValue = prodCutInLength;
+  G4DataVector cuts;
+  cuts.push_back(prodCutValue);
+  G4ProductionCuts* pcut = new G4ProductionCuts();
+  pcut->SetProductionCut(cuts[0], 0); // set cut for gamma
+  pcut->SetProductionCut(cuts[0], 1); // set cut for e-
+  pcut->SetProductionCut(cuts[0], 2); // set cut for e+
+  pcut->SetProductionCut(cuts[0], 3); // set cut for p+
+  //
+  // --- Create the material-cuts couple objects: first the for the word, then
+  //     create default region, add this word material-cuts couple  then all others.
+  G4MaterialCutsCouple* couple0 = new G4MaterialCutsCouple(wMat, pcut);
+  couple0->SetIndex(0);
+  //
+  G4Region* reg = new G4Region("DefaultRegionForTheWorld");
+  reg->AddRootLogicalVolume(lW);
+  reg->UsedInMassGeometry(true);
+  reg->SetProductionCuts(pcut);
+  reg->RegisterMaterialCouplePair(wMat, couple0);
+  for (G4int im=0; im<numMat; ++im) {
+    G4Material*              mat = G4NistManager::Instance()->GetMaterial(im);
+    G4MaterialCutsCouple* couple = new G4MaterialCutsCouple(mat, pcut);
+    couple->SetIndex(im+1);
+    reg->RegisterMaterialCouplePair(mat, couple);
+  }
+  // --- Update the couple tables
+  G4ProductionCutsTable* theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
+  theCoupleTable->UpdateCoupleTable(pW);
+  //
+  if ( verbose>0 ) {
+    G4cout << " === FakeG4Setup() completed: \n"
+           << "     - number of G4MaterialCutsCouple objects built = " << numMat          << "     \n"
+           << "     - with secondary production threshold          = " << prodCutInLength << " [mm]\n"
+           << G4endl;
+  }
+}
+
+
+// builds a fake Geant4 geometry just to be able to produce material-cuts couple
+const G4MaterialCutsCouple* FakeG4Setup ( G4double prodCutInLength, const G4String& nistMatName, G4int verbose) {
+  //
+  // --- Find the required NIST material for the target
+  G4Material* wMat = G4NistManager::Instance()->FindOrBuildMaterial(nistMatName);
+  if (!wMat) {
+    std::cerr << " *** ERROR in FakeG4Setup: unknown G4-NIST material `"
+              << nistMatName << "`!"
+              << std::endl;
+    exit(-1);
+  }
+  //
+  // --- Geometry definition: create the word i.e. the target
+  G4double wDimX      = 0.6*mm;
+  G4double wDimY      = 0.6*mm;
+  G4double wDimZ      = 0.6*mm;
+  G4Box*           sW = new G4Box ("Box",wDimX, wDimY, wDimZ);
+  G4LogicalVolume* lW = new G4LogicalVolume(sW,wMat,"Box",0,0,0);
+  G4PVPlacement*   pW = new G4PVPlacement(0,G4ThreeVector(),"Box",lW,0,false,0);
+  //
+  // --- Create particles that has secondary production threshold
+  G4Gamma::Gamma();
+  G4Electron::Electron();
+  G4Positron::Positron();
+  G4Proton::Proton();
+  G4ParticleTable* partTable = G4ParticleTable::GetParticleTable();
+  partTable->SetReadiness();
+  //
+  // --- Create production - cuts object and set the secondary production threshold
+  G4double prodCutValue = prodCutInLength;
+  G4DataVector cuts;
+  cuts.push_back(prodCutValue);
+  G4ProductionCuts* pcut = new G4ProductionCuts();
+  pcut->SetProductionCut(cuts[0], 0); // set cut for gamma
+  pcut->SetProductionCut(cuts[0], 1); // set cut for e-
+  pcut->SetProductionCut(cuts[0], 2); // set cut for e+
+  pcut->SetProductionCut(cuts[0], 3); // set cut for p+
+  //
+  // --- Create the material-cuts couple objects
+  G4MaterialCutsCouple* couple0 = new G4MaterialCutsCouple(wMat, pcut);
+  couple0->SetIndex(0);
+  //
+  G4Region* reg = new G4Region("DefaultRegionForTheWorld");
+  reg->AddRootLogicalVolume(lW);
+  reg->UsedInMassGeometry(true);
+  reg->SetProductionCuts(pcut);
+  reg->RegisterMaterialCouplePair(wMat, couple0);
+  // --- Update the couple tables
+  G4ProductionCutsTable* theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
+  theCoupleTable->UpdateCoupleTable(pW);
+  //
+  if ( verbose>0 ) {
+    G4cout << " === FakeG4Setup() completed: \n"
+           << "     - number of G4MaterialCutsCouple objects built = " << 1              << "     \n"
+           << "     - with secondary production threshold          = " << prodCutInLength << " [mm]\n"
+           << G4endl;
+  }
+  // return with a pointer to teh registered material-cuts couple
+  return couple0;
+}
+
+
+
+void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool iselectron) {
+  //
+  // --- Get primary particle: e- or e+
+  G4Electron::Electron();
+  G4Positron::Positron();
+  G4ParticleDefinition *part = G4Positron::Positron();
+  if (iselectron) {
+    part = G4Electron::Electron();
+  }
+  //
+  // --- Get the `cuts`
+//  theCuts =
+//  static_cast<const G4DataVector*>(theCoupleTable->GetEnergyCutsVector(idx));
+  const G4DataVector* cuts = static_cast<const G4DataVector*>(G4ProductionCutsTable::GetProductionCutsTable()->GetEnergyCutsVector(0));
+  G4double gammaCutEnergy = (*cuts)[g4MatCut->GetIndex()]; // should be [0]
+  //
+  // --- Start run processing
+  G4StateManager *g4State = G4StateManager::GetStateManager();
+  if (!g4State->SetNewState(G4State_Init)) {
+    G4cout << "error changing G4state" << G4endl;
+  }
+  //
+  // --- Initilize the model
+  //  G4EmParameters::Instance()->Dump();
+  // create the G4 SB-brem model and set up
+  G4SeltzerBergerModel bremSB; // SB
+  bremSB.SetBicubicInterpolationFlag(true); // set bspline
+  G4ParticleChangeForLoss *fParticleChange = new G4ParticleChangeForLoss();
+  bremSB.SetParticleChange(fParticleChange, 0);
+  bremSB.Initialise(part, *cuts);
+  //
+  G4VEmModel *model = &bremSB;
+//  if (bremModelName == "bremRel") {
+//    model = &bremRel_DB;
+//  }
+  //
+  // --- Create a dynamic particle and track for the pirmay
+  G4ThreeVector aPosition  = G4ThreeVector(0.0, 0.0, 0.0);
+  G4ThreeVector aDirection = G4ThreeVector(0.0, 0.0, 1.0);
+  G4DynamicParticle dParticle(part, aDirection, ekin);
+  G4Track *gTrack = new G4Track(&dParticle, 0.0, aPosition);
+  G4TouchableHandle fpTouchable(new G4TouchableHistory());
+  gTrack->SetTouchableHandle(fpTouchable);
+  const G4Track *track = const_cast<G4Track *>(gTrack);
+  //
+  // --- Step
+  if (!G4StateManager::GetStateManager()->SetNewState(G4State_Idle)) {
+    G4cout << "G4StateManager PROBLEM! " << G4endl;
+  }
+  // --- Event loop
+  std::vector<G4DynamicParticle *> vdp;
+  vdp.reserve(1);
+//  dParticle.SetKineticEnergy(ekin);
+
+  // print outs
+  G4cout << g4MatCut->GetMaterial() << G4endl;
+  G4ProductionCutsTable::GetProductionCutsTable()->DumpCouples();
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+  G4cout << "   Particle       =  " << part->GetParticleName() << G4endl;
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+  G4cout << "   Kinetic energy =  " << ekin / MeV << "  [MeV] " << G4endl;
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+  G4cout << "   Model name     =  " << model->GetName() << G4endl;
+
+  // --- Prepare histograms:
+  //
+  // energy distribution(k) is sampled in varibale log10(k/primaryEnergy)
+  // angular distribution(theta) is sampled in variable log10(1-cos(theta)*0.5)
+  //
+  // set histo name prefix
+  G4String hname = "brem_SB_G4_";
+  //
+  // set up a histogram for the secondary gamma energy(k) : log10(k/primaryEnergy)
+  G4int nbins       = numHistBins;
+  G4double xmin     = std::log10(gammaCutEnergy / ekin);
+  G4double xmax     = 0.1;
+  G4String h1Name   = hname + "gamma_energy.dat";
+  Hist* h1 = new Hist(xmin, xmax, nbins);
+  //
+  // set up histogram for the secondary gamma direction(theta) : log10(1-cos(theta)*0.5)
+  xmin     = -12.;
+  xmax     = 0.5;
+  G4String h2Name  = hname + "gamma_angular.dat";
+  Hist* h2 = new Hist(xmin, xmax, nbins);
+  //
+  // set up a histogram for the post interaction primary e-/e+ energy(E1) : log10(E1/primaryEnergy)
+  xmin     = -12.;
+  xmax     = 0.1;
+  G4String h3Name   = hname + "energy.dat";
+  Hist* h3 = new Hist(xmin, xmax, nbins);
+  //
+  // set up a histogram for the post interaction primary e-/e+ direction(theta) : log10(1-cos(theta)*0.5)
+  xmin     = -16.;
+  xmax     = 0.5;
+  G4String h4Name   =  hname + "angular.dat";
+  Hist* h4 = new Hist(xmin, xmax, nbins);
+
+  // start sampling
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+  G4cout << "   Sampling is running : .........................................................  " << G4endl;
+  // Sampling
+
+  // SB ---------------------------
+  G4double timeInSec = 0.0;
+  G4Timer *timer     = new G4Timer();
+  timer->Start();
+  for (long int iter = 0; iter < numSamples; ++iter) {
+    fParticleChange->InitializeForPostStep(*track);
+    model->SampleSecondaries(&vdp, g4MatCut, &dParticle, gammaCutEnergy, ekin);
+    // if there is any secondary gamma then get it
+    if (vdp.size() > 0) {
+      // reduced gamma energy
+      G4double eGamma = vdp[0]->GetKineticEnergy() / ekin; // k/E_prim
+      if (eGamma > 0.0) {
+        h1->Fill(std::log10(eGamma), 1.0);
+      }
+      G4double costGamma = vdp[0]->GetMomentumDirection().z();
+      costGamma          = 0.5 * (1.0 - costGamma);
+      if (costGamma > 0.0) {
+        costGamma = std::log10(costGamma);
+        if (costGamma > -12.) {
+          h2->Fill(costGamma, 1.0);
+        }
+      }
+      // go for the post interaction primary
+      G4double ePrim = fParticleChange->GetProposedKineticEnergy() / ekin;
+      if (ePrim > 0.0) {
+        ePrim = std::log10(ePrim);
+        if (ePrim > -12.0) {
+          h3->Fill(ePrim, 1.0);
+        }
+      }
+      G4double costPrim = fParticleChange->GetProposedMomentumDirection().z();
+      costPrim          = 0.5 * (1.0 - costPrim);
+      if (costPrim > 0.0) {
+        costPrim = std::log10(costPrim);
+        if (costPrim > -16.) {
+          h4->Fill(costPrim, 1.0);
+        }
+      }
+      delete vdp[0];
+      vdp.clear();
+    }
+  }
+  timer->Stop();
+  timeInSec = timer->GetRealElapsed();
+  delete timer;
+
+  //
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+  G4cout << "   Time of sampling =  " << timeInSec << " [s]" << G4endl;
+  G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
+
+  // --- Write histograms
+  h1->Write(h1Name, 0.25 / numSamples);
+  h2->Write(h2Name, 1.0  / numSamples);
+  h3->Write(h3Name, 0.25 / numSamples);
+  h4->Write(h4Name, 1.0  / numSamples);
+
+
+  delete h1;
+  delete h2;
+  delete h3;
+  delete h4;
+}
+
+
+
+
+
+void G4HepEmSBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool iselectron) {
+  //
+  // Get the maser G4HepEmRunManager (already initialised in the main) then:
+  //  - get the pointer to the global G4HepEmData structure (already initialised)
+  //  - get the pointer to the corresponding G4HepEmTLData
+  const G4HepEmRunManager* theRunMgr    = G4HepEmRunManager::GetMasterRunManager();
+  G4HepEmData*             theHepEmData = theRunMgr->GetHepEmData();
+  G4HepEmTLData*           theTLData    = theRunMgr->GetTheTLData();
+  //
+  // set primary particle related data in the G4HepEmTLData
+  G4HepEmTrack*         thePrimaryTrack = theTLData->GetPrimaryElectronTrack()->GetTrack();
+  double charge      = iselectron ? -1.0 : 1.0;
+  thePrimaryTrack->SetCharge(charge);
+  const double lekin = std::log(ekin);
+  thePrimaryTrack->SetEKin(ekin, lekin);
+  const int    g4IMC = g4MatCut->GetIndex();
+  const int hepEmIMC = theRunMgr->GetHepEmData()->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4IMC];
+  // these two will be updated to the post-interaction values so need to be re-set each time
+  thePrimaryTrack->SetMCIndex(hepEmIMC);
+  thePrimaryTrack->SetDirection(0.0, 0.0, 1.0);
+  //
+  double gammaCutEnergy = theRunMgr->GetHepEmData()->fTheMatCutData->fMatCutData[hepEmIMC].fSecGamProdCutE;
+  //
+  // Create Histograms
+  // - set histo name prefix
+  std::string hname = "brem_SB_G4HepEm_";
+  // set up a histogram for the secondary gamma energy(k) : log10(k/primaryEnergy)
+  int nbins       = numHistBins;
+  double xmin     = std::log10(gammaCutEnergy / ekin);
+  double xmax     = 0.1;
+  std::string h1Name   = hname + "gamma_energy.dat";
+  Hist* h1 = new Hist(xmin, xmax, nbins);
+  //
+  // set up histogram for the secondary gamma direction(theta) : log10(1-cos(theta)*0.5)
+  xmin     = -12.;
+  xmax     = 0.5;
+  std::string h2Name  = hname + "gamma_angular.dat";
+  Hist* h2 = new Hist(xmin, xmax, nbins);
+  //
+  // set up a histogram for the post interaction primary e-/e+ energy(E1) : log10(E1/primaryEnergy)
+  xmin     = -12.;
+  xmax     = 0.1;
+  std::string h3Name   = hname + "energy.dat";
+  Hist* h3 = new Hist(xmin, xmax, nbins);
+  //
+  // set up a histogram for the post interaction primary e-/e+ direction(theta) : log10(1-cos(theta)*0.5)
+  xmin     = -16.;
+  xmax     = 0.5;
+  std::string h4Name   =  hname + "angular.dat";
+  Hist* h4 = new Hist(xmin, xmax, nbins);
+  // start sampling
+  std::cout << "   -------------------------------------------------------------------------------- " << std::endl;
+  std::cout << "   Sampling is running : .........................................................  " << std::endl;
+  // Sampling
+  // SB ---------------------------
+  double timeInSec = 0.0;
+  G4Timer *timer = new G4Timer();
+  timer->Start();
+  for (long int iter = 0; iter < numSamples; ++iter) {
+    thePrimaryTrack->SetEKin(ekin, lekin);
+    thePrimaryTrack->SetDirection(0.0, 0.0, 1.0);
+    // invoke SB brem intercation from G4HepEmElectronInteractionBrem.hh
+    PerformElectronBremSB(theTLData, theHepEmData, iselectron);
+    // get secondary related results (energy, direction) if any
+    const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
+    if (numSecGamma > 0) {
+      G4HepEmTrack* secTrack = theTLData->GetSecondaryGammaTrack(0)->GetTrack();
+      // reduced gamma energy
+      double eGamma = secTrack->GetEKin() / ekin; // k/E_prim
+      if (eGamma > 0.0) {
+        h1->Fill(std::log10(eGamma), 1.0);
+      }
+      double costGamma = secTrack->GetDirection()[2];
+      costGamma        = 0.5 * (1.0 - costGamma);
+      if (costGamma > 0.0) {
+        costGamma = std::log10(costGamma);
+        if (costGamma > -12.) {
+          h2->Fill(costGamma, 1.0);
+        }
+      }
+      // release used secondary track buffer
+      theTLData->ResetNumSecondaryGammaTrack();
+    }
+    // get post-interaction primary related results (energy, direction)
+    double ePrim = thePrimaryTrack->GetEKin() / ekin;
+    if (ePrim > 0.0) {
+      ePrim = std::log10(ePrim);
+      if (ePrim > -12.0) {
+        h3->Fill(ePrim, 1.0);
+      }
+    }
+    double costPrim = thePrimaryTrack->GetDirection()[2];
+    costPrim        = 0.5 * (1.0 - costPrim);
+    if (costPrim > 0.0) {
+      costPrim = std::log10(costPrim);
+      if (costPrim > -16.) {
+        h4->Fill(costPrim, 1.0);
+      }
+    }
+  }
+  timer->Stop();
+  timeInSec = timer->GetRealElapsed();
+  delete timer;
+  //
+  std::cout << "   -------------------------------------------------------------------------------- " << std::endl;
+  std::cout << "   Time of sampling =  " << timeInSec << " [s]" << std::endl;
+  std::cout << "   -------------------------------------------------------------------------------- " << std::endl;
+
+  // --- Write histograms
+  h1->Write(h1Name, 0.25 / numSamples);
+  h2->Write(h2Name, 1.0  / numSamples);
+  h3->Write(h3Name, 0.25 / numSamples);
+  h4->Write(h4Name, 1.0  / numSamples);
+
+
+  delete h1;
+  delete h2;
+  delete h3;
+  delete h4;
+}

@@ -164,9 +164,9 @@ double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, 
   const double       theLogGamCut = theMCData.fLogSecGamCutE;
   const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
   // sample target element
+  const G4HepEmElectronData* theElData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   const int elemIndx = (theMData.fNumOfElement > 1)
-                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
-                                              theLogEkin, rnge->flat(), true)
+                       ? SelectTargetAtomBrem(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), true)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
@@ -270,17 +270,17 @@ double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, 
 
 G4HepEmHostDevice
 double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theMCIndx, G4HepEmRandomEngine* rnge) {
+                             int theMCIndx, G4HepEmRandomEngine* rnge, bool iselectron) {
   const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
   const double          theGamCut = theMCData.fSecGamProdCutE;
 //  const double       theLogGamCut = theMCData.fLogSecGamCutE;
 
   // get the material data
-  const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
+  const G4HepEmMatData&  theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
   // sample target element
+  const G4HepEmElectronData*  theElData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   const int elemIndx = (theMData.fNumOfElement > 1)
-                       ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
-                                              theLogEkin, rnge->flat(), false)
+                       ? SelectTargetAtomBrem(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), false)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
