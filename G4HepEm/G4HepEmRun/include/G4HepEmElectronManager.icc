@@ -158,6 +158,22 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   return false;
 }
 
+bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, struct G4HepEmTrack* theTrack, double rand) {
+  const bool isElectron = (theTrack->GetCharge() < 0.0);
+  const G4HepEmElectronData* elData = isElectron
+                                      ? hepEmData->fTheElectronData
+                                      : hepEmData->fThePositronData;
+  const int iDProc      = theTrack->GetWinnerProcessIndex();
+  const int theIMC      = theTrack->GetMCIndex();
+  const int theMatIndex = hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex;
+  const double theEkin  = theTrack->GetEKin();
+  const double theLEkin = theTrack->GetLogEKin();
+  const double mxsec = (iDProc<2)
+                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
+                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[theMatIndex].fElectronDensity);
+  return mxsec <= 0.0 || rand > mxsec*theTrack->GetMFP(iDProc);
+}
+
 void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
   G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack*   theTrack = theElTrack->GetTrack();
@@ -181,22 +197,14 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   }
   // reset number of interaction left for the winner discrete process
   theTrack->SetNumIALeft(-1.0, iDProc);
+
   // 4/2. check if delta interaction happens instead of the real discrete process
-  // reset here the number of intercation left for the iDProcess
-  const G4HepEmElectronData* elData = isElectron
-                                      ? hepEmData->fTheElectronData
-                                      : hepEmData->fThePositronData;
-  const int theIMC      = theTrack->GetMCIndex();
-  const double theEkin  = theTrack->GetEKin();
-  const double theLEkin = theTrack->GetLogEKin();
-  const double mxsec = (iDProc<2)
-                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
-                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex].fElectronDensity);
-  if (mxsec <= 0.0 || tlData->GetRNGEngine()->flat() > mxsec*theTrack->GetMFP(iDProc)) {
-    // delta interaction happens
+  if (CheckDelta(hepEmData, theTrack, tlData->GetRNGEngine()->flat())) {
     return;
   }
+
   // 4/3. perform the discrete part of the winner interaction
+  const double theEkin = theTrack->GetEKin();
   switch (iDProc) {
     case 0: // invoke ioni (for e-/e+):
             PerformElectronIoni(tlData, hepEmData, isElectron);

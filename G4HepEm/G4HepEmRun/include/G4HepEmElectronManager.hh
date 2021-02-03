@@ -98,6 +98,17 @@ public:
   G4HepEmHostDevice
   bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
 
+  /** Function to check if a delta interaction happens instead of the discrete process.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theTrack pointer to the input information of the track.
+    * @param rand number drawn at random
+    * @return boolean whether a delta interaction happens
+    */
+  G4HepEmHostDevice
+  bool CheckDelta(struct G4HepEmData* hepEmData, struct G4HepEmTrack* theTrack, double rand);
+
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *
     * This functions can be invoked when the particle is propagated to its post-step point to perform all
