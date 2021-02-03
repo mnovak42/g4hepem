@@ -48,7 +48,7 @@ void FreeSBTableDataOnDevice(struct G4HepEmSBTableData** onDEVICE) {
     // copy the on-device data back to host in order to be able to free the device
     // side dynamically allocated memories
     struct G4HepEmSBTableData* onHostTo_d = new G4HepEmSBTableData;
-    gpuErrchk ( cudaMemcpy( onHostTo_d, onDEVICE, sizeof( struct G4HepEmSBTableData ), cudaMemcpyDeviceToHost ) );
+    gpuErrchk ( cudaMemcpy( onHostTo_d, *onDEVICE, sizeof( struct G4HepEmSBTableData ), cudaMemcpyDeviceToHost ) );
     // ELoss data
     cudaFree( onHostTo_d->fGammaCutIndxStartIndexPerMC );
     cudaFree( onHostTo_d->fGammaCutIndices             );
