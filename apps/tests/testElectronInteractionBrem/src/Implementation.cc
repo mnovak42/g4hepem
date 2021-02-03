@@ -30,6 +30,7 @@
 #include "G4TouchableHandle.hh"
 #include "G4TouchableHistory.hh"
 #include "G4SeltzerBergerModel.hh"
+#include "G4eBremsstrahlungRelModel.hh"
 #include "G4ParticleChangeForLoss.hh"
 
 #include "Hist.hh"
@@ -186,7 +187,7 @@ const G4MaterialCutsCouple* FakeG4Setup ( G4double prodCutInLength, const G4Stri
 
 
 
-void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool iselectron) {
+void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool isSBmodel, G4bool iselectron) {
   //
   // --- Get primary particle: e- or e+
   G4Electron::Electron();
@@ -196,9 +197,7 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
     part = G4Electron::Electron();
   }
   //
-  // --- Get the `cuts`
-//  theCuts =
-//  static_cast<const G4DataVector*>(theCoupleTable->GetEnergyCutsVector(idx));
+  // --- Get the `cuts` data vector in energy
   const G4DataVector* cuts = static_cast<const G4DataVector*>(G4ProductionCutsTable::GetProductionCutsTable()->GetEnergyCutsVector(0));
   G4double gammaCutEnergy = (*cuts)[g4MatCut->GetIndex()]; // should be [0]
   //
@@ -210,17 +209,21 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
   //
   // --- Initilize the model
   //  G4EmParameters::Instance()->Dump();
-  // create the G4 SB-brem model and set up
-  G4SeltzerBergerModel bremSB; // SB
-  bremSB.SetBicubicInterpolationFlag(true); // set bspline
-  G4ParticleChangeForLoss *fParticleChange = new G4ParticleChangeForLoss();
-  bremSB.SetParticleChange(fParticleChange, 0);
-  bremSB.Initialise(part, *cuts);
   //
-  G4VEmModel *model = &bremSB;
-//  if (bremModelName == "bremRel") {
-//    model = &bremRel_DB;
-//  }
+  G4VEmModel*                       theModel = nullptr;
+  G4ParticleChangeForLoss* theParticleChange = nullptr;
+  if (isSBmodel) {
+    // create the G4 SB-brem model and set up
+    theModel = new G4SeltzerBergerModel;
+    // bremSB.SetBicubicInterpolationFlag(true);
+  } else {
+    theModel = new G4eBremsstrahlungRelModel;
+  }
+  theParticleChange = new G4ParticleChangeForLoss();
+  theModel->SetParticleChange(theParticleChange, 0);
+  theModel->Initialise(part, *cuts);
+
+
   //
   // --- Create a dynamic particle and track for the pirmay
   G4ThreeVector aPosition  = G4ThreeVector(0.0, 0.0, 0.0);
@@ -248,7 +251,7 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
   G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
   G4cout << "   Kinetic energy =  " << ekin / MeV << "  [MeV] " << G4endl;
   G4cout << "   -------------------------------------------------------------------------------- " << G4endl;
-  G4cout << "   Model name     =  " << model->GetName() << G4endl;
+  G4cout << "   Model name     =  " << theModel->GetName() << G4endl;
 
   // --- Prepare histograms:
   //
@@ -293,8 +296,8 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
   G4Timer *timer     = new G4Timer();
   timer->Start();
   for (long int iter = 0; iter < numSamples; ++iter) {
-    fParticleChange->InitializeForPostStep(*track);
-    model->SampleSecondaries(&vdp, g4MatCut, &dParticle, gammaCutEnergy, ekin);
+    theParticleChange->InitializeForPostStep(*track);
+    theModel->SampleSecondaries(&vdp, g4MatCut, &dParticle, gammaCutEnergy, ekin);
     // if there is any secondary gamma then get it
     if (vdp.size() > 0) {
       // reduced gamma energy
@@ -311,14 +314,14 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
         }
       }
       // go for the post interaction primary
-      G4double ePrim = fParticleChange->GetProposedKineticEnergy() / ekin;
+      G4double ePrim = theParticleChange->GetProposedKineticEnergy() / ekin;
       if (ePrim > 0.0) {
         ePrim = std::log10(ePrim);
         if (ePrim > -12.0) {
           h3->Fill(ePrim, 1.0);
         }
       }
-      G4double costPrim = fParticleChange->GetProposedMomentumDirection().z();
+      G4double costPrim = theParticleChange->GetProposedMomentumDirection().z();
       costPrim          = 0.5 * (1.0 - costPrim);
       if (costPrim > 0.0) {
         costPrim = std::log10(costPrim);
@@ -356,7 +359,7 @@ void G4SBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numS
 
 
 
-void G4HepEmSBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool iselectron) {
+void G4HepEmSBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double numSamples, G4int numHistBins, G4bool isSBmodel, G4bool iselectron) {
   //
   // Get the maser G4HepEmRunManager (already initialised in the main) then:
   //  - get the pointer to the global G4HepEmData structure (already initialised)
@@ -418,7 +421,11 @@ void G4HepEmSBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double
     thePrimaryTrack->SetEKin(ekin, lekin);
     thePrimaryTrack->SetDirection(0.0, 0.0, 1.0);
     // invoke SB brem intercation from G4HepEmElectronInteractionBrem.hh
-    PerformElectronBremSB(theTLData, theHepEmData, iselectron);
+    if (isSBmodel) {
+      PerformElectronBremSB(theTLData, theHepEmData, iselectron);
+    } else {
+      PerformElectronBremRB(theTLData, theHepEmData, iselectron);
+    }
     // get secondary related results (energy, direction) if any
     const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
     if (numSecGamma > 0) {

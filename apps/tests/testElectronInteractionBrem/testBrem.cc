@@ -1,38 +1,49 @@
 
 #include "Declaration.hh"
 
+#include "TestBremArgs.hh"
+
 // G4 includes
 #include "globals.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "CLHEP/Random/RandomEngine.h"
 #include "G4MaterialCutsCouple.hh"
-#include "G4SeltzerBergerModel.hh"
-
-// #include "G4ProductionCutsTable.hh"
 
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
 
-int main() {
+int main(int argc, char *argv[]) {
   int verbose = 1;
-  //
-  // --- Set up a fake G4 geometry with including all pre-defined NIST materials
-  //     to produce the G4MaterialCutsCouple objects.
-  //
-  // secondary production threshold in length
-  const G4double secProdThreshold = 0.7*mm;
-  const G4double ekin             = 245.6*MeV;
-  const G4double numSamples       = 1.0E+8;
-  const G4int    numHistBins      = 100;
 
-  // SB-brem is used below 1 GeV primary energy
+  //
+  // --- Get input arguments
+  struct BremArgs theArgs;
+  GetBremArgs(argc, argv, theArgs);
+  //
+  const bool        theIsElectron         = (theArgs.fParticleName == "e-");
+  const std::string theTargetMaterialName = theArgs.fMaterialName;
+  const std::string theBremModelName      = theArgs.fBremModelName;
+  const int         theTestType           = theArgs.fTestType;
+  const int         theNumHistBins        = theArgs.fNumHistBins;
+  const double      theNumSamples         = theArgs.fNumSamples;
+  const double      thePrimaryKinEnergy   = theArgs.fPrimaryEnergy;
+  const double      theSecondaryProdCut   = theArgs.fProdCutValue;
 
-  const G4MaterialCutsCouple* g4MatCut = FakeG4Setup (secProdThreshold, "G4_CONCRETE", verbose);
+  //
+  // --- Set up a fake G4 geometry with including:
+  //       - test type = 0 or 1 :  the single pre-defined NIST material specified as target
+  //       - test type = 2      :  all pre-defined NIST materials
+  //     to produce the corresponding G4MaterialCutsCouple object(s).
+  const G4MaterialCutsCouple* theG4MatCut = nullptr;
+  if (theTestType < 2) {
+      theG4MatCut = FakeG4Setup (theSecondaryProdCut, theTargetMaterialName, verbose);
+  } else {
+      FakeG4Setup (theSecondaryProdCut, verbose);
+  }
   // print out all material-cuts (needs the G4ProductionCutsTable.hh include)
 //  G4ProductionCutsTable* theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
 //  theCoupleTable->DumpCouples();
-
 
   //
   // --- Initialise the `global` data structures of G4HepEm:
@@ -46,21 +57,38 @@ int main() {
   //       extracted from the already initialized Geant4 obejcts such as G4ProductionCutsTable
   //
   //     Therefore, here we create a `master` G4HepEmRunManager and call its Initialize()
-  //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
-  int g4HepEmParticleIndx = 1; // e-: 0; e+: 1;
-  G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  runMgr->Initialize ( G4Random::getTheEngine(), g4HepEmParticleIndx );
-
-
-  G4SBTest(g4MatCut, ekin, numSamples, numHistBins, g4HepEmParticleIndx==0);
-//  G4HepEmSBTest(g4MatCut, ekin, numSamples, numHistBins, g4HepEmParticleIndx==0);
+  //     method for e- or e+ (regarding the global data, it could be any of e-: 0; e+: 1; or gamma: 2).
+  G4HepEmRunManager*  runMgr = nullptr;
+  if (theTestType !=1 ) {
+    int theG4HepEmParticleIndx = theIsElectron ? 0 : 1; // e-: 0; e+: 1;
+    runMgr = new G4HepEmRunManager ( true );
+    runMgr->Initialize ( G4Random::getTheEngine(), theG4HepEmParticleIndx );
+  }
 
   //
-  // --- Make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)
+  // --- Final state generation by using either the:
+  //     - test type = 0: the G4HepEm interaction
+  //     - test type = 1: the native Geant4 interaction model
+  //     or if G4HepEm was built with CUDA support (-DG4HepEm_CUDA_BUILD=ON)
+  //     - test type = 2: simple G4HepEm SB sampling table data host v.s device consistency check
   //
+  switch (theTestType) {
+      case 0:
+          std::cout << " --- Final state test using the G4HepEm `" << theBremModelName << "` interaction model." << std::endl;
+          G4HepEmSBTest(theG4MatCut, thePrimaryKinEnergy, theNumSamples, theNumHistBins, theBremModelName=="bremSB", theIsElectron);
+          break;
+      case 1:
+          std::cout << " --- Final state test using the Geant4 `" << theBremModelName << "` interaction model." << std::endl;
+          G4SBTest(theG4MatCut, thePrimaryKinEnergy, theNumSamples, theNumHistBins, theBremModelName=="bremSB", theIsElectron);
+          break;
+      default:
 #ifdef G4HepEm_CUDA_BUILD
-  CopyG4HepEmDataToGPU ( runMgr->GetHepEmData() );
+          // make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)
+          CopyG4HepEmDataToGPU ( runMgr->GetHepEmData() );
+          // invoke the SBTableDataTest
 #endif // G4HepEm_CUDA_BUILD
+     }
+
 
 /*
   //
