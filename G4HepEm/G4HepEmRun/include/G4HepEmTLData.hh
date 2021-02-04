@@ -5,10 +5,9 @@
 
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmGammaTrack.hh"
+#include "G4HepEmRandomEngine.hh"
 
-// g4: CLHEP include
-#include "CLHEP/Random/RandomEngine.h"
-
+#include <vector>
 
 /**
  * @file    G4HepEmTLData.hh
@@ -42,8 +41,8 @@ public:
   
  ~G4HepEmTLData();
   
-  void SetRandomEngine(CLHEP::HepRandomEngine* rnge) {fRNGEngine = rnge; }
-  CLHEP::HepRandomEngine* GetRNGEngine() { return fRNGEngine; }
+  void SetRandomEngine(G4HepEmRandomEngine* rnge) { fRNGEngine = rnge; }
+  G4HepEmRandomEngine* GetRNGEngine() { return fRNGEngine; }
   
   G4HepEmElectronTrack* GetPrimaryElectronTrack()   { return &fElectronTrack; }
   G4HepEmElectronTrack* AddSecondaryElectronTrack() { 
@@ -73,7 +72,7 @@ public:
 private:  
   
   // needs to set to point to the RNG engine of the thread
-  CLHEP::HepRandomEngine*            fRNGEngine;
+  G4HepEmRandomEngine*               fRNGEngine;
   
   std::size_t                        fNumSecondaryElectronTracks;
   G4HepEmElectronTrack               fElectronTrack;

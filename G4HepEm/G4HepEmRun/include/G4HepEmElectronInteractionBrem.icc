@@ -37,15 +37,136 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   const int             theMCIndx = thePrimaryTrack->GetMCIndex();
   const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
   const double          theGamCut = theMCData.fSecGamProdCutE;
-  const double       theLogGamCut = theMCData.fLogSecGamCutE;
   // return if intercation is not possible (should not happen)
   if (thePrimEkin <= theGamCut) return;
-  // get the material data
+  //
+  // == Sampling of the emitted photon energy
+  //
+   double eGamma = SampleETransferBremSB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
+
+   //
+   // sample photon direction (modified Tsai sampling):
+   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
+   double rndm3[3];
+   double u;
+   do {
+     tlData->GetRNGEngine()->flatArray(3, rndm3);
+     const double uu = -std::log(rndm3[0]*rndm3[1]);
+     u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
+   } while (u > uMax);
+   const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
+   const double sint = std::sqrt((1.0-cost)*(1.0+cost));
+   const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
+   // create secondary photon
+   G4HepEmTrack*         secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
+   secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
+   double* theSecondaryDirection = secTrack->GetDirection();
+   double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
+   // rotate back to refernce frame (G4HepEmRunUtils function)
+   RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
+   secTrack->SetEKin(eGamma);
+   secTrack->SetParentID(thePrimaryTrack->GetID());
+
+   //
+   //
+   // compute post-interaction kinematics of the primary e-/e+
+   const double primETot = thePrimEkin + kElectronMassC2;
+   const double primPTot = std::sqrt(thePrimEkin * (primETot + kElectronMassC2));
+   double elDirX = primPTot * thePrimaryDirection[0] - eGamma * theSecondaryDirection[0];
+   double elDirY = primPTot * thePrimaryDirection[1] - eGamma * theSecondaryDirection[1];
+   double elDirZ = primPTot * thePrimaryDirection[2] - eGamma * theSecondaryDirection[2];
+   // normalisation
+   const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
+   // update primary track direction
+   thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
+   // update primary track kinetic energy
+   thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
+   // NOTE: the following usually set to very high energy so I don't include this.
+   // if secondary gamma energy is higher than threshold(very high by default)
+   // then stop tracking the primary particle and create new secondary e-/e+
+   // instead of the primary
+}
+
+
+// Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
+// such as screening and Coulomb corrections, emission in the field of the atomic
+// electrons and LPM suppression.
+// Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
+void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
+  //
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
+  //
+  double              thePrimEkin = thePrimaryTrack->GetEKin();
+  const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
+  const int             theMCIndx = thePrimaryTrack->GetMCIndex();
+  const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
+  const double          theGamCut = theMCData.fSecGamProdCutE;
+//  const double       theLogGamCut = theMCData.fLogSecGamCutE;
+
+  // return if intercation is not possible (should not happen)
+  if (thePrimEkin <= theGamCut) return;
+
+  //
+  // == Sampling of the emitted photon energy
+  //
+  double eGamma = SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine());
+
+  //
+  // sample photon direction (modified Tsai sampling):
+  const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
+  double rndm3[3];
+  double u;
+  do {
+    tlData->GetRNGEngine()->flatArray(3, rndm3);
+    const double uu = -std::log(rndm3[0]*rndm3[1]);
+    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
+  } while (u > uMax);
+  const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
+  const double sint = std::sqrt((1.0-cost)*(1.0+cost));
+  const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
+  // create secondary photon
+  G4HepEmTrack*        secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
+  secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
+  double* theSecondaryDirection = secTrack->GetDirection();
+  double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
+  // rotate back to refernce frame (G4HepEmRunUtils function)
+  RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
+  secTrack->SetEKin(eGamma);
+  secTrack->SetParentID(thePrimaryTrack->GetID());
+
+  //
+  //
+  // compute post-interaction kinematics of the primary e-/e+
+  const double thePrimTotalE = thePrimEkin + kElectronMassC2;
+  const double primPTot = std::sqrt( thePrimEkin * (thePrimTotalE + kElectronMassC2) );
+  double elDirX = primPTot * thePrimaryDirection[0] - eGamma * theSecondaryDirection[0];
+  double elDirY = primPTot * thePrimaryDirection[1] - eGamma * theSecondaryDirection[1];
+  double elDirZ = primPTot * thePrimaryDirection[2] - eGamma * theSecondaryDirection[2];
+  // normalisation
+  const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
+  // update primary track direction
+  thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
+  // update primary track kinetic energy
+  thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
+  // NOTE: the following usually set to very high energy so I don't include this.
+  // if secondary gamma energy is higher than threshold(very high by default)
+  // then stop tracking the primary particle and create new secondary e-/e+
+  // instead of the primary
+}
+
+
+G4HepEmHostDevice
+double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                             int theMCIndx, G4HepEmRandomEngine* rnge, bool iselectron) {
+  const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
+  const double          theGamCut = theMCData.fSecGamProdCutE;
+  const double       theLogGamCut = theMCData.fLogSecGamCutE;
   const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
   // sample target element
   const int elemIndx = (theMData.fNumOfElement > 1)
                        ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
-                                              theLogEkin, tlData->GetRNGEngine()->flat(), true)
+                                              theLogEkin, rnge->flat(), true)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
@@ -75,7 +196,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
       isCorner = true;
     }
     //
-    if (tlData->GetRNGEngine()->flat()<pIndxH) {
+    if (rnge->flat()<pIndxH) {
       ++elEnergyIndx;      // take the table at the higher e- energy bin
     } else if (isCorner) { // take the table at the lower  e- energy bin
       // special sampling need to be done if lower edge e- energy < gam-gut:
@@ -98,14 +219,13 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   const double lKTrans = (theLogGamCut-theLogEkin)/(theLogGamCut-theSBTables->fLElEnergyVect[elEnergyIndx]);
   // dielectric (always) and e+ correction suppressions (if the primary is e+)
   const double primETot = thePrimEkin + kElectronMassC2;
-  const double primPTot = std::sqrt(thePrimEkin * (primETot + kElectronMassC2));
   const double dielSupConst = theMData.fDensityCorFactor*primETot*primETot;
   double suppression = 1.0;
   double rndm[2];
   // rejection loop starts here (rejection only for the diel-supression)
   double eGamma = 0.0;
   do {
-    tlData->GetRNGEngine()->flatArray(2, rndm);
+    rnge->flatArray(2, rndm);
     double kappa = 1.0;
     if (!isSimply) {
       const double cumRV  = rndm[0]*(1.0-minV)+minV;
@@ -145,73 +265,22 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
        suppression = (dum > -12.) ? suppression*std::exp(dum) : 0.;
      }
    } while (rndm[1] > suppression);
-   // end of rejection loop: the photon energy is `eGamma`
-   //
-   // sample photon direction (modified Tsai sampling):
-   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
-   double rndm3[3];
-   double u;
-   do {
-     tlData->GetRNGEngine()->flatArray(3, rndm3);
-     const double uu = -std::log(rndm3[0]*rndm3[1]);
-     u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
-   } while (u > uMax);
-   const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
-   const double sint = std::sqrt((1.0-cost)*(1.0+cost));
-   const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
-   // create secondary photon
-   G4HepEmTrack*         secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
-   secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
-   double* theSecondaryDirection = secTrack->GetDirection();
-   double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
-   // rotate back to refernce frame (G4HepEmRunUtils function)
-   RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
-   secTrack->SetEKin(eGamma);
-   secTrack->SetParentID(thePrimaryTrack->GetID());
-
-   //
-   //
-   // compute post-interaction kinematics of the primary e-/e+
-   double elDirX = primPTot * thePrimaryDirection[0] - eGamma * theSecondaryDirection[0];
-   double elDirY = primPTot * thePrimaryDirection[1] - eGamma * theSecondaryDirection[1];
-   double elDirZ = primPTot * thePrimaryDirection[2] - eGamma * theSecondaryDirection[2];
-   // normalisation
-   const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
-   // update primary track direction
-   thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
-   // update primary track kinetic energy
-   thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
-   // NOTE: the following usually set to very high energy so I don't include this.
-   // if secondary gamma energy is higher than threshold(very high by default)
-   // then stop tracking the primary particle and create new secondary e-/e+
-   // instead of the primary
+   return eGamma;
 }
 
-
-// Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
-// such as screening and Coulomb corrections, emission in the field of the atomic
-// electrons and LPM suppression.
-// Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
-  //
-  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
-  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
-  //
-  double              thePrimEkin = thePrimaryTrack->GetEKin();
-  const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
-  const int             theMCIndx = thePrimaryTrack->GetMCIndex();
+G4HepEmHostDevice
+double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                             int theMCIndx, G4HepEmRandomEngine* rnge) {
   const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
   const double          theGamCut = theMCData.fSecGamProdCutE;
 //  const double       theLogGamCut = theMCData.fLogSecGamCutE;
 
-  // return if intercation is not possible (should not happen)
-  if (thePrimEkin <= theGamCut) return;
   // get the material data
   const G4HepEmMatData& theMData  = hepEmData->fTheMaterialData->fMaterialData[theMCData.fHepEmMatIndex];
   // sample target element
   const int elemIndx = (theMData.fNumOfElement > 1)
                        ? SelectTargetAtomBrem(hepEmData->fTheElectronData, theMCIndx, thePrimEkin,
-                                              theLogEkin, tlData->GetRNGEngine()->flat(), false)
+                                              theLogEkin, rnge->flat(), false)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
@@ -240,7 +309,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   double rndm[2];
   double eGamma, funcVal;
   do {
-    tlData->GetRNGEngine()->flatArray(2, rndm);
+    rnge->flatArray(2, rndm);
     eGamma = std::sqrt( G4HepEmMax( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
     // evaluate the DCS at this emitted gamma energy
     const double y     = eGamma / thePrimTotalE;
@@ -277,47 +346,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
     }
     funcVal = G4HepEmMax( 0.0, funcVal);
   } while ( funcVal < rejFuncMax * rndm[1] );
-  // end of rejection loop: the photon energy is `eGamma`
-  //
-  // sample photon direction (modified Tsai sampling):
-  const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
-  double rndm3[3];
-  double u;
-  do {
-    tlData->GetRNGEngine()->flatArray(3, rndm3);
-    const double uu = -std::log(rndm3[0]*rndm3[1]);
-    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
-  } while (u > uMax);
-  const double cost = 1.0 - 2.0*u*u/(uMax*uMax);
-  const double sint = std::sqrt((1.0-cost)*(1.0+cost));
-  const double  phi = k2Pi*tlData->GetRNGEngine()->flat();
-  // create secondary photon
-  G4HepEmTrack*        secTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
-  secTrack->SetDirection(sint * std::cos(phi), sint * std::sin(phi), cost);
-  double* theSecondaryDirection = secTrack->GetDirection();
-  double* thePrimaryDirection   = thePrimaryTrack->GetDirection();
-  // rotate back to refernce frame (G4HepEmRunUtils function)
-  RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
-  secTrack->SetEKin(eGamma);
-  secTrack->SetParentID(thePrimaryTrack->GetID());
-
-  //
-  //
-  // compute post-interaction kinematics of the primary e-/e+
-  const double primPTot = std::sqrt( thePrimEkin * (thePrimTotalE + kElectronMassC2) );
-  double elDirX = primPTot * thePrimaryDirection[0] - eGamma * theSecondaryDirection[0];
-  double elDirY = primPTot * thePrimaryDirection[1] - eGamma * theSecondaryDirection[1];
-  double elDirZ = primPTot * thePrimaryDirection[2] - eGamma * theSecondaryDirection[2];
-  // normalisation
-  const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
-  // update primary track direction
-  thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
-  // update primary track kinetic energy
-  thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
-  // NOTE: the following usually set to very high energy so I don't include this.
-  // if secondary gamma energy is higher than threshold(very high by default)
-  // then stop tracking the primary particle and create new secondary e-/e+
-  // instead of the primary
+  return eGamma;
 }
 
 

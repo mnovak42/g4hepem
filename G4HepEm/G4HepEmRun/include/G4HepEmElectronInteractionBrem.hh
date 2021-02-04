@@ -5,6 +5,7 @@
 #include "G4HepEmMacros.hh"
 
 class  G4HepEmTLData;
+class  G4HepEmRandomEngine;
 struct G4HepEmData;
 struct G4HepEmElectronData;
 
@@ -25,6 +26,18 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData);
 
 
+// Sampling of the energy transferred to the emitted photon using the numerical
+// Seltzer-Berger DCS.
+G4HepEmHostDevice
+double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                             int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
+
+// Sampling of the energy transferred to the emitted photon using the Bethe-Heitler
+// DCS.
+G4HepEmHostDevice
+double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                             int theIMCIndx, G4HepEmRandomEngine* rnge);
+
 
 // Target atom selector for the above bremsstrahlung intercations in case of
 // materials composed from multiple elements.
@@ -34,14 +47,17 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
 
 // Simple linear search (with step of 3!) used in the photon energy sampling part
 // of the SB (Seltzer-Berger) brem model.
+G4HepEmHostDevice
 int LinSearch(const double* vect, const int size, const double val);
 
 
+G4HepEmHostDevice
 void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS, const double egamma,
                      const double etotal, const double elpm, const double z23,
                      const double ilVarS1, const double ilVarS1Cond, const double densityCor);
 
 // LPM functions G(s) and Phi(s) over an s-value grid of: ds=0.05 on [0:2.0] (2x41)
+G4HepEmHostDeviceConstant
 const double kFuncLPM[] = {
   0.0000E+00, 0.0000E+00,  6.9163E-02, 2.5747E-01,  2.0597E-01, 4.4573E-01,
   3.5098E-01, 5.8373E-01,  4.8095E-01, 6.8530E-01,  5.8926E-01, 7.6040E-01,

@@ -7,6 +7,7 @@
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmTLData.hh"
 #include "G4HepEmRunManager.hh"
+#include "G4HepEmCLHEPRandomEngine.hh"
 
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmGammaTrack.hh"
@@ -25,19 +26,20 @@
 #include "G4Positron.hh"
 #include "G4Gamma.hh"
 
-
 G4HepEmProcess::G4HepEmProcess() 
 : G4VProcess("hepEm", fElectromagnetic), 
   fTheG4HepEmRunManager(nullptr) {
   enableAtRestDoIt    = false;
   enablePostStepDoIt  = false;
   
-  fTheG4HepEmRunManager  = new G4HepEmRunManager(G4Threading::IsMasterThread());  
-  fParticleChangeForLoss = new G4ParticleChangeForLoss();
+  fTheG4HepEmRunManager   = new G4HepEmRunManager(G4Threading::IsMasterThread());
+  fTheG4HepEmRandomEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
+  fParticleChangeForLoss  = new G4ParticleChangeForLoss();
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
   delete fTheG4HepEmRunManager;
+  delete fTheG4HepEmRandomEngine;
 }
 
 
@@ -50,11 +52,11 @@ void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
   //fTheG4HepEmRunManager->Initialize(G4Random::getTheEngine());
   
   if (partDef.GetPDGEncoding()==11) {          // e- 
-    fTheG4HepEmRunManager->Initialize(G4Random::getTheEngine(), 0);
+    fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 0);
   } else if (partDef.GetPDGEncoding()==-11) {  // e+ 
-    fTheG4HepEmRunManager->Initialize(G4Random::getTheEngine(), 1);
+    fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 1);
   } else if (partDef.GetPDGEncoding()==22) {   // gamma  
-    fTheG4HepEmRunManager->Initialize(G4Random::getTheEngine(), 2);
+    fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 2);
   } else {
     std::cerr << " **** ERROR in G4HepEmProcess::BuildPhysicsTable: unknown particle " << std::endl;
     exit(-1); 

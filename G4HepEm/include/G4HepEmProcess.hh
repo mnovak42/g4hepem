@@ -6,6 +6,7 @@
 #include "G4VProcess.hh"
 
 class  G4HepEmRunManager;  
+class  G4HepEmRandomEngine;
 
 class  G4ParticleChangeForLoss;
 
@@ -103,6 +104,7 @@ public:
 private:
   // the top level interface to the G4HepEm functionalities  
   G4HepEmRunManager*       fTheG4HepEmRunManager;
+  G4HepEmRandomEngine*     fTheG4HepEmRandomEngine;
 
   G4ParticleChangeForLoss* fParticleChangeForLoss;
 

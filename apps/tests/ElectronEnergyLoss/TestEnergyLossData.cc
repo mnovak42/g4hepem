@@ -5,11 +5,11 @@
 #include "globals.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
-#include "CLHEP/Random/RandomEngine.h"
 
 
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
+#include "G4HepEmCLHEPRandomEngine.hh"
 
 int main() {
   int verbose = 1;
@@ -39,7 +39,8 @@ int main() {
   //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
   int g4HepEmParticleIndx = 0; // e-
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  runMgr->Initialize ( G4Random::getTheEngine(), g4HepEmParticleIndx );
+  G4HepEmCLHEPRandomEngine* rng = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
+  runMgr->Initialize ( rng, g4HepEmParticleIndx );
   
   
   //

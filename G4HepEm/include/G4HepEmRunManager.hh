@@ -13,11 +13,7 @@ class  G4HepEmTLData;
 class  G4HepEmElectronManager;
 class  G4HepEmGammaManager;
 
-// Geant4 CLHEP::HepRandomEngine
-namespace CLHEP {
-  class HepRandomEngine;
-}
-
+class  G4HepEmRandomEngine;
 
 #include <vector>
 
@@ -77,7 +73,7 @@ public:
    *   its random engine pointer to the corresponding geant4, thread local random 
    *   engine pointer.
    */
-  void Initialize (CLHEP::HepRandomEngine* theRNGEngine, int hepEmParticleIndx);
+  void Initialize (G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx);
 
    
   /** 
