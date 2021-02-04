@@ -13,9 +13,7 @@
 #include "G4HepEmElectronInit.hh"
 #include "G4HepEmElectronManager.hh"
 
-// g4 includes
-#include "Randomize.hh"
-#include "CLHEP/Random/RandomEngine.h"
+#include "G4HepEmRandomEngine.hh"
 
 
 #include <iostream>
@@ -88,7 +86,7 @@ void G4HepEmRunManager::InitializeGlobal() {
   }
 }
 
-void G4HepEmRunManager::Initialize(CLHEP::HepRandomEngine* theRNGEngine, int hepEmParticleIndx) {
+void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx) {
   if (fIsMaster) {
     //
     // Build the global data structures (material-cuts, material, element data and
