@@ -2,6 +2,7 @@
 #include "G4HepEmElectronInteractionIoni.hh"
 
 #include "G4HepEmTLData.hh"
+#include "G4HepEmRandomEngine.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmMatCutData.hh"
 
@@ -29,8 +30,8 @@ void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
   const double elInitETot = thePrimEkin + kElectronMassC2;
   const double elInitPTot = std::sqrt(thePrimEkin * (elInitETot + kElectronMassC2));
   const double  deltaEkin = (iselectron) 
-                            ? SampleETransferMoller(theElCut, thePrimEkin, tlData) 
-                            : SampleETransferBhabha(theElCut, thePrimEkin, tlData);
+                            ? SampleETransferMoller(theElCut, thePrimEkin, tlData->GetRNGEngine()) 
+                            : SampleETransferBhabha(theElCut, thePrimEkin, tlData->GetRNGEngine());
   const double deltaPTot = std::sqrt(deltaEkin * (deltaEkin + 2.0 * kElectronMassC2));
   const double      cost = deltaEkin * (elInitETot + kElectronMassC2) / (deltaPTot * elInitPTot);
   // check cosTheta limit
@@ -63,7 +64,7 @@ void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
 }
 
 
-double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmTLData* tlData) {
+double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
   const double tmax    = 0.5*primEkin;
   const double xmin    = tmin / primEkin;
@@ -80,7 +81,7 @@ double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmT
   double rndArray[2];
   double deltaEkin  = 0.;
   do {
-    tlData->GetRNGEngine()->flatArray(2, rndArray);
+    rnge->flatArray(2, rndArray);
     deltaEkin       = xminmax / (xmin * (1.0 - rndArray[0]) + xmax * rndArray[0]);
     const double xx = 1.0 - deltaEkin;
     dum             = 1.0 - gg * deltaEkin + deltaEkin * deltaEkin * (1.0 - gg + (1.0 - gg * xx) / (xx * xx));
@@ -88,7 +89,7 @@ double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmT
   return deltaEkin * primEkin;
 }
 
-double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmTLData* tlData) {
+double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
   const double tmax    = primEkin;
   const double xmin    = tmin / primEkin;
@@ -113,7 +114,7 @@ double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmT
   double rndArray[2];
   double deltaEkin  = 0.;
   do {
-    tlData->GetRNGEngine()->flatArray(2, rndArray);
+    rnge->flatArray(2, rndArray);
     deltaEkin       = xminmax / (xmin * (1.0 - rndArray[0]) + xmax * rndArray[0]);
     const double xx = deltaEkin * deltaEkin;
     dum             = 1.0 + (xx * xx * b4 - deltaEkin * xx * b3 + xx * b2 - deltaEkin * b1) * beta2;

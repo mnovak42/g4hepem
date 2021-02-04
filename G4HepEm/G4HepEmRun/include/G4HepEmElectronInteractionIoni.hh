@@ -2,7 +2,10 @@
 #ifndef G4HepEmElectronInteractionIoni_HH
 #define G4HepEmElectronInteractionIoni_HH
 
+#include "G4HepEmMacros.hh"
+
 class  G4HepEmTLData;
+class  G4HepEmRandomEngine;
 struct G4HepEmData;
 
 
@@ -12,9 +15,11 @@ void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
 
 // Sampling of the energy transferred to the secondary electron in case of e- 
 // primary i.e. in case of Moller interaction.
-double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmTLData* tlData);
+G4HepEmHostDevice
+double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge);
 // Sampling of the energy transferred to the secondary electron in case of e+ 
 // primary i.e. in case of Bhabha interaction.
-double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmTLData* tlData);
+G4HepEmHostDevice
+double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge);
 
 #endif // G4HepEmElectronInteractionIoni_HH
