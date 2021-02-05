@@ -98,19 +98,5 @@ int main(int argc, char *argv[]) {
 #endif // G4HepEm_CUDA_BUILD
      }
 
-
-/*
-  //
-  // --- Invoke the test for Restricted Macroscopic Cross Section structure test(s):
-  if ( !TestXSectionData ( runMgr->GetHepEmData(), g4HepEmParticleIndx==0 ) ) {
-    return 1;
-  } else if ( verbose > 0 ) {
-#ifdef G4HepEm_CUDA_BUILD
-    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST v.s. DEVICE) \n" << std::endl;
-#else   // G4HepEm_CUDA_BUILD
-    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST) \n" << std::endl;
-#endif  // G4HepEm_CUDA_BUILD
-  }
-*/
   return 0;
 }
