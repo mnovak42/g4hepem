@@ -211,11 +211,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
             PerformElectronIoni(tlData, hepEmData, isElectron);
             break;
     case 1: // invoke brem (for e-/e+): either SB- or Rel-Brem
-            if (theEkin < hepEmPars->fElectronBremModelLim) {
-              PerformElectronBremSB(tlData, hepEmData, isElectron);
-            } else {
-              PerformElectronBremRB(tlData, hepEmData, isElectron);
-            }
+            PerformElectronBrem(tlData, hepEmData, isElectron, theEkin < hepEmPars->fElectronBremModelLim);
             break;
     case 2: // invoke annihilation (in-flight) for e+
             PerformPositronAnnihilation(tlData, false);

@@ -20,14 +20,17 @@
 //#include <iostream>
 
 
-// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the
-// emitted photon energy.
-// Used between 1 keV - 1 GeV primary e-/e+ kinetic energies.
-// NOTE: the core part i.e. sampling the emitted photon energy is different than
-//       that in the G4SeltzerBergerModel. I implemented here my rejection free,
-//       memory effcicient (tables only per Z and not per mat-cuts) sampling.
-//       Rejection is used only to account dielectric supression and e+ correction.
-void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
+// Bremsstrahlung interaction based on:
+// 1. SB: - the numerical Seltzer-Berger DCS for the emitted photon energy.
+//        - used between 1 keV - 1 GeV primary e-/e+ kinetic energies.
+//        NOTE: the core part i.e. sampling the emitted photon energy is different than
+//          that in the G4SeltzerBergerModel. I implemented here my rejection free,
+//          memory effcicient (tables only per Z and not per mat-cuts) sampling.
+//          Rejection is used only to account dielectric supression and e+ correction.
+// 2. RB: - the Bethe-Heitler DCS with modifications such as screening and Coulomb
+//          corrections, emission in the field of the atomic electrons and LPM suppression.
+//          Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
+void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron, bool isSBmodel) {
   //
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
@@ -41,48 +44,9 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
   if (thePrimEkin <= theGamCut) return;
   //
   // == Sampling of the emitted photon energy
-  const double eGamma = SampleETransferBremSB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
-  // get a secondary photon track and sample directions (all will be already in lab. frame)
-  G4HepEmTrack* theSecTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
-  double*    theSecGammaDir = theSecTrack->GetDirection();
-  double*    thePrimElecDir = thePrimaryTrack->GetDirection();
-  //
-  // == Sampling of the emitted photon and post interaction e-/e+ directions
-  SampleDirections(thePrimEkin, eGamma, theSecGammaDir, thePrimElecDir, tlData->GetRNGEngine());
-  //
-  // == Update primary and set secondary gamma track properties
-  //    note: the directions are already set in SampleDirections
-  thePrimaryTrack->SetEKin(thePrimEkin - eGamma);
-  theSecTrack->SetEKin(eGamma);
-  theSecTrack->SetParentID(thePrimaryTrack->GetID());
-  // NOTE: the following usually set to very high energy so I don't include this.
-  // if secondary gamma energy is higher than threshold(very high by default)
-  // then stop tracking the primary particle and create new secondary e-/e+
-  // instead of the primary
-}
-
-
-// Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
-// such as screening and Coulomb corrections, emission in the field of the atomic
-// electrons and LPM suppression.
-// Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
-  //
-  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
-  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
-  //
-  double              thePrimEkin = thePrimaryTrack->GetEKin();
-  const double        theLogEkin  = thePrimaryTrack->GetLogEKin();
-  const int             theMCIndx = thePrimaryTrack->GetMCIndex();
-  const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
-  const double          theGamCut = theMCData.fSecGamProdCutE;
-//  const double       theLogGamCut = theMCData.fLogSecGamCutE;
-
-  // return if intercation is not possible (should not happen)
-  if (thePrimEkin <= theGamCut) return;
-  //
-  // == Sampling of the emitted photon energy
-  double eGamma = SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
+  const double eGamma = isSBmodel
+                        ? SampleETransferBremSB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron)
+                        : SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
   // get a secondary photon track and sample directions (all will be already in lab. frame)
   G4HepEmTrack* theSecTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
   double*    theSecGammaDir = theSecTrack->GetDirection();

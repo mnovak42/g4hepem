@@ -10,20 +10,17 @@ struct G4HepEmData;
 struct G4HepEmElectronData;
 
 
-// Bremsstrahlung interaction based on the numerical Seltzer-Berger DCS for the
-// emitted photon energy.
-// Used between 100 eV - 1 GeV primary e-/e+ kinetic energies.
-// NOTE: the core part i.e. sampling the emitted photon energy is different than
-//       that in the G4SeltzerBergerModel. I implemented here my rejection free,
-//       memory effcicient (tables only per Z and not per mat-cuts) sampling.
-//       Rejection is used only to account dielectric supression and e+ correction.
-void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron);
-
-// Bremsstrahlung interaction based on the Bethe-Heitler DCS with modifications
-// such as screening and Coulomb corrections, emission in the field of the atomic
-// electrons and LPM suppression.
-// Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron);
+// Bremsstrahlung interaction based on:
+// 1. SB: - the numerical Seltzer-Berger DCS for the emitted photon energy.
+//        - used between 1 keV - 1 GeV primary e-/e+ kinetic energies.
+//        NOTE: the core part i.e. sampling the emitted photon energy is different than
+//          that in the G4SeltzerBergerModel. I implemented here my rejection free,
+//          memory effcicient (tables only per Z and not per mat-cuts) sampling.
+//          Rejection is used only to account dielectric supression and e+ correction.
+// 2. RB: - the Bethe-Heitler DCS with modifications such as screening and Coulomb
+//          corrections, emission in the field of the atomic electrons and LPM suppression.
+//          Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
+void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron, bool isSBmodel);
 
 
 // Sampling of the energy transferred to the emitted photon using the numerical
