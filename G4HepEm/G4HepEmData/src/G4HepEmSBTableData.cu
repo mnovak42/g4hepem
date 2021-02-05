@@ -34,7 +34,7 @@ void CopySBTableDataToDevice(struct G4HepEmSBTableData* onHOST, struct G4HepEmSB
   }
   for (int i=0; i<54; ++i) {
     sbTablesHTo_d->fKappaVect[i]  = onHOST->fKappaVect[i];
-    sbTablesHTo_d->fLKappaVect[i] = onHOST->fKappaVect[i];
+    sbTablesHTo_d->fLKappaVect[i] = onHOST->fLKappaVect[i];
   }
   //
   // allocate device side memory for the dynamic arrys
