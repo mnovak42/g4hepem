@@ -45,6 +45,11 @@ G4HepEmHostDevice
 int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
                          const double lekin, const double urndn, const bool isbremSB);
 
+
+void SampleDirections(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir,
+                      double* thePrimElecDir, G4HepEmRandomEngine* rnge);
+
+
 // Simple linear search (with step of 3!) used in the photon energy sampling part
 // of the SB (Seltzer-Berger) brem model.
 G4HepEmHostDevice
