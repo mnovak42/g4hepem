@@ -42,8 +42,7 @@ int main() {
   //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
   int g4HepEmParticleIndx = 0; // e-: 0; e+: 1;
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  G4HepEmCLHEPRandomEngine* rng = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
-  runMgr->Initialize ( rng, g4HepEmParticleIndx );
+  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), g4HepEmParticleIndx );
 
 
   //

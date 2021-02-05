@@ -2,16 +2,9 @@
 #ifndef Declaration_HH
 #define Declaration_HH
 
-// G4 include (for types)
-#include "globals.hh"
-
 struct G4HepEmData;
 struct G4HepEmParameters;
 struct G4HepEmElectronData;
-
-
-// builds a fake Geant4 geometry just to be able to produce material-cuts couple
-void FakeG4Setup ( G4double prodCutInLength,  G4int verbose=1 );
 
 
 // checks the Target Element Selector data (e-/e+: ioni and brem models) of the G4HepEmElectronData (host/device)

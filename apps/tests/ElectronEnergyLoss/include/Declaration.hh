@@ -2,17 +2,8 @@
 #ifndef Declaration_HH
 #define Declaration_HH
 
-// G4 include (for types)
-#include "globals.hh"
-
-
 struct G4HepEmData;
 struct G4HepEmElectronData;
-
-
-// builds a fake Geant4 geometry just to be able to produce material-cuts couple
-void FakeG4Setup ( G4double prodCutInLength,  G4int verbose=1 );
-
 
 // checks the EnergyLoss related parts of the G4HepEmElectronData (host/device)
 bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron=true );
