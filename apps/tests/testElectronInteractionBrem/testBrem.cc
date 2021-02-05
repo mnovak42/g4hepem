@@ -12,6 +12,7 @@
 
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
+#include "G4HepEmCLHEPRandomEngine.hh"
 
 int main(int argc, char *argv[]) {
   int verbose = 1;
@@ -62,7 +63,7 @@ int main(int argc, char *argv[]) {
   if (theTestType !=1 ) {
     int theG4HepEmParticleIndx = theIsElectron ? 0 : 1; // e-: 0; e+: 1;
     runMgr = new G4HepEmRunManager ( true );
-    runMgr->Initialize ( G4Random::getTheEngine(), theG4HepEmParticleIndx );
+    runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), theG4HepEmParticleIndx );
   }
 
   //
@@ -83,9 +84,17 @@ int main(int argc, char *argv[]) {
           break;
       default:
 #ifdef G4HepEm_CUDA_BUILD
+          std::cout << " --- Checking G4HepEmSBTableData host vs devide consistency." << std::endl;
           // make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)
           CopyG4HepEmDataToGPU ( runMgr->GetHepEmData() );
           // invoke the SBTableDataTest
+          if ( !TestSBTableData( runMgr->GetHepEmData() ) ) {
+            std::cout << "     - G4HepEmSBTableData host vs device consistency test: FAILED....!!!  \n" << std::endl;
+            return 1;
+          } else if ( verbose > 0 ) {
+            std::cout << "     - G4HepEmSBTableData host vs device consistency test: PASSED  \n" << std::endl;
+          }
+
 #endif // G4HepEm_CUDA_BUILD
      }
 
