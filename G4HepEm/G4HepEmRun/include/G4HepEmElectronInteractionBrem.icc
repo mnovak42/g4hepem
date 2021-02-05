@@ -53,7 +53,7 @@ void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
   double*    thePrimElecDir = thePrimaryTrack->GetDirection();
   //
   // == Sampling of the emitted photon and post interaction e-/e+ directions
-  SampleDirections(thePrimEkin, eGamma, theSecGammaDir, thePrimElecDir, tlData->GetRNGEngine());
+  SampleDirectionsBrem(thePrimEkin, eGamma, theSecGammaDir, thePrimElecDir, tlData->GetRNGEngine());
   //
   // == Update primary and set secondary gamma track properties
   //    note: the directions are already set in SampleDirections
@@ -291,7 +291,7 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
 }
 
 
-void SampleDirections(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge) {
+void SampleDirectionsBrem(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge) {
   // sample photon direction (modified Tsai sampling):
   const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
   double rndm3[3];
