@@ -9,7 +9,8 @@ struct G4HepEmParameters;
 struct G4HepEmElectronData;
 
 class  G4HepEmTLData;
-
+class  G4HepEmElectronTrack;
+class  G4HepEmTrack; 
 
 /**
  * @file    G4HepEmElectronManager.hh
@@ -80,7 +81,7 @@ public:
     *   the computed physics step limit is written into its fGStepLength member.
     */
   G4HepEmHostDevice
-  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
+  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
 
   /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
     *
@@ -96,7 +97,7 @@ public:
     * @return boolean whether the particle was stopped
     */
   G4HepEmHostDevice
-  bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, struct G4HepEmElectronTrack* theElTrack);
+  bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
 
   /** Function to check if a delta interaction happens instead of the discrete process.
     *
@@ -107,7 +108,7 @@ public:
     * @return boolean whether a delta interaction happens
     */
   G4HepEmHostDevice
-  bool CheckDelta(struct G4HepEmData* hepEmData, struct G4HepEmTrack* theTrack, double rand);
+  bool CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand);
 
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *

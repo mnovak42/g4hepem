@@ -23,7 +23,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 // such as screening and Coulomb corrections, emission in the field of the atomic
 // electrons and LPM suppression.
 // Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData);
+void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron);
 
 
 // Sampling of the energy transferred to the emitted photon using the numerical
@@ -36,7 +36,7 @@ double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, 
 // DCS.
 G4HepEmHostDevice
 double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theIMCIndx, G4HepEmRandomEngine* rnge);
+                             int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
 
 
 // Target atom selector for the above bremsstrahlung intercations in case of
