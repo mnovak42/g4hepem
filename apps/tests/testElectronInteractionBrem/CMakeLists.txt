@@ -8,8 +8,8 @@ project (testBrem)
 #
 set ( CMAKE_CXX_FLAGS "${G4HepEm_CMAKE_CXX_FLAGS}" )
 
-file ( GLOB headers     ${CMAKE_SOURCE_DIR}/include/*.hh)
-file ( GLOB cxx_sources ${CMAKE_SOURCE_DIR}/src/*.cc)
+file ( GLOB headers     ${CMAKE_SOURCE_DIR}/include/*.hh ${CMAKE_SOURCE_DIR}/../TestUtils/include/*.hh)
+file ( GLOB cxx_sources ${CMAKE_SOURCE_DIR}/src/*.cc ${CMAKE_SOURCE_DIR}/../TestUtils/src/*.cc)
 file ( GLOB cu_sources  ${CMAKE_SOURCE_DIR}/src/*.cu)
 
 #----------------------------------------------------------------------------
@@ -36,6 +36,7 @@ find_package ( G4HepEm REQUIRED)
 include_directories ( ${Geant4_INCLUDE_DIR}
                       ${G4HepEm_INCLUDE_DIR}
                       ${CMAKE_SOURCE_DIR}/include
+                      ${CMAKE_SOURCE_DIR}/../TestUtils/include
                     )
 
 #----------------------------------------------------------------------------
