@@ -9,58 +9,41 @@
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmConstants.hh"
 #include "G4HepEmRunUtils.hh"
+#include "G4HepEmMath.hh"
 
 
 
 #include <iostream>
 
 
-void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {  
-  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
-  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
+void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
+  G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
   double    thePrimEkin = thePrimaryTrack->GetEKin();
   const int   theMCIndx = thePrimaryTrack->GetMCIndex();
   const double theElCut = hepEmData->fTheMatCutData->fMatCutData[theMCIndx].fSecElProdCutE;
-  
+
   const double maxETransfer = (iselectron) ? 0.5*thePrimEkin : thePrimEkin;
   if (maxETransfer <= theElCut) return;
-  
+
   //
   // sample energy transfer and compute direction
-  const double elInitETot = thePrimEkin + kElectronMassC2;
-  const double elInitPTot = std::sqrt(thePrimEkin * (elInitETot + kElectronMassC2));
-  const double  deltaEkin = (iselectron) 
-                            ? SampleETransferMoller(theElCut, thePrimEkin, tlData->GetRNGEngine()) 
+  const double  deltaEkin = (iselectron)
+                            ? SampleETransferMoller(theElCut, thePrimEkin, tlData->GetRNGEngine())
                             : SampleETransferBhabha(theElCut, thePrimEkin, tlData->GetRNGEngine());
-  const double deltaPTot = std::sqrt(deltaEkin * (deltaEkin + 2.0 * kElectronMassC2));
-  const double      cost = deltaEkin * (elInitETot + kElectronMassC2) / (deltaPTot * elInitPTot);
-  // check cosTheta limit
-  const double  cosTheta = std::max(-1.0, std::min(cost, 1.0));
-  const double  sinTheta = std::sqrt((1.0 - cosTheta) * (1.0 + cosTheta));
-  // spherical symmetry
-  const double  phi      = k2Pi * tlData->GetRNGEngine()->flat();
-  // create the secondary partcile i.e. the delta e-
-  G4HepEmElectronTrack* secElTrack = tlData->AddSecondaryElectronTrack();
-  G4HepEmTrack*           secTrack = secElTrack->GetTrack();
-  secTrack->SetDirection(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
-  double* theSecondaryDirection  = secTrack->GetDirection();
-  double* thePrimaryDirection    = thePrimaryTrack->GetDirection();
-  // rotate back to refernce frame (G4HepEmRunUtils function)
-  RotateToReferenceFrame(theSecondaryDirection, thePrimaryDirection);
-  secTrack->SetEKin(deltaEkin);
-  secTrack->SetParentID(thePrimaryTrack->GetID()); 
+  // get a secondary e- track and sample/compute directions (all will be already in lab. frame)
+  G4HepEmTrack* theSecTrack = tlData->AddSecondaryElectronTrack()->GetTrack();
+  double*     theSecElecDir = theSecTrack->GetDirection();
+  double*    thePrimElecDir = thePrimaryTrack->GetDirection();
   //
-  // compute the primary e-/e+ post interaction kinetic energy and direction: from momentum vector conservation
-  // final momentum of the primary e-/e+ in the lab frame
-  double elDirX = elInitPTot * thePrimaryDirection[0] - deltaPTot * theSecondaryDirection[0];
-  double elDirY = elInitPTot * thePrimaryDirection[1] - deltaPTot * theSecondaryDirection[1];
-  double elDirZ = elInitPTot * thePrimaryDirection[2] - deltaPTot * theSecondaryDirection[2];
-  // normalisation
-  const double norm = 1.0 / std::sqrt(elDirX * elDirX + elDirY * elDirY + elDirZ * elDirZ);
-  // update primary track direction
-  thePrimaryTrack->SetDirection(elDirX * norm, elDirY * norm, elDirZ * norm);
-  // update primary track kinetic energy
+  // == Sample/copute the emitted secondary e- and post interaction primary e-/e+ directions
+  SampleDirectionsIoni(thePrimEkin, deltaEkin, theSecElecDir, thePrimElecDir, tlData->GetRNGEngine());
+  //
+  // == Update primary e-/e+ and the secondary e- track properties
+  //    note: the directions are already set in SampleDirections
   thePrimaryTrack->SetEKin(thePrimEkin - deltaEkin);
+  theSecTrack->SetEKin(deltaEkin);
+  theSecTrack->SetParentID(thePrimaryTrack->GetID());
 }
 
 
@@ -119,6 +102,33 @@ double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmR
     const double xx = deltaEkin * deltaEkin;
     dum             = 1.0 + (xx * xx * b4 - deltaEkin * xx * b3 + xx * b2 - deltaEkin * b1) * beta2;
   } while (gf * rndArray[1] > dum);
-  return deltaEkin * primEkin;  
+  return deltaEkin * primEkin;
 }
 
+
+void SampleDirectionsIoni(const double thePrimEkin, const double deltaEkin, double* theSecElecDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge) {
+    const double elInitETot = thePrimEkin + kElectronMassC2;
+    const double elInitPTot = std::sqrt(thePrimEkin * (elInitETot + kElectronMassC2));
+    const double  deltaPTot = std::sqrt(deltaEkin * (deltaEkin + 2.0 * kElectronMassC2));
+    const double       cost = deltaEkin * (elInitETot + kElectronMassC2) / (deltaPTot * elInitPTot);
+    // check cosTheta limit
+    const double   cosTheta = G4HepEmMax(-1.0, G4HepEmMin(cost, 1.0));
+    const double   sinTheta = std::sqrt((1.0 - cosTheta) * (1.0 + cosTheta));
+    const double        phi = k2Pi * rnge->flat();     // spherical symmetry
+    //
+    theSecElecDir[0]  = sinTheta * std::cos(phi);
+    theSecElecDir[1]  = sinTheta * std::sin(phi);
+    theSecElecDir[2]  = cosTheta;
+    // rotate to refernce frame (G4HepEmRunUtils function) to get it in lab. frame
+    RotateToReferenceFrame(theSecElecDir, thePrimElecDir);
+    // go for the post-interaction primary electron/positiorn direction in lab. farme
+    // (compute from momentum vector conservation)
+    thePrimElecDir[0] = elInitPTot * thePrimElecDir[0] - deltaPTot * theSecElecDir[0];
+    thePrimElecDir[1] = elInitPTot * thePrimElecDir[1] - deltaPTot * theSecElecDir[1];
+    thePrimElecDir[2] = elInitPTot * thePrimElecDir[2] - deltaPTot * theSecElecDir[2];
+    // normalisation
+    const double  norm = 1.0 / std::sqrt(thePrimElecDir[0] * thePrimElecDir[0] + thePrimElecDir[1] * thePrimElecDir[1] + thePrimElecDir[2] * thePrimElecDir[2]);
+    thePrimElecDir[0] *= norm;
+    thePrimElecDir[1] *= norm;
+    thePrimElecDir[2] *= norm;
+}
