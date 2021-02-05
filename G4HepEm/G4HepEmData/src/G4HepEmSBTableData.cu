@@ -24,6 +24,18 @@ void CopySBTableDataToDevice(struct G4HepEmSBTableData* onHOST, struct G4HepEmSB
   sbTablesHTo_d->fNumHepEmMatCuts   = numHepEmMatCuts;
   sbTablesHTo_d->fNumElemsInMatCuts = numElemsInMatCuts;
   sbTablesHTo_d->fNumSBTableData    = numSBTableData;
+  // copy array values
+  for (int i=0; i<121; ++i) {
+    sbTablesHTo_d->fSBTablesStartPerZ[i] = onHOST->fSBTablesStartPerZ[i];
+  }
+  for (int i=0; i<65; ++i) {
+    sbTablesHTo_d->fElEnergyVect[i]  = onHOST->fElEnergyVect[i];
+    sbTablesHTo_d->fLElEnergyVect[i] = onHOST->fLElEnergyVect[i];
+  }
+  for (int i=0; i<54; ++i) {
+    sbTablesHTo_d->fKappaVect[i]  = onHOST->fKappaVect[i];
+    sbTablesHTo_d->fLKappaVect[i] = onHOST->fKappaVect[i];
+  }
   //
   // allocate device side memory for the dynamic arrys
   gpuErrchk ( cudaMalloc ( &(sbTablesHTo_d->fGammaCutIndxStartIndexPerMC), sizeof( int )    * numHepEmMatCuts   ) );
