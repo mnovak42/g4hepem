@@ -92,7 +92,7 @@ void PerformElectronBremSB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
 // such as screening and Coulomb corrections, emission in the field of the atomic
 // electrons and LPM suppression.
 // Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
+void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
   //
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
@@ -110,7 +110,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   //
   // == Sampling of the emitted photon energy
   //
-  double eGamma = SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine());
+  double eGamma = SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
 
   //
   // sample photon direction (modified Tsai sampling):
