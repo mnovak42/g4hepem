@@ -4,6 +4,7 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmElementData.hh"
 
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <random>
@@ -12,14 +13,14 @@
 #include "G4HepEmCuUtils.hh"
 
 
-// The list of elements used in the geometry are obtained, `numTestCases` 
-// elements are selected uniformly random from this list, the stored element 
-// properties for all these test cases are obtained both on the host and on the 
-// device using the host and the device side data structures respectively. 
+// The list of elements used in the geometry are obtained, `numTestCases`
+// elements are selected uniformly random from this list, the stored element
+// properties for all these test cases are obtained both on the host and on the
+// device using the host and the device side data structures respectively.
 // FAILURE is reported in case of any differences, SUCCESS is returned otherwise.
 
 
-// Kernel to evaluate the G4HepEmElementData for the test cases stored on the 
+// Kernel to evaluate the G4HepEmElementData for the test cases stored on the
 // device main memory
 __global__
 void TestElementDataKernel (struct G4HepEmElementData* elemData_d, int* elemIndices_d, double* resZet_d, double* resZet13_d, int numTestCases) {
@@ -30,25 +31,25 @@ void TestElementDataKernel (struct G4HepEmElementData* elemData_d, int* elemIndi
     resZet_d[tid]   = elemData_d->fElementData[izet].fZet;
     resZet13_d[tid] = elemData_d->fElementData[izet].fZet13;
   }
-}  
+}
 
 // Element data test that compares the data stored on the host v.s. device sides
-bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) { 
-  // get the G4HepEmElementData member of the top level G4HepEmData structure 
+bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
+  // get the G4HepEmElementData member of the top level G4HepEmData structure
   const struct G4HepEmElementData* elemData = hepEmData->fTheElementData;
   //
   // --- Prepare test cases:
   //
   // number of (valid i.e. used in the geometry) element indices to generate for checking
   int  numTestCases = 1024;
-  // collect all valid Z values 
-  std::vector<int> validZets;  
+  // collect all valid Z values
+  std::vector<int> validZets;
   for ( int iz=0; iz<elemData->fMaxZet; ++iz ) {
     // check if this Z element data has been set
     int izet = (int)elemData->fElementData[iz].fZet;
     if ( elemData->fElementData[iz].fZet > 0 ) {
       validZets.push_back(izet);
-    }    
+    }
   }
   int numValidZet = (int)validZets.size();
   // set up an rng to get element indices on [0,numValidZet)
@@ -58,16 +59,16 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   //
   // --- Allocate memory on the host:
   //
-  // for the uniformly random valid element index values as test cases 
+  // for the uniformly random valid element index values as test cases
   int* theElemIndices_h = new int[numTestCases];
-  for (int i=0; i<numTestCases; ++i) {     
+  for (int i=0; i<numTestCases; ++i) {
     theElemIndices_h[i] = validZets[ dis(gen) ];
   }
   // for the results i.e. for all fZet, fZet13 values
   double*   theResZet_h = new double[numTestCases];
   double* theResZet13_h = new double[numTestCases];
   //
-  // --- Allocate memory on the device: 
+  // --- Allocate memory on the device:
   //
   // for the input elemement indices, for the resulted Z and Z^{1/3} values
   int* theElemIndices_d = nullptr;
@@ -88,7 +89,7 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   gpuErrchk ( cudaMemcpy ( theResZet_h,     theResZet_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
   gpuErrchk ( cudaMemcpy ( theResZet13_h, theResZet13_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
   //
-  // --- Check the results for each test cases by comparing to the corresponding 
+  // --- Check the results for each test cases by comparing to the corresponding
   //     results obtained on the host side
   //
   bool isPassed = true;
@@ -101,15 +102,15 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
     const double zet = theElemData_h.fZet;
     if ( zet != theResZet_h[i] ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nG4HepEmElementData: HOST v.s. DEVICE mismatch: fZet = " << zet << " != " << (double)theResZet_h[i] << std::endl; 
-      break;                   
+      std::cerr << "\n*** ERROR:\nG4HepEmElementData: HOST v.s. DEVICE mismatch: fZet = " << zet << " != " << (double)theResZet_h[i] << std::endl;
+      break;
     }
     const double zet13 = theElemData_h.fZet13;
     if ( zet13 != theResZet13_h[i] ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nG4HepEmElementData: HOST v.s. DEVICE mismatch: fZet13 = " << zet13 << " != " << (double)theResZet13_h[i] << std::endl; 
-      break;                   
-    }    
+      std::cerr << "\n*** ERROR:\nG4HepEmElementData: HOST v.s. DEVICE mismatch: fZet13 = " << zet13 << " != " << (double)theResZet13_h[i] << std::endl;
+      break;
+    }
   }
   //
   // --- Free all dynamically allocated memory  (both host and device)
@@ -120,8 +121,6 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   cudaFree ( theElemIndices_d );
   cudaFree ( theResZet_d      );
   cudaFree ( theResZet13_d    );
-  // 
+  //
   return isPassed;
 }
-
-
