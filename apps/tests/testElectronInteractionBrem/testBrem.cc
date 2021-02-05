@@ -1,22 +1,23 @@
 
 #include "Declaration.hh"
 
+// local (and TestUtils) includes
 #include "TestBremArgs.hh"
+#include "G4SetUp.hh"
 
 // G4 includes
 #include "globals.hh"
-#include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
-#include "CLHEP/Random/RandomEngine.h"
 #include "G4MaterialCutsCouple.hh"
 
+// G4HepEm includes
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmCLHEPRandomEngine.hh"
 
+
 int main(int argc, char *argv[]) {
   int verbose = 1;
-
   //
   // --- Get input arguments
   struct BremArgs theArgs;
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
   const double      theSecondaryProdCut   = theArgs.fProdCutValue;
 
   //
-  // --- Set up a fake G4 geometry with including:
+  // --- Set up a fake G4 geometry with including (From TestUtils/G4SetUp):
   //       - test type = 0 or 1 :  the single pre-defined NIST material specified as target
   //       - test type = 2      :  all pre-defined NIST materials
   //     to produce the corresponding G4MaterialCutsCouple object(s).
