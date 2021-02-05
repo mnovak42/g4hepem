@@ -269,11 +269,7 @@ void G4HepEmSBTest(const G4MaterialCutsCouple* g4MatCut, G4double ekin, G4double
     thePrimaryTrack->SetEKin(ekin, lekin);
     thePrimaryTrack->SetDirection(0.0, 0.0, 1.0);
     // invoke SB brem intercation from G4HepEmElectronInteractionBrem.hh
-    if (isSBmodel) {
-      PerformElectronBremSB(theTLData, theHepEmData, iselectron);
-    } else {
-      PerformElectronBremRB(theTLData, theHepEmData, iselectron);
-    }
+    PerformElectronBremSB(theTLData, theHepEmData, iselectron, isSBmodel);
     // get secondary related results (energy, direction) if any
     const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
     if (numSecGamma > 0) {
