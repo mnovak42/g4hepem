@@ -95,7 +95,8 @@ int main(int argc, char *argv[]) {
           } else if ( verbose > 0 ) {
             std::cout << "     - G4HepEmSBTableData host vs device consistency test: PASSED  \n" << std::endl;
           }
-
+#else
+          std::cerr << " *** Unknown test type: -t must be 0 or 1. " << std::endl;
 #endif // G4HepEm_CUDA_BUILD
      }
 
