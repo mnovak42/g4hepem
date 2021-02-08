@@ -1,16 +1,16 @@
 
 
-set (G4HEPEMDATA_INC_DIR ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/include PARENT_SCOPE)
+set (G4HEPEMDATA_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
-include_directories (${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/include)
-file ( GLOB G4HEPEMDATA_headers ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/include/*.hh)
-file ( GLOB G4HEPEMDATA_CXX_sources ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/src/*.cc)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
+file ( GLOB G4HEPEMDATA_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
+file ( GLOB G4HEPEMDATA_CXX_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 
 #
 # CUDA
 
 if (G4HepEm_CUDA_BUILD)
-  file (GLOB G4HEPEMDATA_CUDA_sources ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/src/*.cu)
+  file (GLOB G4HEPEMDATA_CUDA_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu)
   # add possible CUDA headers
   # list (APPEND G4HEPEMDATA_headers )
   #
