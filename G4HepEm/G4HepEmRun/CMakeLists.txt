@@ -1,15 +1,15 @@
 
-set (G4HEPEMRUN_INC_DIR ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include PARENT_SCOPE)
+set (G4HEPEMRUN_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
 include_directories (
-  ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include
-  ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmData/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../G4HepEmData/include
   ${Geant4_INCLUDE_DIRS}  # only for CLHEP:: Random and units/constants
   )
-file ( GLOB G4HEPEmRun_headers ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include/*.hh
-                               ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include/*.icc)
-file ( GLOB G4HEPEmRun_sources ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/src/*.cc
-                               ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmRun/include/*.icc)
+file ( GLOB G4HEPEmRun_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh
+                               ${CMAKE_CURRENT_SOURCE_DIR}/include/*.icc)
+file ( GLOB G4HEPEmRun_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
+                               ${CMAKE_CURRENT_SOURCE_DIR}/include/*.icc)
 set_source_files_properties(${G4HEPEmRun_sources} PROPERTIES LANGUAGE CXX)
 if (BUILD_STATIC_LIBS)
   add_library (g4HepEmRun STATIC ${G4HEPEmRun_sources})

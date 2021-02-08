@@ -1,13 +1,13 @@
 
-set (G4HEPEMINIT_INC_DIR ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmInit/include PARENT_SCOPE)
+set (G4HEPEMINIT_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
 include_directories (
-   ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmInit/include
+   ${CMAKE_CURRENT_SOURCE_DIR}/include
    ${G4HEPEMDATA_INC_DIR}
 )
 
-file ( GLOB G4HEPEMInit_headers ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmInit/include/*.hh)
-file ( GLOB G4HEPEMInit_sources ${CMAKE_SOURCE_DIR}/G4HepEm/G4HepEmInit/src/*.cc)
+file ( GLOB G4HEPEMInit_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
+file ( GLOB G4HEPEMInit_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 if (BUILD_STATIC_LIBS)
   add_library (g4HepEmInit STATIC ${G4HEPEMInit_sources})
 else ()
