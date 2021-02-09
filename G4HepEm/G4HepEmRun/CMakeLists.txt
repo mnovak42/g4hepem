@@ -18,7 +18,7 @@ target_compile_features(g4HepEmRun PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
 target_include_directories(g4HepEmRun PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
-target_link_libraries(g4HepEmRun g4HepEmData Geant4::G4clhep) # only rng is used from G4 at run
+target_link_libraries(g4HepEmRun g4HepEmData ${G4HepEm_CLHEP_TARGET}) # only rng is used from G4 at run
 
 ## ----------------------------------------------------------------------------
 ## Install G4HepEm libraries and headers

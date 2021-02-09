@@ -42,12 +42,17 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 #----------------------------------------------------------------------------
-# Find Geant4, changing library build type to default Geant4 variant
-#
+# Find Geant4, changing library build type to default Geant4 variant and
+# determining which CLHEP target to use
 find_package(Geant4 REQUIRED)
 if(Geant4_static_FOUND AND NOT Geant4_shared_FOUND)
   set(BUILD_SHARED_LIBS OFF)
   set(BUILD_STATIC_LIBS ON)
+endif()
+
+set(G4HepEm_CLHEP_TARGET CLHEP::CLHEP)
+if(TARGET Geant4::G4clhep)
+  set(G4HepEm_CLHEP_TARGET Geant4::G4clhep)
 endif()
 
 #----------------------------------------------------------------------------
