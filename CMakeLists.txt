@@ -1,16 +1,14 @@
 #----------------------------------------------------------------------------
 # Setup the project; take policies from up to CMake 3.18 to avoid warnings
 # concerning CMP0104.
-cmake_minimum_required(VERSION 3.8...3.18 FATAL_ERROR)
-if(${CMAKE_VERSION} VERSION_LESS 3.12)
-  cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
-endif()
-
+cmake_minimum_required(VERSION 3.17...3.18 FATAL_ERROR)
 project(G4HepEm VERSION 0.1.0)
 
-# Core Modules, CMake and Build Settings
+# Local and Core Modules
 include(GNUInstallDirs)
+include(CheckLanguage)
 
+# CMake and Build Settings
 # - Don't allow absolute paths other than CMAKE_INSTALL_PREFIX
 set(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION ON)
 
@@ -59,18 +57,28 @@ endif()
 # CUDA
 option(G4HepEm_CUDA_BUILD "BUILD with CUDA support" OFF)
 if(G4HepEm_CUDA_BUILD)
-  find_package(CUDA 6.0 REQUIRED)
-  if(CUDA_FOUND)
-    add_definitions(-DG4HepEm_CUDA_BUILD)
-    message(STATUS "Found CUDA at ${CUDA_TOOLKIT_ROOT_DIR} (${CUDA_VERSION_STRING})")
-    include_directories(AFTER SYSTEM ${CUDA_INCLUDE_DIRS})
+  # Use host compiler by default to ensure ABI consistency
+  set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}" CACHE STRING
+    "Set to CMAKE_CXX_COMPILER by G4HepEM CMakeLists")
+
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
-    # Disable -pedantic because nvcc uses GCC extensions for line directives;
-    # leave all other warnings enabled.
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -Wno-pedantic")
   else()
-    message(FATAL_ERROR "REQUIRED CUDA LIBRARIES WERE NOT FOUND")
+    message(FATAL_ERROR "No CUDA compiler/support available")
   endif()
+
+  # On CMake < 3.18, need FindCUDA for Arch flags, and it's messy...
+  if(CMAKE_VERSION VERSION_LESS 3.18)
+    find_package(CUDA 10 REQUIRED QUIET)
+    cuda_select_nvcc_arch_flags(G4HEPEM_CUDA_ARCH_FLAGS)
+    string(REPLACE ";" " " G4HEPEM_CUDA_ARCH_FLAGS "${G4HEPEM_CUDA_ARCH_FLAGS}")
+    set(CMAKE_CUDA_FLAGS "${G4HEPEM_CUDA_ARCH_FLAGS}")
+  endif()
+
+  set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
+  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+  set(CMAKE_CUDA_EXTENSIONS OFF)
 endif()
 
 #----------------------------------------------------------------------------

@@ -21,14 +21,6 @@ set(TESTS_INPUT
   "-m ${PROJECT_SOURCE_DIR}/apps/examples/TestEm3/ATLASbar.mac")
 
 ## ----------------------------------------------------------------------------
-## Inactivate GPU build for the testing (if it was active) since there is no DEVICE
-##
-if(NOT G4HepEm_CUDA_BUILD)
-  remove_definitions(-DG4HepEm_CUDA_BUILD)
-endif()
-
-
-## ----------------------------------------------------------------------------
 ## First: the unit tests
 ##
 list(LENGTH UNIT_TESTS_DIR_NAME num)

@@ -14,12 +14,9 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(Geant4 @Geant4_VERSION@ REQUIRED)
 
-# TODO: Convert to Target/language/find_dependency
-set(G4HepEm_CMAKE_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
-set(G4HepEm_CUDA_LIBRARIES "@CUDA_LIBRARIES@;@CUDA_cudart_static_LIBRARY@")
-set(G4HepEm_CUDA_INCLUDE_DIR "@CUDA_INCLUDE_DIRS@")
-set(G4HepEm_CUDA_NVCC_FLAGS "@CUDA_NVCC_FLAGS@")
-set(G4HepEm_CUDA_BUILD "@G4HepEm_CUDA_BUILD@")
+# Direct CUDA deps to be determined, but should be handled by
+# target properties (remains to be seen if we need find_dependency on CUDA Toolkit
+# and to transport CUDA architecture flags)
 
 # - Project targets
 include(${CMAKE_CURRENT_LIST_DIR}/G4HepEmTargets.cmake)
