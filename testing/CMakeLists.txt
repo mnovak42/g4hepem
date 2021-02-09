@@ -1,9 +1,4 @@
 ## ----------------------------------------------------------------------------
-## Retrieve G4HepEm_INCLUDE_DIR (a collection of all headers set only for testing)
-##
-get_property(G4HepEm_INCLUDE_DIR GLOBAL PROPERTY G4HEPEM_TESTING_INCLUDE_DIR_PROP)
-
-## ----------------------------------------------------------------------------
 ## List of unit tests: under the '/apps/tests/' directory
 ##
 set(UNIT_TESTS_DIR_NAME
@@ -42,7 +37,7 @@ foreach(val RANGE ${len})
   list(GET UNIT_TESTS_DIR_NAME ${val}  t_DIR)
   list(GET UNIT_TESTS_NAME     ${val}  t_NAME)
 
-  file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/src/*.cc ${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/src/*.cc)
+  file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/src/*.cc ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/src/*.cu ${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/src/*.cc)
   file(GLOB HEADERS ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/include/*.hh ${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/include/*.hh)
 
   add_executable(${t_NAME} ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/${t_NAME}.cc ${SOURCES} ${HEADERS})
