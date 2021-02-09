@@ -10,6 +10,7 @@
 // don't worry it's just for testing
 #define private public
 #include "G4HepEmElectronManager.hh"
+#undef private
 
 #include <cmath>
 #include <random>

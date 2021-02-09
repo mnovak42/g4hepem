@@ -2,33 +2,31 @@
 ## Simple CMake configuration file for the G4HepEm extensions
 ##
 
-## G4HepEm_INCLUDE_DIR to the include directory
-## G4HepEm_LIBRARIES contains all the 4 libraries
-##
+@PACKAGE_INIT@
 
+# - Project properties
+set_and_check(G4HepEm_INCLUDE_DIR "@PACKAGE_G4HEPEM_EXPORTED_INCLUDE_DIR@")
 
-set(G4HepEm_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@")
+set(G4HepEm_cuda_FOUND @G4HepEm_CUDA_BUILD@)
 
-set(G4HepEm_LIB_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+# - Project dependencies
+include(CMakeFindDependencyMacro)
 
-find_path(G4HepEm_INCLUDE_DIR NAMES G4HepEmRunManager.hh HINTS "@CMAKE_INSTALL_PREFIX@/includes" NO_DEFAULT_PATH)
+find_dependency(Geant4 @Geant4_VERSION@ REQUIRED)
 
-find_library(G4HepEm_LIB     NAMES libg4HepEm.a     g4HepEm     PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
-find_library(G4HepEmData_LIB NAMES libg4HepEmData.a g4HepEmData PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
-find_library(G4HepEmInit_LIB NAMES libg4HepEmInit.a g4HepEmInit PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
-find_library(G4HepEmRun_LIB  NAMES libg4HepEmRun.a  g4HepEmRun  PATHS "${G4HepEm_LIB_DIR}" NO_DEFAULT_PATH)
+# Direct CUDA deps to be determined, but should be handled by
+# target properties (remains to be seen if we need find_dependency on CUDA Toolkit
+# and to transport CUDA architecture flags)
 
-set (G4HepEm_LIBRARIES
-  ${G4HepEm_LIB}
-  ${G4HepEmData_LIB}
-  ${G4HepEmInit_LIB}
-  ${G4HepEmRun_LIB}
-)
+# - Project targets
+include(${CMAKE_CURRENT_LIST_DIR}/G4HepEmTargets.cmake)
 
-set (G4HepEm_CMAKE_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+# - TEMPORARY back compatibility
+set(G4HepEm_LIBRARIES
+  G4HepEm::g4HepEm
+  G4HepEm::g4HepEmData
+  G4HepEm::g4HepEmInit
+  G4HepEm::g4HepEmInit)
 
-set (G4HepEm_CUDA_LIBRARIES "@CUDA_LIBRARIES@;@CUDA_cudart_static_LIBRARY@")
-set (G4HepEm_CUDA_INCLUDE_DIR "@CUDA_INCLUDE_DIRS@")
-set (G4HepEm_CUDA_NVCC_FLAGS "@CUDA_NVCC_FLAGS@")
-set (G4HepEm_CUDA_BUILD "@G4HepEm_CUDA_BUILD@")
-
+# - Requested component check
+check_required_components(G4HepEm)

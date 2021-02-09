@@ -78,7 +78,7 @@ jobs:
           export G4INCLDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4INCL1.0
           export G4ENSDFSTATEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ENSDFSTATE2.2                    
           cmake -E remove_directory build
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
           cmake --build build
           cd build && ctest -j2 --verbose --output-on-failure
 
@@ -97,6 +97,6 @@ jobs:
           export G4INCLDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4INCL1.0
           export G4ENSDFSTATEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ENSDFSTATE2.2                    
           cmake -E remove_directory build
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
           cmake --build build
           cd build && ctest -j2 --verbose --output-on-failure
