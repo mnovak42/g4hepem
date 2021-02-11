@@ -11,10 +11,10 @@
 // needs to be accounted and the final new direction, i.e. in the lab frame is
 // computed.
 G4HepEmHostDevice
-void RotateToReferenceFrame(double &u, double &v, double &w, double* refDir);
+void RotateToReferenceFrame(double &u, double &v, double &w, const double* refDir);
 
 G4HepEmHostDevice
-void RotateToReferenceFrame(double* dir, double* refDir);
+void RotateToReferenceFrame(double* dir, const double* refDir);
 
 
 
