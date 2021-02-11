@@ -14,6 +14,17 @@
 #include "G4HepEmElectronManager.icc"
 #include "G4HepEmRunUtils.icc"
 
+__global__
+void TestElossDataKernel  ( struct G4HepEmElectronData* theElectronData_d, int* tsInImc_d,
+                            double* tsInEkin_d, double* tsInLogEkin_d, double* tsOutResRange_d,
+                            double* tsOutResDEDX_d, double* tsOutResInvRange_d, int numTestCases ) {
+   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+     G4HepEmElectronManager theElectronMgr;
+     tsOutResRange_d[i]    = theElectronMgr.GetRestRange(theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
+     tsOutResDEDX_d[i]     = theElectronMgr.GetRestDEDX (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
+     tsOutResInvRange_d[i] = theElectronMgr.GetInvRange (theElectronData_d, tsInImc_d[i], tsOutResRange_d[i]);
+   }
+ }
 
 void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
      int* tsInImc_h, double* tsInEkin_h, double* tsInLogEkin_h,
@@ -64,17 +75,3 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   cudaFree ( tsOutResRange_d    );
   cudaFree ( tsOutResInvRange_d );
 }
-
-
-
-__global__
-void TestElossDataKernel  ( struct G4HepEmElectronData* theElectronData_d, int* tsInImc_d,
-                            double* tsInEkin_d, double* tsInLogEkin_d, double* tsOutResRange_d,
-                            double* tsOutResDEDX_d, double* tsOutResInvRange_d, int numTestCases ) {
-   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
-     G4HepEmElectronManager theElectronMgr;
-     tsOutResRange_d[i]    = theElectronMgr.GetRestRange(theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
-     tsOutResDEDX_d[i]     = theElectronMgr.GetRestDEDX (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
-     tsOutResInvRange_d[i] = theElectronMgr.GetInvRange (theElectronData_d, tsInImc_d[i], tsOutResRange_d[i]);
-   }
- }
