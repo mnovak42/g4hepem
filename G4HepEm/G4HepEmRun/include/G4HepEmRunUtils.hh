@@ -10,8 +10,10 @@
 // original direction, the real original direction [u1,u2,u3] in the lab frame
 // needs to be accounted and the final new direction, i.e. in the lab frame is
 // computed.
+G4HepEmHostDevice
 void RotateToReferenceFrame(double &u, double &v, double &w, double* refDir);
 
+G4HepEmHostDevice
 void RotateToReferenceFrame(double* dir, double* refDir);
 
 
