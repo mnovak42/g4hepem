@@ -15,6 +15,15 @@
 #include "G4HepEmElectronManager.icc"
 #include "G4HepEmRunUtils.icc"
 
+ __global__
+ void TestResMacXSecDataKernel ( const struct G4HepEmElectronData* theElectronData_d,
+                                 int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
+                                 double* tsOutRes_d, bool isIoni, int numTestCases) {
+   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+     G4HepEmElectronManager theElectronMgr;
+     tsOutRes_d[i] = theElectronMgr.GetRestMacXSec (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i], isIoni);
+   }
+ }
 
 void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h,
      double* tsInEkinIoni_h, double* tsInLogEkinIoni_h, double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
@@ -71,14 +80,3 @@ void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsIn
   cudaFree ( tsOutResMXIoni_d  );
   cudaFree ( tsOutResMXBrem_d  );
 }
-
-
- __global__
- void TestResMacXSecDataKernel ( const struct G4HepEmElectronData* theElectronData_d,
-                                 int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
-                                 double* tsOutRes_d, bool isIoni, int numTestCases) {
-   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
-     G4HepEmElectronManager theElectronMgr;
-     tsOutRes_d[i] = theElectronMgr.GetRestMacXSec (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i], isIoni);
-   }
- }

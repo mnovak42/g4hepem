@@ -10,6 +10,27 @@
 // Pull in implementation of Brem element selector
 #include "G4HepEmElectronInteractionBrem.icc"
 
+template <bool TisSBModel>
+__global__
+void TestElemSelectorDataBremKernel ( const struct G4HepEmElectronData* theElectronData_d,
+     const struct G4HepEmMatCutData* theMatCutData_d, const struct G4HepEmMaterialData* theMaterialData_d,
+     int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d, double* tsInRngVals_d,
+     int* tsOutRes_d, int numTestCases ) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+    // get number of elements this material (from the currecnt material-cuts)
+    // is composed of
+    const int imc = tsInImc_d[i];
+    const int indxMaterial = theMatCutData_d->fMatCutData[imc].fHepEmMatIndex;
+    const struct G4HepEmMatData& theMatData = theMaterialData_d->fMaterialData[indxMaterial];
+    const int numOfElement = theMatData.fNumOfElement;
+    int targetElemIndx = 0;
+    if (numOfElement > 1) {
+      targetElemIndx = SelectTargetAtomBrem( theElectronData_d, imc, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i], TisSBModel);
+    }
+    tsOutRes_d[i] = targetElemIndx;
+  }
+}
+
 void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h,
      double* tsInEkin_h, double* tsInLogEkin_h, double* tsInRngVals_h,
      int* tsOutRes_h, int numTestCases, int indxModel, bool iselectron ) {
@@ -66,26 +87,4 @@ void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* ts
   cudaFree ( tsInLogEkin_d );
   cudaFree ( tsInRngVals_d );
   cudaFree ( tsOutRes_d    );
-}
-
-
-template <bool TisSBModel>
-__global__
-void TestElemSelectorDataBremKernel ( const struct G4HepEmElectronData* theElectronData_d,
-     const struct G4HepEmMatCutData* theMatCutData_d, const struct G4HepEmMaterialData* theMaterialData_d,
-     int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d, double* tsInRngVals_d,
-     int* tsOutRes_d, int numTestCases ) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
-    // get number of elements this material (from the currecnt material-cuts)
-    // is composed of
-    const int imc = tsInImc_d[i];
-    const int indxMaterial = theMatCutData_d->fMatCutData[imc].fHepEmMatIndex;
-    const struct G4HepEmMatData& theMatData = theMaterialData_d->fMaterialData[indxMaterial];
-    const int numOfElement = theMatData.fNumOfElement;
-    int targetElemIndx = 0;
-    if (numOfElement > 1) {
-      targetElemIndx = SelectTargetAtomBrem( theElectronData_d, imc, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i], TisSBModel);
-    }
-    tsOutRes_d[i] = targetElemIndx;
-  }
 }
