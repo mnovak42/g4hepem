@@ -4,7 +4,8 @@
 #ifdef G4HepEm_CUDA_BUILD
 
 #include <cuda_runtime.h>
-#include <cstdio> 
+#include <cstdio>
+#include <cstdlib>
 
 /**
  * @file    G4HepEmCuUtils.hh
@@ -13,7 +14,7 @@
  *
  * A simple macro for printing out  CUDA error strings.
  */
- 
+
 
 #define gpuErrchk(ans) { cuAssert((ans), __FILE__, __LINE__); }
   inline void cuAssert(cudaError_t code, const char *file, int line, bool abort=true){
@@ -21,7 +22,7 @@
           fprintf(stderr,"CUAassert: %s %s %d\n",
           cudaGetErrorString(code), file, line);
           if (abort) exit(code);
-      }   
+      }
   }
 
 #endif // G4HepEm_CUDA_BUILD

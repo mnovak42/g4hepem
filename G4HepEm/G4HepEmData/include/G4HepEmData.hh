@@ -1,7 +1,5 @@
-
 #ifndef G4HepEmData_HH
 #define G4HepEmData_HH
-
 
 struct G4HepEmMatCutData;
 struct G4HepEmMaterialData;

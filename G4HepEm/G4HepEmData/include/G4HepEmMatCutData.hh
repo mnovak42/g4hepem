@@ -1,5 +1,3 @@
-
-
 #ifndef G4HepEmMatCutData_HH
 #define G4HepEmMatCutData_HH
 
@@ -33,9 +31,9 @@
  * G4HepEmRunManager.
  *
  * @note  only the data members that are needed on the device side are copied to
- * the device memory. This means, that only the G4HepEmMatCutData::fMatCutData 
- * collection of the G4HepEmMCCData structures is copied to the device memory 
- * together with the G4HepEmMatCutData::fNumMatCutData length of this collection. 
+ * the device memory. This means, that only the G4HepEmMatCutData::fMatCutData
+ * collection of the G4HepEmMCCData structures is copied to the device memory
+ * together with the G4HepEmMatCutData::fNumMatCutData length of this collection.
  *
  */
 
@@ -68,34 +66,34 @@ struct G4HepEmMatCutData {
 /**
   * Allocates and pre-initialises the G4HepEmMatCutData structure.
   *
-  * This method is invoked from the InitMaterialAndCoupleData() function declared 
-  * in the G4HepEmMaterialInit header file. The input argument address of the 
-  * G4HepEmMatCutData structure pointer is the one stored in the G4HepEmData  
-  * member of the `master` G4HepEmRunManager and the initialisation should be 
+  * This method is invoked from the InitMaterialAndCoupleData() function declared
+  * in the G4HepEmMaterialInit header file. The input argument address of the
+  * G4HepEmMatCutData structure pointer is the one stored in the G4HepEmData
+  * member of the `master` G4HepEmRunManager and the initialisation should be
   * done by the master G4HepEmRunManager.
   *
   * @param theMatCutData address of a G4HepEmMatCutData structure pointer. At termination,
   *   the correspondig pointer will be set to a memory location with a freshly allocated
   *   G4HepEmMatCutData structure. If the pointer is not null at input, the pointed
   *   memory is freed before the new allocation.
-  * @param numG4MatCuts number of Geant4 material-cuts couple objects (irrespectively if used or not). 
+  * @param numG4MatCuts number of Geant4 material-cuts couple objects (irrespectively if used or not).
   *   It determines the maximum value of the G4MaterialCutsCouple object index.
-  * @param numUsedG4MatCuts number of Geant4 material-cuts couple objects used in the current geometry. 
+  * @param numUsedG4MatCuts number of Geant4 material-cuts couple objects used in the current geometry.
   *   It determines the number of the G4HepEmMCCData structures.
   */
 void AllocateMatCutData(struct G4HepEmMatCutData** theMatCutData, int numG4MatCuts, int numUsedG4MatCuts);
 
-/** 
-  * Frees a G4HepEmMatCutData structure. 
+/**
+  * Frees a G4HepEmMatCutData structure.
   *
-  * This function deallocates all dynamically allocated memory stored in the 
-  * input argument related G4HepEmMatCutData structure, deallocates the structure 
-  * itself and sets the input address to store a pointer to null. This makes the 
-  * corresponding input stucture cleared, freed and ready to be re-initialised. 
-  * The input argument is supposed to be the address of the corresponding pointer 
+  * This function deallocates all dynamically allocated memory stored in the
+  * input argument related G4HepEmMatCutData structure, deallocates the structure
+  * itself and sets the input address to store a pointer to null. This makes the
+  * corresponding input stucture cleared, freed and ready to be re-initialised.
+  * The input argument is supposed to be the address of the corresponding pointer
   * member of the G4HepEmData member of the `master` G4HepEmRunManager.
   *
-  * @param theMatCutData memory address that stores pointer to a G4HepEmMatCutData  
+  * @param theMatCutData memory address that stores pointer to a G4HepEmMatCutData
   *  structure. The memory is freed and the input address will store a null pointer
   *  at termination.
   */
@@ -107,25 +105,25 @@ void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData);
 
 #ifdef G4HepEm_CUDA_BUILD
   /**
-    * Allocates memory for and copies the G4HepEmMatCutData structure from the host 
+    * Allocates memory for and copies the G4HepEmMatCutData structure from the host
     * to the device.
     *
-    * Only the G4HepEmMatCutData::fMatCutData collection of the G4HepEmMCCData 
-    * structures is copied to the device together with the G4HepEmMatCutData::fNumMatCutData 
+    * Only the G4HepEmMatCutData::fMatCutData collection of the G4HepEmMCCData
+    * structures is copied to the device together with the G4HepEmMatCutData::fNumMatCutData
     * length of this collection.
     *
-    * The input arguments are supposed to be the corresponding members of the 
+    * The input arguments are supposed to be the corresponding members of the
     * G4HepEmData, top level data structure, stored in the `master` G4HepEmRunManager.
     *
     * @param onHost    pointer to the host side, already initialised G4HepEmMatCutData structure.
-    * @param onDevice  host side address of a G4HepEmMatCutData structure memory pointer. The pointed 
-    *   memory is cleaned (if not null at input) and points to the device side memory at termination 
+    * @param onDevice  host side address of a G4HepEmMatCutData structure memory pointer. The pointed
+    *   memory is cleaned (if not null at input) and points to the device side memory at termination
     *   that stores the copied G4HepEmMatCutData structure.
     */
   void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onHost, struct G4HepEmMatCutData** onDevice);
 
   /**
-    * Frees all memory related to the device side G4HepEmMatCutData structure referred 
+    * Frees all memory related to the device side G4HepEmMatCutData structure referred
     * by the pointer stored on the host side input argument address.
     *
     * @param onDevice host side address of a G4HepEmMatCutData structure located on the device side memory.
@@ -133,6 +131,5 @@ void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData);
     */
   void FreeMatCutDataOnGPU(struct G4HepEmMatCutData** onDevice);
 #endif // DG4HepEm_CUDA_BUILD
-
 
 #endif // G4HepEmMatCutData_HH
