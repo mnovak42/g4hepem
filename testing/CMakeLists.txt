@@ -1,63 +1,26 @@
 ## ----------------------------------------------------------------------------
-## List of unit tests: under the '/apps/tests/' directory
+## 1. TestUtils helper library
 ##
-set(UNIT_TESTS_DIR_NAME
-  "MaterialAndRelated"
-  "ElectronEnergyLoss"
-  "ElectronTargetElementSelector"
-  "ElectronXSections")
-set(UNIT_TESTS_NAME
-  "TestMaterialAndRelated"
-  "TestEnergyLossData"
-  "TestElemSelectorData"
-  "TestXSectionData")
+add_library(TestUtils STATIC
+  TestUtils/G4SetUp.hh
+  TestUtils/G4SetUp.cc
+  TestUtils/Hist.hh)
+target_compile_features(TestUtils PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
+target_include_directories(TestUtils PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(TestUtils PUBLIC ${Geant4_LIBRARIES})
 
 ## ----------------------------------------------------------------------------
-## List of test applications: under the '/apps/examples' directory
+## 2. Add the unit test applications
 ##
-set(TESTS
-  "TestEm3")
-set(TESTS_INPUT
-  "-m ${PROJECT_SOURCE_DIR}/apps/examples/TestEm3/ATLASbar.mac")
+add_subdirectory(ElectronEnergyLoss)
+add_subdirectory(ElectronTargetElementSelector)
+add_subdirectory(ElectronXSections)
+add_subdirectory(MaterialAndRelated)
 
 ## ----------------------------------------------------------------------------
-## First: the unit tests
+## 3. Add the example applications as tests
 ##
-list(LENGTH UNIT_TESTS_DIR_NAME num)
-math(EXPR len "${num} - 1")
-foreach(val RANGE ${len})
-  list(GET UNIT_TESTS_DIR_NAME ${val}  t_DIR)
-  list(GET UNIT_TESTS_NAME     ${val}  t_NAME)
+set(G4HepEm_DIR "${PROJECT_BINARY_DIR}")
+add_subdirectory(${PROJECT_SOURCE_DIR}/apps/examples/TestEm3 ${CMAKE_CURRENT_BINARY_DIR}/TestEm3)
+add_test(NAME TestEm3 COMMAND TestEm3 -m "${PROJECT_SOURCE_DIR}/apps/examples/TestEm3/ATLASbar.mac")
 
-  file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/src/*.cc ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/src/*.cu ${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/src/*.cc)
-  file(GLOB HEADERS ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/include/*.hh ${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/include/*.hh)
-
-  add_executable(${t_NAME} ${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/${t_NAME}.cc ${SOURCES} ${HEADERS})
-  target_include_directories(${t_NAME}
-    PRIVATE
-      "${PROJECT_SOURCE_DIR}/apps/tests/${t_DIR}/include"
-      "${PROJECT_SOURCE_DIR}/apps/tests/TestUtils/include")
-  target_link_libraries(${t_NAME} PRIVATE ${Geant4_LIBRARIES} g4HepEmData g4HepEmInit g4HepEmRun g4HepEm)
-
-  add_test(${t_NAME} ${t_NAME})
-endforeach ()
-
-
-## ----------------------------------------------------------------------------
-## Second: the test applications
-##
-list(LENGTH TESTS num)
-math(EXPR len "${num} - 1")
-foreach(val RANGE ${len})
-  list(GET TESTS       ${val}  t_NAME)
-  list(GET TESTS_INPUT ${val}  t_INPARS)
-
-  file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/apps/examples/${t_NAME}/src/*.cc)
-  file(GLOB HEADERS ${PROJECT_SOURCE_DIR}/apps/examples/${t_NAME}/include/*.hh)
-
-  add_executable(${t_NAME} ${PROJECT_SOURCE_DIR}/apps/examples/${t_NAME}/${t_NAME}.cc ${SOURCES} ${HEADERS})
-  target_include_directories(${t_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/apps/examples/${t_NAME}/include")
-  target_link_libraries(${t_NAME} PRIVATE ${Geant4_LIBRARIES} g4HepEmData g4HepEmInit g4HepEmRun g4HepEm)
-
-  add_test(${t_NAME} ${t_NAME} ${t_INPARS})
-endforeach ()

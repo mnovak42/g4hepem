@@ -2,7 +2,7 @@
 #include "Declaration.hh"
 
 // local (and TestUtils) includes
-#include "G4SetUp.hh"
+#include "TestUtils/G4SetUp.hh"
 
 // G4 includes
 #include "globals.hh"
@@ -13,6 +13,7 @@
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmCLHEPRandomEngine.hh"
+
 
 int main() {
   int verbose = 1;
@@ -40,10 +41,9 @@ int main() {
   //
   //     Therefore, here we create a `master` G4HepEmRunManager and call its Initialize()
   //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
-  int g4HepEmParticleIndx = 0; // e-: 0; e+: 1;
+  int g4HepEmParticleIndx = 1; // e-: 0; e+: 1;
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
   runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), g4HepEmParticleIndx );
-
 
   //
   // --- Make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)
@@ -55,13 +55,13 @@ int main() {
 
   //
   // --- Invoke the test for Restricted Macroscopic Cross Section structure test(s):
-  if ( !TestXSectionData ( runMgr->GetHepEmData(), g4HepEmParticleIndx==0 ) ) {
+  if ( !TestElemSelectorData( runMgr->GetHepEmData(), runMgr->GetHepEmParameters(),  g4HepEmParticleIndx==0 ) ) {
     return 1;
   } else if ( verbose > 0 ) {
 #ifdef G4HepEm_CUDA_BUILD
-    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST v.s. DEVICE) \n" << std::endl;
+    std::cout << " === Target Element Selector Test: PASSING (HepEm HOST v.s. DEVICE) \n" << std::endl;
 #else   // G4HepEm_CUDA_BUILD
-    std::cout << " === Macroscopic Cross Section Test: PASSING (HepEm HOST) \n" << std::endl;
+    std::cout << " === Target Element Selector Test: PASSING (HepEm HOST) \n" << std::endl;
 #endif  // G4HepEm_CUDA_BUILD
   }
 

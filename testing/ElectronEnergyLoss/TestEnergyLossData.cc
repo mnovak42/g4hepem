@@ -2,7 +2,7 @@
 #include "Declaration.hh"
 
 // local (and TestUtils) includes
-#include "G4SetUp.hh"
+#include "TestUtils/G4SetUp.hh"
 
 // G4 includes
 #include "globals.hh"
