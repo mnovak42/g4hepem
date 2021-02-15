@@ -16,6 +16,7 @@ add_subdirectory(ElectronEnergyLoss)
 add_subdirectory(ElectronTargetElementSelector)
 add_subdirectory(ElectronXSections)
 add_subdirectory(MaterialAndRelated)
+add_subdirectory(testElectronInteractionBrem)
 
 ## ----------------------------------------------------------------------------
 ## 3. Add the example applications as tests

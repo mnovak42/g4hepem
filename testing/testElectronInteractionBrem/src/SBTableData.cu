@@ -8,6 +8,48 @@
 
 #include <cstdio>
 
+__global__
+void TestSBTableDataKernel(struct G4HepEmSBTableData* theSBTables_d, int* theIData1_d, int* theIData2_d, int* theIData3_d, int* theIData4_d,
+                           double* theDData1_d, double* theDData2_d, double* theDData3_d, double* theDData4_d, double* theDData5_d) {
+   // one thread will get all data
+   if (blockIdx.x * blockDim.x + threadIdx.x == 0) {
+     // fMaxZet, fNumElEnergy, fNumKappa, fNumHepEmMatCuts, fNumElemsInMatCuts, fNumSBTableData
+     theIData1_d[0] = theSBTables_d->fMaxZet;
+     theIData1_d[1] = theSBTables_d->fNumElEnergy;
+     theIData1_d[2] = theSBTables_d->fNumKappa;
+     theIData1_d[3] = theSBTables_d->fNumHepEmMatCuts;
+     theIData1_d[4] = theSBTables_d->fNumElemsInMatCuts;
+     theIData1_d[5] = theSBTables_d->fNumSBTableData;
+     //
+     for (int i=0; i<121; ++i) {
+       theIData2_d[i] = theSBTables_d->fSBTablesStartPerZ[i];
+     }
+     for (int i=0; i<theSBTables_d->fNumHepEmMatCuts; ++i) {
+       theIData3_d[i] = theSBTables_d->fGammaCutIndxStartIndexPerMC[i];
+     }
+     for (int i=0; i<theSBTables_d->fNumElemsInMatCuts; ++i) {
+       theIData4_d[i] = theSBTables_d->fGammaCutIndices[i];
+     }
+     //
+     //
+     for (int i=0; i<65; ++i) {
+       theDData1_d[i] = theSBTables_d->fElEnergyVect[i];
+     }
+     for (int i=0; i<65; ++i) {
+       theDData2_d[i] = theSBTables_d->fLElEnergyVect[i];
+     }
+     for (int i=0; i<54; ++i) {
+       theDData3_d[i] = theSBTables_d->fKappaVect[i];
+     }
+     for (int i=0; i<54; ++i) {
+       theDData4_d[i] = theSBTables_d->fKappaVect[i];
+     }
+     for (int i=0; i<theSBTables_d->fNumSBTableData; ++i) {
+       theDData5_d[i] = theSBTables_d->fSBTableData[i];
+     }
+   }
+}
+
 bool TestSBTableData(const struct G4HepEmData* hepEmData) {
   const struct G4HepEmSBTableData* theSBTables = hepEmData->fTheSBTableData;
   // allocate arrays to store results of device side evaluation of data as:
@@ -120,44 +162,3 @@ bool TestSBTableData(const struct G4HepEmData* hepEmData) {
   return isPassing;
 }
 
-__global__
-void TestSBTableDataKernel(struct G4HepEmSBTableData* theSBTables_d, int* theIData1_d, int* theIData2_d, int* theIData3_d, int* theIData4_d,
-                           double* theDData1_d, double* theDData2_d, double* theDData3_d, double* theDData4_d, double* theDData5_d) {
-   // one thread will get all data
-   if (blockIdx.x * blockDim.x + threadIdx.x == 0) {
-     // fMaxZet, fNumElEnergy, fNumKappa, fNumHepEmMatCuts, fNumElemsInMatCuts, fNumSBTableData
-     theIData1_d[0] = theSBTables_d->fMaxZet;
-     theIData1_d[1] = theSBTables_d->fNumElEnergy;
-     theIData1_d[2] = theSBTables_d->fNumKappa;
-     theIData1_d[3] = theSBTables_d->fNumHepEmMatCuts;
-     theIData1_d[4] = theSBTables_d->fNumElemsInMatCuts;
-     theIData1_d[5] = theSBTables_d->fNumSBTableData;
-     //
-     for (int i=0; i<121; ++i) {
-       theIData2_d[i] = theSBTables_d->fSBTablesStartPerZ[i];
-     }
-     for (int i=0; i<theSBTables_d->fNumHepEmMatCuts; ++i) {
-       theIData3_d[i] = theSBTables_d->fGammaCutIndxStartIndexPerMC[i];
-     }
-     for (int i=0; i<theSBTables_d->fNumElemsInMatCuts; ++i) {
-       theIData4_d[i] = theSBTables_d->fGammaCutIndices[i];
-     }
-     //
-     //
-     for (int i=0; i<65; ++i) {
-       theDData1_d[i] = theSBTables_d->fElEnergyVect[i];
-     }
-     for (int i=0; i<65; ++i) {
-       theDData2_d[i] = theSBTables_d->fLElEnergyVect[i];
-     }
-     for (int i=0; i<54; ++i) {
-       theDData3_d[i] = theSBTables_d->fKappaVect[i];
-     }
-     for (int i=0; i<54; ++i) {
-       theDData4_d[i] = theSBTables_d->fKappaVect[i];
-     }
-     for (int i=0; i<theSBTables_d->fNumSBTableData; ++i) {
-       theDData5_d[i] = theSBTables_d->fSBTableData[i];
-     }
-   }
-}
