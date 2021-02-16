@@ -54,7 +54,6 @@ jobs:
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
                sudo apt-get update -y
                sudo ACCEPT_EULA=Y apt-get install msodbcsql17
-               sudo apt-get upgrade -y
                sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
                echo "CC=/usr/bin/gcc-${{ matrix.version }}" >> $GITHUB_ENV
                echo "CXX=/usr/bin/g++-${{ matrix.version }}" >> $GITHUB_ENV
