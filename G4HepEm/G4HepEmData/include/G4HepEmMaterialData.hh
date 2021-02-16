@@ -1,4 +1,3 @@
-
 #ifndef G4HepEmMatrialData_HH
 #define G4HepEmMatrialData_HH
 
@@ -69,42 +68,42 @@ struct G4HepEmMaterialData {
   /** Array that translates a Geant4 G4Material object index to the correspondig G4HepEmMatData index in the collection below.*/
   int*      fG4MatIndexToHepEmMatIndex; // [fNumG4Material]
   /** Collection of G4HepEmMatData structures for all materials used in the current geometry.*/
-  struct G4HepEmMatData* fMaterialData; // [fNumMaterialData] 
+  struct G4HepEmMatData* fMaterialData; // [fNumMaterialData]
 };
 
 
 /**
   * Allocates and pre-initialises the G4HepEmMaterialData structure.
   *
-  * This method is invoked from the InitMaterialAndCoupleData() function declared 
-  * in the G4HepEmMaterialInit header file. The input argument address of the 
-  * G4HepEmMaterialData structure pointer is the one stored in the G4HepEmData  
-  * member of the `master` G4HepEmRunManager and the initialisation should be 
+  * This method is invoked from the InitMaterialAndCoupleData() function declared
+  * in the G4HepEmMaterialInit header file. The input argument address of the
+  * G4HepEmMaterialData structure pointer is the one stored in the G4HepEmData
+  * member of the `master` G4HepEmRunManager and the initialisation should be
   * done by the master G4HepEmRunManager.
   *
   * @param theMatData address of a G4HepEmMaterialData structure pointer. At termination,
   *   the correspondig pointer will be set to a memory location with a freshly allocated
   *   G4HepEmMaterialData structure. If the pointer was not null at input, the pointed
   *   memory is freed before the new allocation.
-  * @param numG4Mat number of Geant4 material objects (irrespectively if used or not). 
+  * @param numG4Mat number of Geant4 material objects (irrespectively if used or not).
   *   It determines the maximum value of the G4Material object index.
-  * @param numUsedG4Mat number of Geant4 material objects used in the current geometry. 
+  * @param numUsedG4Mat number of Geant4 material objects used in the current geometry.
   *   It determines the number of the G4HepEmMatData structures.
   */
 void AllocateMaterialData(struct G4HepEmMaterialData** theMatData, int numG4Mat, int numUsedG4Mat);
 
 
-/** 
-  * Frees a G4HepEmMaterialData structure. 
+/**
+  * Frees a G4HepEmMaterialData structure.
   *
-  * This function deallocates all dynamically allocated memory stored in the 
-  * input argument related G4HepEmMaterialData structure, deallocates the structure 
-  * itself and sets the input address to store a pointer to null. This makes the 
-  * corresponding input stucture cleared, freed and ready to be re-initialised. 
-  * The input argument is supposed to be the address of the corresponding pointer 
+  * This function deallocates all dynamically allocated memory stored in the
+  * input argument related G4HepEmMaterialData structure, deallocates the structure
+  * itself and sets the input address to store a pointer to null. This makes the
+  * corresponding input stucture cleared, freed and ready to be re-initialised.
+  * The input argument is supposed to be the address of the corresponding pointer
   * member of the G4HepEmData member of the `master` G4HepEmRunManager.
   *
-  * @param theMatData memory address that stores pointer to a G4HepEmMaterialData  
+  * @param theMatData memory address that stores pointer to a G4HepEmMaterialData
   *  structure. The memory is freed and the input address will store a null pointer
   *  at termination.
   */
@@ -116,22 +115,22 @@ void FreeMaterialData (struct G4HepEmMaterialData** theMatData);
     * Allocates memory for and copies the G4HepEmMaterialData structure from the
     * host to the device.
     *
-    * Only the G4HepEmMaterialData::fMaterialData collection of the G4HepEmMatData 
-    * structures is copied to the device together with the G4HepEmMaterialData::fNumMaterialData 
+    * Only the G4HepEmMaterialData::fMaterialData collection of the G4HepEmMatData
+    * structures is copied to the device together with the G4HepEmMaterialData::fNumMaterialData
     * length of this collection.
     *
-    * The input arguments are supposed to be the corresponding members of the 
+    * The input arguments are supposed to be the corresponding members of the
     * G4HepEmData, top level data structure, stored in the `master` G4HepEmRunManager.
     *
     * @param onHost    pointer to the host side, already initialised G4HepEmMaterialData structure.
-    * @param onDevice  host side address of a G4HepEmMaterialData structure memory pointer. The pointed 
-    *   memory is cleaned (if not null at input) and points to the device side memory at termination 
+    * @param onDevice  host side address of a G4HepEmMaterialData structure memory pointer. The pointed
+    *   memory is cleaned (if not null at input) and points to the device side memory at termination
     *   that stores the copied G4HepEmMaterialData structure.
-    */  
+    */
   void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onHost, struct G4HepEmMaterialData** onDevice);
 
   /**
-    * Frees all memory related to the device side G4HepEmMaterialData structure referred 
+    * Frees all memory related to the device side G4HepEmMaterialData structure referred
     * by the pointer stored on the host side input argument address.
     *
     * @param onDevice host side address of a G4HepEmMaterialData structure located on the device side memory.

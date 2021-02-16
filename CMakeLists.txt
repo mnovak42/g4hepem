@@ -68,6 +68,9 @@ if(G4HepEm_CUDA_BUILD)
     message(FATAL_ERROR "No CUDA compiler/support available")
   endif()
 
+  # Find needed toolkit libraries
+  find_package(CUDAToolkit REQUIRED)
+
   # On CMake < 3.18, need FindCUDA for Arch flags, and it's messy...
   if(CMAKE_VERSION VERSION_LESS 3.18)
     find_package(CUDA 10 REQUIRED QUIET)

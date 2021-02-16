@@ -1,4 +1,3 @@
-
 #ifndef G4HepEmElectronData_HH
 #define G4HepEmElectronData_HH
 
@@ -369,8 +368,5 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData);
     */
   void FreeElectronDataOnDevice(struct G4HepEmElectronData** onDEVICE);
 #endif // DG4HepEm_CUDA_BUILD
-
-
-
 
 #endif // G4HepEmElementData_HH

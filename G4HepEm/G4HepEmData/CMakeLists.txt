@@ -1,17 +1,10 @@
 file(GLOB G4HEPEMDATA_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
 file(GLOB G4HEPEMDATA_CXX_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 
-#
-# CUDA
-#
-if(G4HepEm_CUDA_BUILD)
-  file(GLOB G4HEPEMDATA_CUDA_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu)
-endif()
-
 if(BUILD_STATIC_LIBS)
-  add_library(g4HepEmData STATIC ${G4HEPEMDATA_CXX_sources} ${G4HEPEMDATA_CUDA_sources})
+  add_library(g4HepEmData STATIC ${G4HEPEMDATA_CXX_sources})
 else()
-  add_library(g4HepEmData SHARED ${G4HEPEMDATA_CXX_sources} ${G4HEPEMDATA_CUDA_sources})
+  add_library(g4HepEmData SHARED ${G4HEPEMDATA_CXX_sources})
 endif()
 
 add_library(${PROJECT_NAME}::g4HepEmData ALIAS g4HepEmData)
@@ -24,9 +17,8 @@ target_include_directories(g4HepEmData PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
 
-if(G4HepEm_CUDA_BUILD)
-  set_property(TARGET g4HepEmData PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-endif()
+# TODO: Determine when/if to use CUDA::cudart_static
+target_link_libraries(g4HepEmData PRIVATE $<$<BOOL:${G4HepEm_CUDA_BUILD}>:CUDA::cudart>)
 
 ## ----------------------------------------------------------------------------
 ## Install G4HepEm libraries and headers
