@@ -1,7 +1,7 @@
 
 #include "Declaration.hh"
 
-#include "Hist.hh"
+#include "TestUtils/Hist.hh"
 
 // G4 includes
 #include "G4SystemOfUnits.hh"
