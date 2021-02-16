@@ -43,6 +43,7 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
                          const double lekin, const double urndn, const bool isbremSB);
 
 
+G4HepEmHostDevice
 void SampleDirectionsBrem(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir,
                           double* thePrimElecDir, G4HepEmRandomEngine* rnge);
 

@@ -22,6 +22,7 @@ double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmR
 G4HepEmHostDevice
 double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge);
 
+G4HepEmHostDevice
 void SampleDirectionsIoni(const double thePrimEkin, const double deltaEkin, double* theSecElecDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge);
 
 #endif // G4HepEmElectronInteractionIoni_HH

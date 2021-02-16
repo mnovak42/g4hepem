@@ -13,7 +13,7 @@
 // original direction, the real original direction [u1,u2,u3] in the lab frame
 // needs to be accounted and the final new direction, i.e. in the lab frame is
 // computed.
-void RotateToReferenceFrame(double &u, double &v, double &w, double* refDir) {
+void RotateToReferenceFrame(double &u, double &v, double &w, const double* refDir) {
   double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
   if (up>0.) {
     up = std::sqrt(up);
@@ -29,7 +29,7 @@ void RotateToReferenceFrame(double &u, double &v, double &w, double* refDir) {
   }
 }
 
-void RotateToReferenceFrame(double* dir, double* refDir) {
+void RotateToReferenceFrame(double* dir, const double* refDir) {
   double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
   if (up>0.) {
     up = std::sqrt(up);
