@@ -16,10 +16,14 @@ add_subdirectory(ElectronEnergyLoss)
 add_subdirectory(ElectronTargetElementSelector)
 add_subdirectory(ElectronXSections)
 add_subdirectory(MaterialAndRelated)
+
+## ----------------------------------------------------------------------------
+## 3. Add the developer-only test applications
+##
 add_subdirectory(testElectronInteractionBrem)
 
 ## ----------------------------------------------------------------------------
-## 3. Add the example applications as tests
+## 4. Add the example applications as tests
 ##
 set(G4HepEm_DIR "${PROJECT_BINARY_DIR}")
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/examples/TestEm3 ${CMAKE_CURRENT_BINARY_DIR}/TestEm3)

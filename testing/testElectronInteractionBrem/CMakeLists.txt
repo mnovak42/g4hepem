@@ -10,5 +10,3 @@ target_link_libraries(testBrem
   PRIVATE
   g4HepEm TestUtils ${Geant4_LIBRARIES})
 
-# Not implemented yet
-#add_test(testBrem testBrem)
