@@ -89,8 +89,9 @@ endif()
 add_subdirectory(G4HepEm)
 
 ## ----------------------------------------------------------------------------
-## Add testing option (ON by default)
+## Add testing option, changing default from CTest to OFF
 ##
+option(BUILD_TESTING "Build the testing tree." OFF)
 include(CTest)
 if(BUILD_TESTING)
   message(STATUS "Building test programs is enabled!")
