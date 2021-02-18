@@ -9,4 +9,4 @@ target_link_libraries(TestEnergyLossData
   PRIVATE
   g4HepEm TestUtils ${Geant4_LIBRARIES})
 
-add_test(TestEnergyLossData TestEnergyLossData)
+add_test(NAME TestEnergyLossData COMMAND TestEnergyLossData)

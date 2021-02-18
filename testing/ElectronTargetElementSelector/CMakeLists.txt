@@ -9,4 +9,4 @@ target_link_libraries(TestElemSelectorData
   PRIVATE
   g4HepEm TestUtils ${Geant4_LIBRARIES})
 
-add_test(TestElemSelectorData TestElemSelectorData)
+add_test(NAME TestElemSelectorData COMMAND TestElemSelectorData)

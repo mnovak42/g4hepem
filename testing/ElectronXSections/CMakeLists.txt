@@ -9,4 +9,4 @@ target_link_libraries(TestXSectionData
   PRIVATE
   g4HepEm TestUtils ${Geant4_LIBRARIES})
 
-add_test(TestXSectionData TestXSectionData)
+add_test(NAME TestXSectionData COMMAND TestXSectionData)
