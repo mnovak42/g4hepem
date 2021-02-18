@@ -9,4 +9,4 @@ target_link_libraries(TestMaterialAndRelated
   PRIVATE
   g4HepEm TestUtils ${Geant4_LIBRARIES})
 
-add_test(TestMaterialAndRelated TestMaterialAndRelated)
+add_test(NAME TestMaterialAndRelated COMMAND TestMaterialAndRelated)
