@@ -120,20 +120,26 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   // init particle change: it might be more special we need to see later
   fParticleChangeForLoss->InitializeForPostStep(track);
 
-  G4HepEmTLData*            theTLData = fTheG4HepEmRunManager->GetTheTLData();
-  const G4ParticleDefinition* partDef = track.GetParticleDefinition();
-  const bool                  isGamma = (partDef->GetPDGEncoding()==22);
+  G4HepEmTLData*              theTLData = fTheG4HepEmRunManager->GetTheTLData();
+  const G4ParticleDefinition*   partDef = track.GetParticleDefinition();
+  const bool                    isGamma = (partDef->GetPDGEncoding()==22);
+  const G4StepPoint* theG4PostStepPoint = step.GetPostStepPoint();
+  const bool               onBoundary   = theG4PostStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary;
   G4HepEmTrack*       thePrimaryTrack = isGamma
                                         ? theTLData->GetPrimaryGammaTrack()->GetTrack()
                                         : theTLData->GetPrimaryElectronTrack()->GetTrack();
+  if (isGamma & onBoundary) {
+    thePrimaryTrack->SetGStepLength(track.GetStepLength());
+    fTheG4HepEmRunManager->GetTheGammaManager()->UpdateNumIALeft(thePrimaryTrack);
+    return fParticleChangeForLoss;
+  }
   // NOTE: this primary track is the same as in the last call in the HowFar()
   //       But transportation might changed its direction, geomertical step length,
   //       or status ( on boundary or not).
   const G4ThreeVector& primDir = track.GetDynamicParticle()->GetMomentumDirection();
   thePrimaryTrack->SetDirection(primDir[0], primDir[1], primDir[2]);
   thePrimaryTrack->SetGStepLength(track.GetStepLength());
-  const G4StepPoint* theG4PostStepPoint = step.GetPostStepPoint();
-  thePrimaryTrack->SetOnBoundary(theG4PostStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary);
+  thePrimaryTrack->SetOnBoundary(onBoundary);
   // invoke the physics interactions (all i.e. all along- and post-step as well as possible at rest)
   if (isGamma) {
     fTheG4HepEmRunManager->GetTheGammaManager()->Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
@@ -149,7 +155,8 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   }
   fParticleChangeForLoss->ProposeLocalEnergyDeposit(edep);
   const double* pdir = thePrimaryTrack->GetDirection();
-  fParticleChangeForLoss->ProposeMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
+//  fParticleChangeForLoss->ProposeMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
+  step.GetPostStepPoint()->SetMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
 
   // secondary: only possible is e- or gamma at the moemnt
   const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
@@ -186,10 +193,6 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
 
   return fParticleChangeForLoss;
 }
-
-
-
-
 
 
 
