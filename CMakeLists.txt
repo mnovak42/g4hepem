@@ -26,6 +26,19 @@ set(CMAKE_LINK_DEPENDS_NO_SHARED ON)
 # - Only report newly installed files
 set(CMAKE_INSTALL_MESSAGE LAZY)
 
+# - Default to Release mode build in single mode
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE)
+    # Default to a Release build if nothing else...
+    set(CMAKE_BUILD_TYPE Release)
+  endif()
+  # Force to the cache, but use existing value.
+  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}"
+    CACHE STRING "Choose the type of build, options are: None Release Debug RelWithDebInfo MinSizeRel"
+    FORCE)
+endif()
+
+
 # - Minimums required by G4HepEm
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
