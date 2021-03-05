@@ -9,8 +9,11 @@
 //#include "G4KleinNishinaModel.hh"  // by defult in G4ComptonScattering
 
 #include "G4GammaConversion.hh"
+
+#include "GammaAbsorption.hh"
 #include "G4PhotoElectricEffect.hh"
 #include "G4LivermorePhotoElectricModel.hh"
+
 //#include "G4RayleighScattering.hh"
 
 #include "G4eMultipleScattering.hh"
@@ -18,6 +21,7 @@
 #include "G4eIonisation.hh"
 #include "G4eBremsstrahlung.hh"
 #include "G4eplusAnnihilation.hh"
+
 
 #include "G4EmParameters.hh"
 #include "G4MscStepLimitType.hh"
@@ -80,7 +84,12 @@ void PhysListG4Em::ConstructProcess() {
 
     if (particleName == "gamma") {
       ph->RegisterProcess(new G4ComptonScattering(), particle);
+
       ph->RegisterProcess(new G4GammaConversion, particle);
+
+      ph->RegisterProcess(new GammaAbsorption, particle);
+
+/*
       G4double LivermoreLowEnergyLimit = 1*eV;
       G4double LivermoreHighEnergyLimit = 1*TeV;
       G4PhotoElectricEffect* thePhotoElectricEffect = new G4PhotoElectricEffect();
@@ -89,6 +98,7 @@ void PhysListG4Em::ConstructProcess() {
       theLivermorePhotoElectricModel->SetHighEnergyLimit(LivermoreHighEnergyLimit);
       thePhotoElectricEffect->AddEmModel(0, theLivermorePhotoElectricModel);
       ph->RegisterProcess(thePhotoElectricEffect, particle);
+*/
     } else if (particleName == "e-") {
 
 // //     ph->RegisterProcess(new G4eMultipleScattering(), particle);
@@ -106,8 +116,9 @@ void PhysListG4Em::ConstructProcess() {
       //
       G4eIonisation* eIoni = new G4eIonisation();
       ph->RegisterProcess(eIoni, particle);
-      
+
       ph->RegisterProcess(new G4eBremsstrahlung(), particle);
+
     } else if (particleName == "e+") {
 //      ph->RegisterProcess(new G4eMultipleScattering(), particle);
 
@@ -116,20 +127,20 @@ void PhysListG4Em::ConstructProcess() {
       G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel();
       msc->AddEmModel(0, msc1);
       ph->RegisterProcess(msc,particle);
-*/      
-     
+*/
+
 
       G4eIonisation* eIoni = new G4eIonisation();
       ph->RegisterProcess(eIoni, particle);
       ph->RegisterProcess(new G4eBremsstrahlung(), particle);
       ph->RegisterProcess(new G4eplusAnnihilation(), particle);
+
     }
   }
 
-  
+
   // Deexcitation
   //
 //  G4VAtomDeexcitation* de = new G4UAtomicDeexcitation();
 //  G4LossTableManager::Instance()->SetAtomDeexcitation(de);
 }
-
