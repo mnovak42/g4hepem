@@ -7,11 +7,9 @@ struct G4HepEmElementData;
 
 struct G4HepEmElectronData;
 
-#ifdef G4HepEm_CUDA_BUILD
- struct G4HepEmElectronDataOnDevice;
-#endif  // G4HepEm_CUDA_BUILD
-
 struct G4HepEmSBTableData;
+
+struct G4HepEmGammaData;
 
 /**
  * @file    G4HepEmData.hh
@@ -57,6 +55,9 @@ struct G4HepEmData {
   struct G4HepEmSBTableData*           fTheSBTableData      = nullptr;
 
 
+  struct G4HepEmGammaData*             fTheGammaData        = nullptr;
+
+
 #ifdef G4HepEm_CUDA_BUILD
   struct G4HepEmMatCutData*            fTheMatCutData_gpu   = nullptr;
   struct G4HepEmMaterialData*          fTheMaterialData_gpu = nullptr;
@@ -66,6 +67,8 @@ struct G4HepEmData {
   struct G4HepEmElectronData*          fThePositronData_gpu = nullptr;
 
   struct G4HepEmSBTableData*           fTheSBTableData_gpu  = nullptr;
+
+  struct G4HepEmGammaData*             fTheGammaData_gpu    = nullptr;
 #endif  // G4HepEm_CUDA_BUILD
 
 };

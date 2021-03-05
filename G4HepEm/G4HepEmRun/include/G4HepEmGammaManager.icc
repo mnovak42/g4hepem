@@ -1,0 +1,144 @@
+#include "G4HepEmGammaManager.hh"
+
+#include "G4HepEmData.hh"
+#include "G4HepEmParameters.hh"
+#include "G4HepEmTLData.hh"
+
+#include "G4HepEmConstants.hh"
+#include "G4HepEmMatCutData.hh"
+#include "G4HepEmMaterialData.hh"
+#include "G4HepEmGammaData.hh"
+
+#include "G4HepEmMath.hh"
+
+#include "G4HepEmRunUtils.hh"
+#include "G4HepEmTrack.hh"
+#include "G4HepEmElectronTrack.hh"
+#include "G4HepEmGammaTrack.hh"
+
+#include "G4HepEmGammaInteractionConversion.hh"
+#include "G4HepEmGammaInteractionCompton.hh"
+#include "G4HepEmGammaInteractionPhotoelectric.hh"
+
+#include <iostream>
+
+// Note: pStepLength will be set here i.e. this is the first access to it that
+//       will clear the previous step value.
+void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+  G4HepEmTrack* theTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
+  // Sample the `number-of-interaction-left`
+  for (int ip=0; ip<3; ++ip) {
+    if (theTrack->GetNumIALeft(ip)<=0.) {
+      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+    }
+  }
+  HowFar(hepEmData, hepEmPars, theTrack);
+}
+
+
+void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTrack* theTrack) {
+  const double   theEkin = theTrack->GetEKin();
+  const double  theLEkin = theTrack->GetLogEKin();
+  const int   theMatIndx = hepEmData->fTheMatCutData->fMatCutData[theTrack->GetMCIndex()].fHepEmMatIndex;
+  // get the Gamma data from the op level data structure
+  const G4HepEmGammaData* theGammaData = hepEmData->fTheGammaData;
+  // === Gamma has only discrete limits due to Conversion, Compton (at the moment)
+  double mxSecs[3];
+  // conversion, compton and photoelectric
+  mxSecs[0] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 0);
+  mxSecs[1] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 1);
+  // NOTE: there is no-photoelectric at the moment!
+  //       But photons with an energy below 250.0 [keV] are absorbed by setting
+  //       the (fake absorption) process macroscopic cross section to a large value.
+  mxSecs[2] = (theEkin > 0.25) ? 0.0 : kALargeValue;
+  // compute mfp and see if we need to sample the `number-of-interaction-left`
+  // before we use it to get the current discrete proposed step length
+  int indxWinnerProcess = -1;             // init to nothing
+  double pStepLength    = kALargeValue;   // init to a large value
+  for (int ip=0; ip<3; ++ip) {
+    const double mxsec = mxSecs[ip];
+    const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
+    // save the mac-xsec for the update of the `number-of-interaction-left`:
+    // the `number-of-intercation-left` should be updated in the along-step-action
+    theTrack->SetMFP(mfp, ip);
+    // sample the proposed step length
+    const double dStepLimit = mfp*theTrack->GetNumIALeft(ip);
+//    std::cout << " ip = " << ip << " mxsec = " << mxsec << " dStepLimit = " << dStepLimit << std::endl;
+    if (dStepLimit<pStepLength) {
+      pStepLength = dStepLimit;
+      indxWinnerProcess = ip;
+    }
+  }
+//  std::cout << "indxWinnerProcess = " << indxWinnerProcess <<  " dStepLimit = " << pStepLength << std::endl;
+  //
+  // the geometrical and physical step lengths are the same for gamma
+  theTrack->SetGStepLength(pStepLength);
+  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
+  //
+}
+
+
+void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* tlData) {
+  G4HepEmTrack* theTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
+  // === 1. The `number-of-interaction-left` needs to be updated based on the actual
+  //        step lenght and the energy deposit needs to be reset to 0.0
+  // physical step length is the geometrical fo rgamma
+  UpdateNumIALeft(theTrack);
+  // reset energy deposit
+  theTrack->SetEnergyDeposit(0.0);
+  // === Gamma has pure Discrete interaction (if any)
+  // 2. check if discrete process limited the step return otherwise (i.e. if
+  //    boundary process limited the step)
+  if (theTrack->GetOnBoundary()) {
+    return;
+  }
+  // reset number of interaction left for the winner discrete process
+  const int iDProc = theTrack->GetWinnerProcessIndex();
+  theTrack->SetNumIALeft(-1.0, iDProc);
+//  std::cout<< " --- iDProc = " << iDProc << std::endl;
+  //
+  // perform the discrete part of the winner interaction
+  switch (iDProc) {
+    case 0: // invoke gamma Conversion to e-/e+ pairs: {
+            PerformGammaConversion(tlData, hepEmData);
+            break;
+    case 1: // invoke Compton scattering of gamma:
+            PerformComptonScattering(tlData, hepEmData);
+            break;
+    case 2: // invoke photoelectric process: pure absorption at the moment (aktive if E_g < 250 keV)
+            PerformPhotoelectric(tlData, hepEmData);
+            break;
+
+  }
+}
+
+
+void   G4HepEmGammaManager::UpdateNumIALeft(G4HepEmTrack* theTrack) {
+  const double pStepLength = theTrack->GetGStepLength();
+  double*    numInterALeft = theTrack->GetNumIALeft();
+  double*       preStepMFP = theTrack->GetMFP();
+  numInterALeft[0] -= pStepLength/preStepMFP[0];
+  numInterALeft[1] -= pStepLength/preStepMFP[1];
+  numInterALeft[2] -= pStepLength/preStepMFP[2];
+}
+
+
+double  G4HepEmGammaManager::GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin, const double lekin, const int iprocess) {
+  // get number of Conversion and Compton discrete energy grid points
+  const int numConvData = gmData->fConvEnergyGridSize;
+  const int numCompData = gmData->fCompEnergyGridSize;
+  const int      iStart = imat*2*(numConvData + numCompData);
+  // use the G4HepEmRunUtils GetSplineLog function for interpolation
+  switch (iprocess) {
+    case 0: { // Conversion
+              const double  mxsec = GetSplineLog(numConvData, gmData->fConvEnergyGrid, &(gmData->fConvCompMacXsecData[iStart]) , ekin, lekin, gmData->fConvLogMinEkin, gmData->fConvEILDelta);
+              return G4HepEmMax(0.0, mxsec);
+            }
+    case 1: { // Compton
+              const double  mxsec = GetSplineLog(numCompData, gmData->fCompEnergyGrid, &(gmData->fConvCompMacXsecData[iStart+2*numConvData]) , ekin, lekin, gmData->fCompLogMinEkin, gmData->fCompEILDelta);
+              return G4HepEmMax(0.0, mxsec);
+            }
+    default:
+            return 0.0;
+  }
+}

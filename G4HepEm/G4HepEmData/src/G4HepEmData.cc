@@ -9,6 +9,8 @@
 #include "G4HepEmElectronData.hh"
 #include "G4HepEmSBTableData.hh"
 
+#include "G4HepEmGammaData.hh"
+
 void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
   // free all previous (if any)
   FreeG4HepEmData (theHepEmData);
@@ -22,6 +24,8 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
 
   theHepEmData->fTheSBTableData      = nullptr;
 
+  theHepEmData->fTheGammaData        = nullptr;
+
 #ifdef G4HepEm_CUDA_BUILD
   theHepEmData->fTheMatCutData_gpu   = nullptr;
   theHepEmData->fTheMaterialData_gpu = nullptr;
@@ -31,6 +35,8 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
   theHepEmData->fThePositronData_gpu = nullptr;
 
   theHepEmData->fTheSBTableData_gpu  = nullptr;
+
+  theHepEmData->fTheGammaData_gpu    = nullptr;
 #endif // G4HepEm_CUDA_BUILD
 }
 
@@ -45,6 +51,8 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
 
   FreeSBTableData  ( &(theHepEmData->fTheSBTableData)  );
 
+  FreeGammaData    ( &(theHepEmData->fTheGammaData)  );
+
 #ifdef G4HepEm_CUDA_BUILD
   FreeMatCutDataOnGPU      ( &(theHepEmData->fTheMatCutData_gpu)   );
   FreeMaterialDataOnGPU    ( &(theHepEmData->fTheMaterialData_gpu) );
@@ -54,6 +62,8 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
   FreeElectronDataOnDevice ( &(theHepEmData->fThePositronData_gpu) );
 
   FreeSBTableDataOnDevice  ( &(theHepEmData->fTheSBTableData_gpu)  );
+
+  FreeGammaDataOnDevice    ( &(theHepEmData->fTheGammaData_gpu)  );
 #endif // G4HepEm_CUDA_BUILD
 }
 
@@ -65,13 +75,13 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
   // Deep copy each members represented by their pointers.
 
   // 1. Copy the G4HepEmMatCutData member and set the device ptr.
-  CopyMatCutDataToGPU ( onCPU->fTheMatCutData, &(onCPU->fTheMatCutData_gpu) );
+  CopyMatCutDataToGPU ( onCPU->fTheMatCutData,      &(onCPU->fTheMatCutData_gpu) );
 
   // 2. Copy the G4HepEmMaterialData member and set the device ptr.
-  CopyMaterialDataToGPU ( onCPU->fTheMaterialData, &(onCPU->fTheMaterialData_gpu) );
+  CopyMaterialDataToGPU ( onCPU->fTheMaterialData,  &(onCPU->fTheMaterialData_gpu) );
 
   // 3. Copy the G4HepEmElementData member and set the device ptr.
-  CopyElementDataToGPU ( onCPU->fTheElementData, &(onCPU->fTheElementData_gpu) );
+  CopyElementDataToGPU ( onCPU->fTheElementData,    &(onCPU->fTheElementData_gpu) );
 
   // 4. Copy electron data to the GPU
   CopyElectronDataToDevice( onCPU->fTheElectronData, &(onCPU->fTheElectronData_gpu));
@@ -81,5 +91,9 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
 
   // 6. Copy SB-brem sampling tables to the GPU
   CopySBTableDataToDevice( onCPU->fTheSBTableData,   &(onCPU->fTheSBTableData_gpu));
+
+  // 7. Copy gamma related data to the GPU
+  CopyGammaDataToDevice( onCPU->fTheGammaData,     &(onCPU->fTheGammaData_gpu));
+
 }
 #endif

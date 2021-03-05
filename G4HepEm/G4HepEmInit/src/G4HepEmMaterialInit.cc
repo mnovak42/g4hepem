@@ -6,7 +6,7 @@
 
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmMaterialData.hh"
-#include "G4HepEmElementData.hh" 
+#include "G4HepEmElementData.hh"
 
 // g4 includes
 #include "G4ProductionCutsTable.hh"
@@ -19,9 +19,9 @@
 #include <iostream>
 
 
-// - translates all G4MaterialCutsCouple, used in the current geometry, to a 
+// - translates all G4MaterialCutsCouple, used in the current geometry, to a
 //   G4HepEmMatCutData structure element used by G4HepEm
-// - generates a G4HepEmMaterialData structure that stores material information 
+// - generates a G4HepEmMaterialData structure that stores material information
 //   for all unique materials, used in the current geometry
 // - builds the G4HepEmElementData structure
 void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars) {
@@ -33,16 +33,16 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
   //  theCoupleTable->DumpCouples();
   //  G4cout << *theMaterialTable;
   //
-  // 0. count G4MaterialCutsCouple and unique G4Material objects that are used in 
+  // 0. count G4MaterialCutsCouple and unique G4Material objects that are used in
   //    the courrent geometry. Record the indices of the used, unique materials.
   G4int  numUsedG4MatCuts = 0;
   G4int  numUsedG4Mat     = 0;
   std::vector<G4int> theUsedG4MatIndices(numG4Mat, -2);
   for (size_t imc=0; imc<numG4MatCuts; ++imc) {
     const G4MaterialCutsCouple* matCut = theCoupleTable->GetMaterialCutsCouple(imc);
-    if (!matCut->IsUsed()) { 
+    if (!matCut->IsUsed()) {
       continue;
-    }   
+    }
     ++numUsedG4MatCuts;
     size_t matIndx = matCut->GetMaterial()->GetIndex();
     if (theUsedG4MatIndices[matIndx]>-2) {
@@ -51,9 +51,9 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     // mark to be used in the geometry (but only once: numUsedG4Mat = unique used mats)
     theUsedG4MatIndices[matIndx] = -1;
     ++numUsedG4Mat;
-  }  
+  }
 
-  // 1. Allocate the MatCutData and MaterialData sub-structure of the global G4HepEmData 
+  // 1. Allocate the MatCutData and MaterialData sub-structure of the global G4HepEmData
   AllocateMatCutData   (&(hepEmData->fTheMatCutData), numG4MatCuts, numUsedG4MatCuts);
   AllocateMaterialData (&(hepEmData->fTheMaterialData), numG4Mat, numUsedG4Mat);
   AllocateElementData  (&(hepEmData->fTheElementData));
@@ -66,9 +66,9 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
   numUsedG4Mat     = 0;
   for (size_t imc=0; imc<numG4MatCuts; ++imc) {
     const G4MaterialCutsCouple* matCut = theCoupleTable->GetMaterialCutsCouple(imc);
-    if (!matCut->IsUsed()) { 
+    if (!matCut->IsUsed()) {
       continue;
-    }    
+    }
     G4int mcIndx          = matCut->GetIndex();
     G4double gammaCutE    = (*(theCoupleTable->GetEnergyCutsVector(0)))[mcIndx];
     G4double electronCutE = (*(theCoupleTable->GetEnergyCutsVector(1)))[mcIndx];
@@ -84,10 +84,10 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     mccData.fSecGamProdCutE = gammaCutE;
     mccData.fLogSecGamCutE  = std::log(gammaCutE);
     ++numUsedG4MatCuts;
-    
+
     // check if the corresponding G4HepEm material struct has already been created
     if (theUsedG4MatIndices[matIndx]>-1) {
-      // already created: 
+      // already created:
       mccData.fHepEmMatIndex = theUsedG4MatIndices[matIndx];
     } else {
       // material structure has not been created so do it
@@ -111,24 +111,28 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       for (size_t ie=0; ie<numOfElement; ++ie) {
         G4int izet = ((*elmVec)[ie])->GetZasInt();
         matData.fElementVect[ie] = izet;
-        matData.fNumOfAtomsPerVolumeVect[ie] = nAtomPerVolVec[ie];      
+        matData.fNumOfAtomsPerVolumeVect[ie] = nAtomPerVolVec[ie];
         // fill element data as well if haven't done yet
         izet = std::min ( izet, (G4int)hepEmData->fTheElementData->fMaxZet );
         struct G4HepEmElemData& elData = hepEmData->fTheElementData->fElementData[izet];
         if (elData.fZet<0) {
-          double dZet         = (double)izet;
-          elData.fZet         = dZet;
-          elData.fZet13       = std::pow(dZet, 1.0/3.0); 
-          elData.fZet23       = std::pow(dZet, 2.0/3.0); 
-          elData.fCoulomb     = ((*elmVec)[ie])->GetfCoulomb();
-          elData.fLogZ        = std::log(dZet);           
-          double Fel          = (izet<5) ? kFelLowZet[izet]   : std::log(184.15) -     elData.fLogZ/3.0;         
-          double Finel        = (izet<5) ? kFinelLowZet[izet] : std::log(1194.0) - 2.0*elData.fLogZ/3.0;                
-          elData.fZFactor1    = (Fel-elData.fCoulomb) + Finel/dZet;
-          double varS1        = elData.fZet23/(184.15*184.15);
-          elData.fILVarS1Cond = 1./(std::log(std::sqrt(2.0)*varS1));
-          elData.fILVarS1     = 1./std::log(varS1);
-        }        
+          double dZet          = (double)izet;
+          elData.fZet          = dZet;
+          elData.fZet13        = std::pow(dZet, 1.0/3.0);
+          elData.fZet23        = std::pow(dZet, 2.0/3.0);
+          elData.fCoulomb      = ((*elmVec)[ie])->GetfCoulomb();
+          elData.fLogZ         = std::log(dZet);
+          double Fel           = (izet<5) ? kFelLowZet[izet]   : std::log(184.15) -     elData.fLogZ/3.0;
+          double Finel         = (izet<5) ? kFinelLowZet[izet] : std::log(1194.0) - 2.0*elData.fLogZ/3.0;
+          elData.fZFactor1     = (Fel-elData.fCoulomb) + Finel/dZet;
+          const double FZLow   = 8.0*elData.fLogZ/3.0;
+          const double FZHigh  = 8.0*(elData.fLogZ/3.0 + elData.fCoulomb);
+          elData.fDeltaMaxLow  = std::exp((42.038 - FZLow)/8.29) - 0.958;
+          elData.fDeltaMaxHigh = std::exp((42.038 - FZHigh)/8.29) - 0.958;
+          double varS1         = elData.fZet23/(184.15*184.15);
+          elData.fILVarS1Cond  = 1./(std::log(std::sqrt(2.0)*varS1));
+          elData.fILVarS1      = 1./std::log(varS1);
+        }
       }
       //
       theUsedG4MatIndices[matIndx] = numUsedG4Mat;

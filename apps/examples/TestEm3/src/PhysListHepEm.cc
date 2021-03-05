@@ -85,8 +85,12 @@ void PhysListHepEm::ConstructProcess() {
     G4String particleName = particle->GetParticleName();
 
     if (particleName == "gamma") {
+
+/*
       ph->RegisterProcess(new G4ComptonScattering(), particle);
+
       ph->RegisterProcess(new G4GammaConversion, particle);
+
       G4double LivermoreLowEnergyLimit = 1*eV;
       G4double LivermoreHighEnergyLimit = 1*TeV;
       G4PhotoElectricEffect* thePhotoElectricEffect = new G4PhotoElectricEffect();
@@ -95,24 +99,29 @@ void PhysListHepEm::ConstructProcess() {
       theLivermorePhotoElectricModel->SetHighEnergyLimit(LivermoreHighEnergyLimit);
       thePhotoElectricEffect->AddEmModel(0, theLivermorePhotoElectricModel);
       ph->RegisterProcess(thePhotoElectricEffect, particle);
+*/
+      // Add G4HepEm process to gamma: includes Conversion, Compton and an simple
+      // absorption when E_g < 250 [keV].
+      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
+
+
     } else if (particleName == "e-") {
 
       // Add G4HepEm process to e-: includes Ionisation and Bremsstrahlung for e-
-      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
+     particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
 
     } else if (particleName == "e+") {
 
-      // Add G4HepEm process to e+: includes Ionisation, Bremsstrahlung and e+e- 
+      // Add G4HepEm process to e+: includes Ionisation, Bremsstrahlung and e+e-
       // annihilation into 2 gamma interactions for e+
       particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
 
     }
   }
 
-  
+
   // Deexcitation
   //
 //  G4VAtomDeexcitation* de = new G4UAtomicDeexcitation();
 //  G4LossTableManager::Instance()->SetAtomDeexcitation(de);
 }
-

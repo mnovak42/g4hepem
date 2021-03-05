@@ -39,12 +39,12 @@ struct G4HepEmElemData {
   double  fZet;
 
   /** \f$Z^{1/3}\f$ */
-  double  fZet13;  
+  double  fZet13;
 
   /** \f$Z^{2/3}\f$ */
-  double  fZet23;  
+  double  fZet23;
 
-  /** Coulomb correction */
+  /** Coulomb correction \f$ f_C \f$ */
   double  fCoulomb;
 
   /** \f$ \ln(Z) \f$  */
@@ -52,6 +52,12 @@ struct G4HepEmElemData {
 
   /** \f$ F_{\text{e}l}-f_c+F_{\text{inel}}/Z \f$  */
   double  fZFactor1;
+
+  /** \f$ \exp\[ \frac{42.038-F_{Z-low}}{8.29} \] -0.958 \f$ with \f$ Z-low = \frac{8}{3}\log(Z)\f$ */
+  double  fDeltaMaxLow;
+
+  /** \f$ \exp\[ \frac{42.038-F_{Z-high}}{8.29} \] -0.958 \f$ with \f$ Z-high = 8[\log(Z)/3 + f_C \f$ */
+  double  fDeltaMaxHigh;
 
   /** LPM variable \f$ 1/ln [ \sqrt{2}s1 ] \f$ */
   double  fILVarS1;
@@ -63,7 +69,7 @@ struct G4HepEmElemData {
 
 // Data for all elements that are used by G4HepEm.
 struct G4HepEmElementData {
-  /** Maximum capacity of the below G4HepEmElemData structure container (max Z that can be stored).*/ 
+  /** Maximum capacity of the below G4HepEmElemData structure container (max Z that can be stored).*/
   int     fMaxZet;
   /** Collection of G4HepEmElemData structures indexed by the atomic number Z. */
   struct G4HepEmElemData* fElementData;  // [fMaxZet]
@@ -72,30 +78,30 @@ struct G4HepEmElementData {
 /**
   * Allocates and pre-initialises the G4HepEmMaterialData structure.
   *
-  * This method is invoked from the InitMaterialAndCoupleData() function declared 
-  * in the G4HepEmMaterialInit header file. The input argument address of the 
-  * G4HepEmElementData structure pointer is the one stored in the G4HepEmData  
-  * member of the `master` G4HepEmRunManager and the initialisation should be 
+  * This method is invoked from the InitMaterialAndCoupleData() function declared
+  * in the G4HepEmMaterialInit header file. The input argument address of the
+  * G4HepEmElementData structure pointer is the one stored in the G4HepEmData
+  * member of the `master` G4HepEmRunManager and the initialisation should be
   * done by the master G4HepEmRunManager.
   *
   * @param theElementData address of a G4HepEmElementData structure pointer. At termination,
   *   the correspondig pointer will be set to a memory location with a freshly allocated
   *   G4HepEmElementData structure. If the pointer was not null at input, the pointed
-  *   memory is freed before the new allocation.  
+  *   memory is freed before the new allocation.
   */
 void AllocateElementData(struct G4HepEmElementData** theElementData);
 
-/** 
-  * Frees a G4HepEmElementData structure. 
+/**
+  * Frees a G4HepEmElementData structure.
   *
-  * This function deallocates all dynamically allocated memory stored in the 
-  * input argument related G4HepEmElementData structure, deallocates the structure 
-  * itself and sets the input address to store a pointer to null. This makes the 
-  * corresponding input stucture cleared, freed and ready to be re-initialised. 
-  * The input argument is supposed to be the address of the corresponding pointer 
+  * This function deallocates all dynamically allocated memory stored in the
+  * input argument related G4HepEmElementData structure, deallocates the structure
+  * itself and sets the input address to store a pointer to null. This makes the
+  * corresponding input stucture cleared, freed and ready to be re-initialised.
+  * The input argument is supposed to be the address of the corresponding pointer
   * member of the G4HepEmData member of the `master` G4HepEmRunManager.
   *
-  * @param theElementData memory address that stores pointer to a G4HepEmElementData  
+  * @param theElementData memory address that stores pointer to a G4HepEmElementData
   *  structure. The memory is freed and the input address will store a null pointer
   *  at termination.
   */
@@ -107,18 +113,18 @@ void FreeElementData (struct G4HepEmElementData** theElementData);
   * Allocates memory for and copies the G4HepEmElementData structure from the
   * host to the device.
   *
-  * The input arguments are supposed to be the corresponding members of the 
+  * The input arguments are supposed to be the corresponding members of the
   * G4HepEmData, top level data structure, stored in the `master` G4HepEmRunManager.
   *
   * @param onHost    pointer to the host side, already initialised G4HepEmElementData structure.
-  * @param onDevice  host side address of a G4HepEmElementData structure memory pointer. The pointed 
-  *   memory is cleaned (if not null at input) and points to the device side memory at termination 
+  * @param onDevice  host side address of a G4HepEmElementData structure memory pointer. The pointed
+  *   memory is cleaned (if not null at input) and points to the device side memory at termination
   *   that stores the copied G4HepEmElementData structure.
-  */  
+  */
   void CopyElementDataToGPU(struct G4HepEmElementData* onHost, struct G4HepEmElementData** onDevice);
-  
+
   /**
-    * Frees all memory related to the device side G4HepEmElementData structure referred 
+    * Frees all memory related to the device side G4HepEmElementData structure referred
     * by the pointer stored on the host side input argument address.
     *
     * @param onDevice host side address of a G4HepEmElementData structure located on the device side memory.
