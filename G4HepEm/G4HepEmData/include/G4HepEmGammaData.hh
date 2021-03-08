@@ -30,7 +30,7 @@ struct G4HepEmGammaData {
 
   // the macroscopic cross sections for all materials and for [conversion,compton]
   // at each material
-  double*       fConvCompMacXsecData;   // [#materials*(fConvEnergyGridSize+fCompEnergyGridSize)]
+  double*       fConvCompMacXsecData;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize)]
 
 //// === element selector for conversion (note: KN compton interaction do not know anything about Z)
   int           fElemSelectorConvEgridSize;

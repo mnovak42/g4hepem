@@ -14,7 +14,9 @@ target_link_libraries(TestUtils PUBLIC ${Geant4_LIBRARIES})
 ##
 add_subdirectory(ElectronEnergyLoss)
 add_subdirectory(ElectronTargetElementSelector)
+add_subdirectory(GammaTargetElementSelector)
 add_subdirectory(ElectronXSections)
+add_subdirectory(GammaXSections)
 add_subdirectory(MaterialAndRelated)
 
 ## ----------------------------------------------------------------------------
@@ -28,4 +30,3 @@ add_subdirectory(testElectronInteractionBrem)
 set(G4HepEm_DIR "${CMAKE_CURRENT_LIST_DIR}/shims")
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/examples/TestEm3 ${CMAKE_CURRENT_BINARY_DIR}/TestEm3)
 add_test(NAME TestEm3 COMMAND TestEm3 -m "${PROJECT_SOURCE_DIR}/apps/examples/TestEm3/ATLASbar.mac")
-
