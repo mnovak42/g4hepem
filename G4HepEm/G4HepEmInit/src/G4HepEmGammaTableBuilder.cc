@@ -183,6 +183,7 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
   }
   // allocate memory:
   int size = num*numConvEkin;
+  gmData->fElemSelectorConvNumData = size;
   if (gmData->fElemSelectorConvData) {
     delete gmData->fElemSelectorConvData;
   }
