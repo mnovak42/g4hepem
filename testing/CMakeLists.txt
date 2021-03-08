@@ -14,6 +14,7 @@ target_link_libraries(TestUtils PUBLIC ${Geant4_LIBRARIES})
 ##
 add_subdirectory(ElectronEnergyLoss)
 add_subdirectory(ElectronTargetElementSelector)
+add_subdirectory(GammaTargetElementSelector)
 add_subdirectory(ElectronXSections)
 add_subdirectory(GammaXSections)
 add_subdirectory(MaterialAndRelated)
