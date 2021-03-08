@@ -79,7 +79,7 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
   gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fCompEnergyGrid), sizeof( double ) * numCompData ) );
   gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fCompEnergyGrid,  onHOST->fCompEnergyGrid, sizeof( double ) * numCompData, cudaMemcpyHostToDevice ) );
   // allocate memory on _d for the conversion and Compton macroscopic x-section data and copy them form _h
-  int numConvCompData = numHepEmMat*(numConvData+numCompData);
+  int numConvCompData = numHepEmMat*2*(numConvData+numCompData);
   gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fConvCompMacXsecData), sizeof( double ) * numConvCompData ) );
   gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fConvCompMacXsecData,  onHOST->fConvCompMacXsecData, sizeof( double ) * numConvCompData, cudaMemcpyHostToDevice ) );
   //
