@@ -57,7 +57,7 @@ Host v.s. Device side memory layouts
 .. warning::
 
       At the moment, **the same memory layout is used on the hots and device sides** in order to (drastically > 95 %)
-      increase the run-time `G4HepEm` codes that are reusable on the device side without any changes!
+      increase the run-time ``G4HepEm`` codes that are reusable on the device side without any changes!
 
       Investigation of possible performance gains, due to optimised device data memory, have been postponed for alter time when the GPU related simulations will be available.
 
