@@ -50,13 +50,13 @@ struct G4HepEmElemData {
   /** \f$ \ln(Z) \f$  */
   double  fLogZ;
 
-  /** \f$ F_{\text{e}l}-f_c+F_{\text{inel}}/Z \f$  */
+  /** \f$ F_{\text{el}}-f_c+F_{\text{inel}}/Z \f$  */
   double  fZFactor1;
 
-  /** \f$ \exp\[ \frac{42.038-F_{Z-low}}{8.29} \] -0.958 \f$ with \f$ Z-low = \frac{8}{3}\log(Z)\f$ */
+  /** \f$ \exp \left[ \frac{42.038-F_{\text{low}}}{8.29} \right] -0.958 \f$ with \f$ Z_{\text{low}} = \frac{8}{3}\log(Z) \f$ */
   double  fDeltaMaxLow;
 
-  /** \f$ \exp\[ \frac{42.038-F_{Z-high}}{8.29} \] -0.958 \f$ with \f$ Z-high = 8[\log(Z)/3 + f_C \f$ */
+  /** \f$ \exp \left[ \frac{42.038-F_{\text{high}}}{8.29} \right] -0.958 \f$ with \f$ F_{\text{high}} = 8[\log(Z)/3 + f_C] \f$ */
   double  fDeltaMaxHigh;
 
   /** LPM variable \f$ 1/ln [ \sqrt{2}s1 ] \f$ */
