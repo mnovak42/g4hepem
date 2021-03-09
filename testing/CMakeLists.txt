@@ -18,6 +18,7 @@ add_subdirectory(GammaTargetElementSelector)
 add_subdirectory(ElectronXSections)
 add_subdirectory(GammaXSections)
 add_subdirectory(MaterialAndRelated)
+add_subdirectory(DataImportExport)
 
 ## ----------------------------------------------------------------------------
 ## 3. Add the developer-only test applications
