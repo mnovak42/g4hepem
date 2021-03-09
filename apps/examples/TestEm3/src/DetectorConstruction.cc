@@ -486,7 +486,7 @@ void DetectorConstruction::SetCalorSizeYZ(G4double val)
 
 void DetectorConstruction::ConstructSDandField()
 {
-  if (fMagFieldVector.mag() > 0.0 && 0) {
+  if (fMagFieldVector.mag() > 0.0) {
     // Apply a global uniform magnetic field along the Z axis.
     // Notice that only if the magnetic field is not zero, the Geant4
     // transportion in field gets activated.

@@ -17,12 +17,17 @@
 /testem/det/setNbOfAbsor 2
 /testem/det/setAbsor 1 G4_Pb 2.3 mm
 /testem/det/setAbsor 2 G4_lAr 5.7 mm
+## -----------------------------------------------------------------------------
+## Optionally, set a constant magnetic filed:
+##   = set a constant, 2 Tesla field perpendicular to the [1,0,0] beam direction
+## -----------------------------------------------------------------------------
+##/testem/det/setField 0 0 2.0 tesla
 ##
 ## -----------------------------------------------------------------------------
 ## Set the physics list (more exactly, the EM physics constructor):
-##  = 'HepEm'           : the G4HepEm EM physics c.t.r.
-##  =  'G4Em'           : the G4 EM physics c.t.r. that corresponds to G4HepEm
-##  = 'emstandard_opt0' : the original, G4 EM-Opt0 physics c.t.r.
+##   = 'HepEm'           : the G4HepEm EM physics c.t.r.
+##   =  'G4Em'           : the G4 EM physics c.t.r. that corresponds to G4HepEm
+##   = 'emstandard_opt0' : the original, G4 EM-Opt0 physics c.t.r.
 ## -----------------------------------------------------------------------------
 /testem/phys/addPhysics   HepEm
 ##/testem/phys/addPhysics   G4Em
