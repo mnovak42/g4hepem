@@ -3,33 +3,33 @@
 Build and Install
 ==================
 
-``G4HepEm`` is one of the ongoing developments, carried out within the EM physics 
-working group of the ``Geant4`` collaboration, that has been made available in order 
-to facilitate and catalyse correlated R&D activities by providing and sharing 
-the related expertise and specific knowledge. Therefore, ``G4HepEm`` is tightly 
-connected to and depends on the ``Geant4`` simulation toolkit. 
+``G4HepEm`` is one of the ongoing developments, carried out within the EM physics
+working group of the ``Geant4`` collaboration, that has been made available in order
+to facilitate and catalyse correlated R&D activities by providing and sharing
+the related expertise and specific knowledge. Therefore, ``G4HepEm`` is tightly
+connected to and depends on the ``Geant4`` simulation toolkit.
 
 
 Requirements
 --------------
 
-As mentioned above, the only requirement of ``G4HepEm`` is a recent ``Geant4`` 
-version to be available on the system. The recommended version, ``Geant4-10.6.p03``
-is available at the corresponding ``Geant4`` `Download <https://geant4.web.cern.ch/node/1837>`_ area. All information regarding the ``Geant4``
+As mentioned above, the only requirement of ``G4HepEm`` is a recent ``Geant4``
+version to be available on the system. The recommended version, ``Geant4-10.7.p01``
+is available at the corresponding ``Geant4`` `Download <https://geant4.web.cern.ch/support/download>`_ area. All information regarding the ``Geant4``
 `Prerequisites <https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/gettingstarted.html>`_
-as well as the installation instruction (`Building and Installing <https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/installguide.html>`_) 
-can be found in the related sections of the `Geant4 Installation Guide <https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/index.html>`_. 
+as well as the installation instruction (`Building and Installing <https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/installguide.html>`_)
+can be found in the related sections of the `Geant4 Installation Guide <https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/index.html>`_.
 
 
 
 Build and install
 --------------------
 
-It is assumed in the followings, that the required version of the ``Geant4`` toolkit is installed on the system and the corresponding 
-``Geant4Config.cmake`` ``CMake`` configuration file is located under the ``G4_INSTALL`` directory. Then 
+It is assumed in the followings, that the required version of the ``Geant4`` toolkit is installed on the system and the corresponding
+``Geant4Config.cmake`` ``CMake`` configuration file is located under the ``G4_INSTALL`` directory. Then
 building and installing ``G4HepEm`` can be done by simple:
 
-  1. Cloning the ``G4HepEm`` repository: :: 
+  1. Cloning the ``G4HepEm`` repository: ::
 
       $ git clone https://github.com/mnovak42/g4hepem.git
       Cloning into 'g4hepem'...
@@ -41,7 +41,7 @@ building and installing ``G4HepEm`` can be done by simple:
       Resolving deltas: 100% (221/221), done.
 
   2. Configuration: ::
-    
+
       $ cd g4hepem/
       $ mkdir build
       $ cd build/
@@ -60,21 +60,21 @@ building and installing ``G4HepEm`` can be done by simple:
       -- Detecting CXX compiler ABI info - done
       -- Detecting CXX compile features
       -- Detecting CXX compile features - done
-      -- Found EXPAT: /usr/lib64/libexpat.so (found suitable version "2.2.5", minimum required is "2.2.5") 
-      -- Found XercesC: /usr/lib64/libxerces-c.so (found suitable version "3.2.2", minimum required is "3.2.2") 
+      -- Found EXPAT: /usr/lib64/libexpat.so (found suitable version "2.2.5", minimum required is "2.2.5")
+      -- Found XercesC: /usr/lib64/libxerces-c.so (found suitable version "3.2.2", minimum required is "3.2.2")
       -- Configuring done
       -- Generating done
-  
-  Note, the the ``-DCMAKE_INSTALL_PREFIX=G4HepEm_INSTALL`` ``CMake`` configuration variable specifies the ``G4HepEm_INSTALL`` directory as 
-  the location where ``G4HepEm`` is required to be installed. The following ``CMake`` configuration options are also available at this point:   
-  
-    - ``-DG4HepEm_CUDA_BUILD=ON/OFF`` : activates/deactivates(default) GPU support (see more at the :ref:`GPU Support Section <ref-GPU-support>`). 
+
+  Note, the the ``-DCMAKE_INSTALL_PREFIX=G4HepEm_INSTALL`` ``CMake`` configuration variable specifies the ``G4HepEm_INSTALL`` directory as
+  the location where ``G4HepEm`` is required to be installed. The following ``CMake`` configuration options are also available at this point:
+
+    - ``-DG4HepEm_CUDA_BUILD=ON/OFF`` : activates/deactivates(default) GPU support (see more at the :ref:`GPU Support Section <ref-GPU-support>`).
       This requires a CUDA capable GPU device to be available with the appropriate driver and CUDA libraries to be installed.
-    - ``-DBUILD_TESTS=ON/OFF`` : activates/deactivates(default) building the test applications (that are located under the ``apps/tests`` and ``apps/examples`` directories)
- 
+    - ``-DBUILD_TESTING=ON/OFF`` : activates/deactivates(default) building the test applications (that are located under the ``testing`` and ``apps/examples`` directories)
+
   3. Build and install ::
-  
-      $ make install 
+
+      $ make install
       Scanning dependencies of target g4HepEmData
       [  3%] Building CXX object G4HepEm/G4HepEmData/CMakeFiles/g4HepEmData.dir/src/G4HepEmData.cc.o
       [  7%] Building CXX object G4HepEm/G4HepEmData/CMakeFiles/g4HepEmData.dir/src/G4HepEmElectronData.cc.o
@@ -91,36 +91,42 @@ building and installing ``G4HepEm`` can be done by simple:
       ...
       ...
 
-    
-  When building the test applications was required by setting the ``-DBUILD_TESTS=ON`` ``CMake`` option during the configuration above, 
+
+  When building the test applications was required by setting the ``-DBUILD_TESTING=ON`` ``CMake`` option during the configuration above,
   the test applications can be executed as  ::
-  
-      $ make test 
+
+      bash-3.2$ make test
       Running tests...
-      Test project g4hepem/build
-          Start 1: TestMaterialAndRelated
-      1/5 Test #1: TestMaterialAndRelated ...........   Passed    1.80 sec
+      Test project /Users/mnovak/projects/G4HepEmDev/g4hepem/build
+          Start 1: TestEm3
+      1/8 Test #1: TestEm3 ..........................   Passed   17.97 sec
           Start 2: TestEnergyLossData
-      2/5 Test #2: TestEnergyLossData ...............   Passed    1.78 sec
+      2/8 Test #2: TestEnergyLossData ...............   Passed    1.98 sec
           Start 3: TestElemSelectorData
-      3/5 Test #3: TestElemSelectorData .............   Passed    1.91 sec
-          Start 4: TestXSectionData
-      4/5 Test #4: TestXSectionData .................   Passed    1.79 sec
-          Start 5: TestEm3
-      5/5 Test #5: TestEm3 ..........................   Passed    0.08 sec
+      3/8 Test #3: TestElemSelectorData .............   Passed    1.80 sec
+          Start 4: TestGammaElemSelectorData
+      4/8 Test #4: TestGammaElemSelectorData ........   Passed    0.16 sec
+          Start 5: TestXSectionData
+      5/8 Test #5: TestXSectionData .................   Passed    1.63 sec
+          Start 6: TestGammaXSectionData
+      6/8 Test #6: TestGammaXSectionData ............   Passed    0.16 sec
+          Start 7: TestMaterialAndRelated
+      7/8 Test #7: TestMaterialAndRelated ...........   Passed    1.64 sec
+          Start 8: TestBrem-Interaction
+      8/8 Test #8: TestBrem-Interaction .............   Passed    2.39 sec
 
-      100% tests passed, 0 tests failed out of 5
+      100% tests passed, 0 tests failed out of 8
 
-      Total Test time (real) =   7.36 sec
+      Total Test time (real) =  27.74 sec
 
 
-Example 
+Example
 ---------
 
-After building and installing ``G4HepEm`` under the ``G4HepEm_INSTALL`` directory, 
-any of the test and/or example applications provided under the ``apps/tests`` and 
-``apps/examples`` directories can be built and used. For example, building and 
-executing the ``TestEm3`` (general) simplified sampling calorimeter example 
+After building and installing ``G4HepEm`` under the ``G4HepEm_INSTALL`` directory,
+any of the test and/or example applications provided under the ``apps/tests`` and
+``apps/examples`` directories can be built and used. For example, building and
+executing the ``TestEm3`` (general) simplified sampling calorimeter example
 application can be done by the following configuration, build and execute steps:
 
   1. Configuration (note, that ``G4HepEm_INSTALL/lib/cmake/G4HepEm/`` directory contains the ``G4HepEmConfig.cmake`` ``CMake`` configuration file) ::
@@ -135,10 +141,10 @@ application can be done by the following configuration, build and execute steps:
       ...
       ...
       ...
-    
+
   2. Build: ::
-    
-      $ make  
+
+      $ make
       Scanning dependencies of target TestEm3
       [  4%] Building CXX object CMakeFiles/TestEm3.dir/TestEm3.cc.o
       [  8%] Building CXX object CMakeFiles/TestEm3.dir/src/ActionInitialization.cc.o
@@ -146,17 +152,19 @@ application can be done by the following configuration, build and execute steps:
       ...
       ...
       ...
-    
-  3. Execute (run the application as ``./TestEm3 --help`` for more information and see the ``g4hepem/apps/examples/TestEm3/ATLASbar.mac`` example input macro file for more details): ::  
-  
-      $ ./TestEm3 -m ../ATLASbar.mac 
+
+  3. Execute (run the application as ``./TestEm3 --help`` for more information and see the ``g4hepem/apps/examples/TestEm3/ATLASbar.mac`` example input macro file for more details): ::
+
+      $ ./TestEm3 -m ../ATLASbar.mac
 
       **************************************************************
-       Geant4 version Name: geant4-10-06-patch-03 [MT]   (6-November-2020)
-        << in Multi-threaded mode >> 
+       Geant4 version Name: geant4-10-07-patch-01 [MT]   (5-February-2021)
+        << in Multi-threaded mode >>
+                             Copyright : Geant4 Collaboration
+                            References : NIM A 506 (2003), 250-303
+                                       : IEEE-TNS 53 (2006), 270-278
+                                       : NIM A 835 (2016), 186-225
+                                   WWW : http://geant4.org/
       ...
       ...
       ...
-  
-  
-
