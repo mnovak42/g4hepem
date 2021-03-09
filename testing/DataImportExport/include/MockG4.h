@@ -1,0 +1,8 @@
+#ifndef TESTDATAIMPORTEXPORT_MOCKG4_H
+#define TESTDATAIMPORTEXPORT_MOCKG4_H
+
+#include "G4PVPlacement.hh"
+
+G4PVPlacement* MockG4();
+
+#endif // TESTDATAIMPORTEXPORT_MOCKG4_H
