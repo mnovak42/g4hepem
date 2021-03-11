@@ -36,6 +36,7 @@ public:
   // interactions
   void   Perform(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/);
 
+  G4HepEmHostDevice
   void   UpdateNumIALeft(G4HepEmTrack* theTrack);
 
 
