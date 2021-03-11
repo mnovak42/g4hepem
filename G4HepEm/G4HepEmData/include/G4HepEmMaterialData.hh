@@ -40,13 +40,13 @@
 /** Data that describes a single matrial in ``G4HepEm``. */
 struct G4HepEmMatData {
   /** The corresponding G4Material object index.*/
-  int       fG4MatIndex;
+  int       fG4MatIndex = -1;
   /** Number of elements this matrial is composed of (size of the arrays below). */
-  int       fNumOfElement;
+  int       fNumOfElement = 0;
   /** The list of element indices in G4HepEmElemData (their atomic number Z), this material is composed of.*/
-  int*      fElementVect;
+  int*      fElementVect = nullptr; // [fNumOfElement]
   /** The list of number-of-atoms-per-unit-volume for each element this material is composed of.*/
-  double*   fNumOfAtomsPerVolumeVect;
+  double*   fNumOfAtomsPerVolumeVect = nullptr; // [fNumOfElement]
   /** The mass density (\f$\rho\f$) of the material in Geant4 internal units. */
   double    fDensity;
   /** Density correction factor (\f$C_{Mg}\rho_{e^-}\f$) used in the `dielectric suppression`
@@ -62,13 +62,13 @@ struct G4HepEmMatData {
 // Data for all materials used in the current geometry.
 struct G4HepEmMaterialData {
   /** Number of Geant4 material objects (irrespectively if used or not).*/
-  int       fNumG4Material;
+  int       fNumG4Material = 0;
   /** Number of G4HepEmMatData structures in ``G4HepEm`` (only the used G4Material objects are translated).*/
-  int       fNumMaterialData;
+  int       fNumMaterialData = 0;
   /** Array that translates a Geant4 G4Material object index to the correspondig G4HepEmMatData index in the collection below.*/
-  int*      fG4MatIndexToHepEmMatIndex; // [fNumG4Material]
+  int*      fG4MatIndexToHepEmMatIndex = nullptr; // [fNumG4Material]
   /** Collection of G4HepEmMatData structures for all materials used in the current geometry.*/
-  struct G4HepEmMatData* fMaterialData; // [fNumMaterialData]
+  struct G4HepEmMatData* fMaterialData = nullptr; // [fNumMaterialData]
 };
 
 
@@ -92,6 +92,18 @@ struct G4HepEmMaterialData {
   */
 void AllocateMaterialData(struct G4HepEmMaterialData** theMatData, int numG4Mat, int numUsedG4Mat);
 
+/**
+ * Initializes a new @ref G4HepEmMaterialData structure
+ *
+ * This function constructs and returns an instance of G4HepEmMaterialData to hold a given number of indices
+ * to Geant4 materials objects and their corresponding G4HepEmMaterialData instance.
+ * It is the callees responsibility to free the instance using @ref FreeMaterialData.
+ *
+  * @param[in] numG4Mat number of Geant4 material objects
+  * @param[in] numUsedG4Mat number of Geant4 materials objects used in the current geometry.
+  * @return Pointer to instance of @ref G4HepEmMaterialData
+ */
+G4HepEmMaterialData* MakeMaterialData(int numG4Mat, int numUsedG4Mat);
 
 /**
   * Frees a G4HepEmMaterialData structure.

@@ -42,6 +42,10 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
 
 
 void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
+  if(theHepEmData == nullptr) {
+    return;
+  }
+
   FreeMatCutData   ( &(theHepEmData->fTheMatCutData)   );
   FreeMaterialData ( &(theHepEmData->fTheMaterialData) );
   FreeElementData  ( &(theHepEmData->fTheElementData)  );

@@ -4,22 +4,20 @@
 void AllocateElementData(struct G4HepEmElementData** theElementData) {
   // clean away the previous (if any)
   FreeElementData ( theElementData );
-  *theElementData   = new G4HepEmElementData;
-  int maxZetPlusOne = 121;
-  (*theElementData)->fMaxZet      = maxZetPlusOne-1;
-  (*theElementData)->fElementData = new G4HepEmElemData[maxZetPlusOne];
-  // init the all Z to -1 to indicate that it has not been set
-  for (int ie=0; ie<(*theElementData)->fMaxZet; ++ie) {
-    (*theElementData)->fElementData[ie].fZet = -1.0;
-  }
+  *theElementData = MakeElementData();
 }
 
+G4HepEmElementData* MakeElementData() {
+  auto* p = new G4HepEmElementData;
+  const int maxZetPlusOne = 121;
+  p->fMaxZet      = maxZetPlusOne-1;
+  p->fElementData = new G4HepEmElemData[maxZetPlusOne];
+  return p;
+}
 
 void FreeElementData(struct G4HepEmElementData** theElementData) {
-  if ( *theElementData ) {
-    if ( (*theElementData)->fElementData ) {
-      delete[] (*theElementData)->fElementData;
-    }
+  if ( *theElementData != nullptr ) {
+    delete[] (*theElementData)->fElementData;
     delete *theElementData;
     *theElementData = nullptr;
   }
@@ -31,7 +29,7 @@ void FreeElementData(struct G4HepEmElementData** theElementData) {
 
 void CopyElementDataToGPU(struct G4HepEmElementData* onCPU, struct G4HepEmElementData** onGPU) {
   // clean away previous (if any)
-  if ( *onGPU ) {
+  if ( *onGPU != nullptr) {
     FreeElementDataOnGPU ( onGPU );
   }
   // allocate array of G4HepEmElemData structures on _d (its pointer adress will on _h)
@@ -52,7 +50,7 @@ void CopyElementDataToGPU(struct G4HepEmElementData* onCPU, struct G4HepEmElemen
 }
 
 void FreeElementDataOnGPU ( struct G4HepEmElementData** onGPU ) {
-  if ( *onGPU ) {
+  if ( *onGPU != nullptr ) {
     // copy the struct G4HepEmElementData` struct, including its `struct G4HepEmElemData* fElementData`
     // pointer member, from _d to _h in order to be able to free the _d sice memory
     // pointed by `fElementData` by calling to cudaFree from the host.

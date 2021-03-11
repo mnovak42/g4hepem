@@ -6,31 +6,38 @@
 void AllocateMaterialData(struct G4HepEmMaterialData** theMatData,  int numG4Mat, int numUsedG4Mat) {
   // clean away the previous (if any)
   FreeMaterialData ( theMatData );
-  *theMatData = new G4HepEmMaterialData;
-  (*theMatData)->fNumG4Material             = numG4Mat;
-  (*theMatData)->fNumMaterialData           = numUsedG4Mat;
-  (*theMatData)->fG4MatIndexToHepEmMatIndex = new int[numG4Mat];
-  (*theMatData)->fMaterialData              = new G4HepEmMatData[numUsedG4Mat];
-  // init G4Mat index to HepEmMat index translator to -1 (i.e. to `not used in the cur. geom.`)
-  for ( int i=0; i<numG4Mat; ++i ) {
-    (*theMatData)->fG4MatIndexToHepEmMatIndex[i] = -1;
-  }
+  *theMatData = MakeMaterialData(numG4Mat, numUsedG4Mat);
 }
 
+G4HepEmMaterialData* MakeMaterialData(int numG4Mat, int numUsedG4Mat) {
+  auto* tmp = new G4HepEmMaterialData;
+  tmp->fNumG4Material             = numG4Mat;
+  tmp->fG4MatIndexToHepEmMatIndex = new int[numG4Mat];
+  // init G4Mat index to HepEmMat index translator to -1 (i.e. to `not used in the cur. geom.`)
+  for ( int i=0; i<numG4Mat; ++i ) {
+    tmp->fG4MatIndexToHepEmMatIndex[i] = -1;
+  }
+
+  tmp->fNumMaterialData = numUsedG4Mat;
+  tmp->fMaterialData    = new G4HepEmMatData[numUsedG4Mat];
+
+  return tmp;
+}
 
 // Clears (the only one) G4HepEmMaterialData structure and resets its ptr to null
 void FreeMaterialData (struct G4HepEmMaterialData** theMatData) {
-  if ( *theMatData ) {
-    if ( (*theMatData)->fG4MatIndexToHepEmMatIndex ) {
-      delete[] (*theMatData)->fG4MatIndexToHepEmMatIndex;
-    }
-    if ( (*theMatData)->fMaterialData ) {
+  if ( *theMatData != nullptr ) {
+    delete[] (*theMatData)->fG4MatIndexToHepEmMatIndex;
+
+    // Inner loop needs refactoring into a deallocator for G4HepEmMatData
+    if ( (*theMatData)->fMaterialData != nullptr ) {
       for (int imd=0; imd<(*theMatData)->fNumMaterialData; ++imd) {
         delete[] (*theMatData)->fMaterialData[imd].fNumOfAtomsPerVolumeVect;
         delete[] (*theMatData)->fMaterialData[imd].fElementVect;
       }
       delete[] (*theMatData)->fMaterialData;
     }
+
     delete *theMatData;
     *theMatData = nullptr;
   }
@@ -90,7 +97,7 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
 
 //
 void FreeMaterialDataOnGPU ( struct G4HepEmMaterialData** onGPU) {
-  if ( *onGPU ) {
+  if ( *onGPU != nullptr) {
       // NOTE:
       // - (*onGPU) is a pointer to device memory while onGPU (i.e. struct G4HepEmMaterialData**)
       //   is the address of this pointer that is located on the host memory

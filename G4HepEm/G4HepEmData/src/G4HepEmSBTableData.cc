@@ -3,37 +3,36 @@
 
 void AllocateSBTableData(struct G4HepEmSBTableData** theSBTableData, int numHepEmMatCuts, int numElemsInMC, int numSBData) {
   FreeSBTableData(theSBTableData);
-  *theSBTableData = new G4HepEmSBTableData;
-  (*theSBTableData)->fNumHepEmMatCuts             = numHepEmMatCuts;
-  (*theSBTableData)->fGammaCutIndxStartIndexPerMC = new int[numHepEmMatCuts];
+  *theSBTableData = MakeSBTableData(numHepEmMatCuts, numElemsInMC, numSBData);
+}
+
+G4HepEmSBTableData* MakeSBTableData(int numHepEmMatCuts, int numElemsInMC, int numSBData) {
+  auto* tmp = new G4HepEmSBTableData;
+
+  tmp->fNumHepEmMatCuts             = numHepEmMatCuts;
+  tmp->fGammaCutIndxStartIndexPerMC = new int[numHepEmMatCuts];
   for (int i=0; i<numHepEmMatCuts; ++i) {
-    (*theSBTableData)->fGammaCutIndxStartIndexPerMC[i] = -1;
+    tmp->fGammaCutIndxStartIndexPerMC[i] = -1;
   }
-  (*theSBTableData)->fNumElemsInMatCuts           = numElemsInMC;
-  (*theSBTableData)->fGammaCutIndices             = new int[numElemsInMC];
+
+  tmp->fNumElemsInMatCuts = numElemsInMC;
+  tmp->fGammaCutIndices   = new int[numElemsInMC];
   for (int i=0; i<numElemsInMC; ++i) {
-    (*theSBTableData)->fGammaCutIndices[i] = -1;
+    tmp->fGammaCutIndices[i] = -1;
   }
-  //
-  (*theSBTableData)->fNumSBTableData              = numSBData;
-  (*theSBTableData)->fSBTableData                 = new double[numSBData];
+
+  tmp->fNumSBTableData = numSBData;
+  tmp->fSBTableData    = new double[numSBData];
+
+  return tmp;
 }
 
 
 void FreeSBTableData(struct G4HepEmSBTableData** theSBTableData) {
   if (*theSBTableData) {
-    if ((*theSBTableData)->fGammaCutIndxStartIndexPerMC) {
-      delete[] (*theSBTableData)->fGammaCutIndxStartIndexPerMC;
-      (*theSBTableData)->fGammaCutIndxStartIndexPerMC = nullptr;
-    }
-    if ((*theSBTableData)->fGammaCutIndices) {
-      delete[] (*theSBTableData)->fGammaCutIndices;
-      (*theSBTableData)->fGammaCutIndices = nullptr;
-    }
-    if ((*theSBTableData)->fSBTableData) {
-      delete[] (*theSBTableData)->fSBTableData;
-      (*theSBTableData)->fSBTableData = nullptr;
-    }
+    delete[] (*theSBTableData)->fGammaCutIndxStartIndexPerMC;
+    delete[] (*theSBTableData)->fGammaCutIndices;
+    delete[] (*theSBTableData)->fSBTableData;
     delete (*theSBTableData);
     *theSBTableData = nullptr;
   }

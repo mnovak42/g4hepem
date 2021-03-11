@@ -8,27 +8,29 @@
 void AllocateMatCutData(struct G4HepEmMatCutData** theMatCutData, int numG4MatCuts, int numUsedG4MatCuts) {
   // clean away the previous (if any)
   FreeMatCutData ( theMatCutData );
-  *theMatCutData = new G4HepEmMatCutData;
-  (*theMatCutData)->fNumG4MatCuts            = numG4MatCuts;
-  (*theMatCutData)->fNumMatCutData           = numUsedG4MatCuts;
-  (*theMatCutData)->fG4MCIndexToHepEmMCIndex = new int[numG4MatCuts];
-  (*theMatCutData)->fMatCutData              = new G4HepEmMCCData[numUsedG4MatCuts];
-  // init G4MC index to HepEmMC index translator to -1 (i.e. to `not used in the cur. geom.`)
-  for ( int i=0; i<numG4MatCuts; ++i ) {
-    (*theMatCutData)->fG4MCIndexToHepEmMCIndex[i] = -1;
-  }
+  *theMatCutData = MakeMatCutData(numG4MatCuts, numUsedG4MatCuts);
 }
 
+G4HepEmMatCutData* MakeMatCutData(int numG4MatCuts, int numUsedG4MatCuts) {
+  auto* tmp = new G4HepEmMatCutData;
+
+  tmp->fNumG4MatCuts = numG4MatCuts;
+  tmp->fG4MCIndexToHepEmMCIndex = new int[numG4MatCuts];
+  // Mark all G4MC as "unused in current geometry" by default
+  for ( int i=0; i<numG4MatCuts; ++i ) {
+    tmp->fG4MCIndexToHepEmMCIndex[i] = -1;
+  }
+
+  tmp->fNumMatCutData = numUsedG4MatCuts;
+  tmp->fMatCutData = new G4HepEmMCCData[numUsedG4MatCuts];
+  return tmp;
+}
 
 // Clears (the only one) G4HepEmMatCutData structure and resets its ptr to null
 void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData) {
-  if ( *theMatCutData ) {
-    if ( (*theMatCutData)->fG4MCIndexToHepEmMCIndex ) {
-      delete[] (*theMatCutData)->fG4MCIndexToHepEmMCIndex;
-    }
-    if ( (*theMatCutData)->fMatCutData ) {
-      delete[] (*theMatCutData)->fMatCutData;
-    }
+  if ( *theMatCutData != nullptr) {
+    delete[] (*theMatCutData)->fG4MCIndexToHepEmMCIndex;
+    delete[] (*theMatCutData)->fMatCutData;
     delete *theMatCutData;
     *theMatCutData = nullptr;
   }
@@ -40,7 +42,7 @@ void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData) {
 
 void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutData** onGPU) {
   // clean away previous (if any)
-  if ( *onGPU ) {
+  if ( *onGPU != nullptr) {
     FreeMatCutDataOnGPU ( onGPU );
   }
   // allocate array of G4HepEmMCCData structures on _d (its pointer adress will on _h)
@@ -62,7 +64,7 @@ void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutDa
 
 // NOTE: only the `struct G4HepEmMCCData* fMatCutData` array has been copied!
 void FreeMatCutDataOnGPU ( struct G4HepEmMatCutData** onGPU ) {
-  if ( *onGPU ) {
+  if ( *onGPU != nullptr ) {
     // copy the struct G4HepEmMatCutData` struct, including its `struct G4HepEmMCCData* fMatCutData`
     // pointer member, from _d to _h in order to be able to free the _d sice memory
     // pointed by `fMatCutData` by calling to cudaFree from the host.
