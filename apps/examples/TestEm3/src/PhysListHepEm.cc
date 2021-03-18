@@ -102,19 +102,19 @@ void PhysListHepEm::ConstructProcess() {
 */
       // Add G4HepEm process to gamma: includes Conversion, Compton and an simple
       // absorption when E_g < 250 [keV].
-      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
+      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
 
     } else if (particleName == "e-") {
 
       // Add G4HepEm process to e-: includes Ionisation and Bremsstrahlung for e-
-     particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
+     particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
     } else if (particleName == "e+") {
 
       // Add G4HepEm process to e+: includes Ionisation, Bremsstrahlung and e+e-
       // annihilation into 2 gamma interactions for e+
-      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, 0, -1);
+      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
     }
   }
