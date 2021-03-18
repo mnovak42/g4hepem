@@ -30,7 +30,8 @@ G4HepEmProcess::G4HepEmProcess()
 : G4VProcess("hepEm", fElectromagnetic),
   fTheG4HepEmRunManager(nullptr) {
   enableAtRestDoIt    = false;
-  enablePostStepDoIt  = false;
+  enableAlongStepDoIt = false;
+  enablePostStepDoIt  = true;
 
   fTheG4HepEmRunManager   = new G4HepEmRunManager(G4Threading::IsMasterThread());
   fTheG4HepEmRandomEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
@@ -81,19 +82,17 @@ void     G4HepEmProcess::StartTracking(G4Track* track) {
   }
 }
 
-G4double G4HepEmProcess::AlongStepGetPhysicalInteractionLength (
-                                               const G4Track& track,
-                                               G4double  /*previousStepSize*/,
-                                               G4double  /*currentMinimumStep*/,
-                                               G4double& /*proposedSafety*/,
-                                               G4GPILSelection* selection) {
-  *selection = CandidateForSelection;
+G4double G4HepEmProcess::PostStepGetPhysicalInteractionLength ( const G4Track& track,
+                                                                G4double previousStepSize,
+                                                                G4ForceCondition* condition ) {
   G4HepEmTLData*            theTLData = fTheG4HepEmRunManager->GetTheTLData();
   const G4ParticleDefinition* partDef = track.GetParticleDefinition();
   const bool                 isGamma  = (partDef->GetPDGEncoding()==22);
   G4HepEmTrack*       thePrimaryTrack = isGamma
                                         ? theTLData->GetPrimaryGammaTrack()->GetTrack()
                                         : theTLData->GetPrimaryElectronTrack()->GetTrack();
+  // forced the DoIt to be called in all cases
+  *condition = G4ForceCondition::Forced;
   thePrimaryTrack->SetCharge(partDef->GetPDGCharge());
   const G4DynamicParticle* theG4DPart = track.GetDynamicParticle();
   thePrimaryTrack->SetEKin(theG4DPart->GetKineticEnergy(), theG4DPart->GetLogKineticEnergy());
@@ -114,9 +113,7 @@ G4double G4HepEmProcess::AlongStepGetPhysicalInteractionLength (
 }
 
 
-
-
-G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4Step& step) {
+G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4Step& step) {
   // init particle change: it might be more special we need to see later
   fParticleChangeForLoss->InitializeForPostStep(track);
 
@@ -155,8 +152,7 @@ G4VParticleChange* G4HepEmProcess::AlongStepDoIt( const G4Track& track, const G4
   }
   fParticleChangeForLoss->ProposeLocalEnergyDeposit(edep);
   const double* pdir = thePrimaryTrack->GetDirection();
-//  fParticleChangeForLoss->ProposeMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
-  step.GetPostStepPoint()->SetMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
+  fParticleChangeForLoss->ProposeMomentumDirection(G4ThreeVector(pdir[0], pdir[1], pdir[2]));
 
   // secondary: only possible is e- or gamma at the moemnt
   const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
