@@ -473,19 +473,27 @@ void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerMod
 
   // write data to the final destination and clean all dynamically allocated auxilary memory
   elData->fElemSelectorIoniNumData = indxContIoni;
-  elData->fElemSelectorIoniData    = new double[indxContIoni];
-  for (int i=0; i<indxContIoni; ++i) {
-    elData->fElemSelectorIoniData[i] = ioniData[i];
+  if (indxContIoni > 0) {
+    elData->fElemSelectorIoniData    = new double[indxContIoni];
+    for (int i=0; i<indxContIoni; ++i) {
+      elData->fElemSelectorIoniData[i] = ioniData[i];
+    }
   }
+
   elData->fElemSelectorBremSBNumData = indxContBremSB;
-  elData->fElemSelectorBremSBData    = new double[indxContBremSB];
-  for (int i=0; i<indxContBremSB; ++i) {
-    elData->fElemSelectorBremSBData[i] = bremSBData[i];
+  if (indxContBremSB > 0) {
+    elData->fElemSelectorBremSBData    = new double[indxContBremSB];
+    for (int i=0; i<indxContBremSB; ++i) {
+      elData->fElemSelectorBremSBData[i] = bremSBData[i];
+    }
   }
+
   elData->fElemSelectorBremRBNumData = indxContBremRB;
-  elData->fElemSelectorBremRBData    = new double[indxContBremRB];
-  for (int i=0; i<indxContBremRB; ++i) {
-    elData->fElemSelectorBremRBData[i] = bremRBData[i];
+  if (indxContBremRB > 0) {
+    elData->fElemSelectorBremRBData    = new double[indxContBremRB];
+    for (int i=0; i<indxContBremRB; ++i) {
+      elData->fElemSelectorBremRBData[i] = bremRBData[i];
+    }
   }
 
   delete[] ioniData;
@@ -585,7 +593,7 @@ void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters*
     int izST = std::min(iz, sbTables->fMaxZet);
     // and construct the HepEm-SB-sampling tables for each
     const G4HepEmSBBremTableBuilder::SamplingTablePerZ* stPerZ = sbTables->GetSamplingTablesForZ(izST);
-    if (!stPerZ) {
+    if (stPerZ == nullptr) {
       std::cout << " *** No SB-STable for iz = " << iz << ": gcut probably above max-model-energy of 1 GeV " << std::endl;
       continue;
     }
@@ -642,7 +650,7 @@ void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters*
     int izST = std::min(iz,sbTables->fMaxZet);
     // and construct the HepEm-SB-sampling tables for each
     const G4HepEmSBBremTableBuilder::SamplingTablePerZ* stPerZ = sbTables->GetSamplingTablesForZ(izST);
-    if (!stPerZ) {
+    if (stPerZ == nullptr) {
       continue;
     }
     // Construct the HepEm-Samplng-tables for this Z:
@@ -685,7 +693,7 @@ void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters*
     for (int ie=0; ie<numElems; ++ie) {
       int izST = std::min(elemVect[ie], sbTables->fMaxZet);
       const G4HepEmSBBremTableBuilder::SamplingTablePerZ* stPerZ = sbTables->GetSamplingTablesForZ(izST);
-      if (!stPerZ) {
+      if (stPerZ == nullptr) {
         continue;
       }
       // get the index of the gamma-cut in this element that corresponds to this mat-cut

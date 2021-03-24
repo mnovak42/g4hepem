@@ -148,9 +148,6 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
   int numConvEkin = (int)(G4EmParameters::Instance()->NumberOfBinsPerDecade()*std::log(emax/emin)*invlog106);
   gmData->fElemSelectorConvEgridSize = numConvEkin;
   // allocate array for the kinetic energy grid
-  if (gmData->fElemSelectorConvEgrid) {
-    delete[] gmData->fElemSelectorConvEgrid;
-  }
   gmData->fElemSelectorConvEgrid = new double[numConvEkin];
   double lemin = std::log(emin);
   double delta = std::log(emax/emin)/(numConvEkin-1.0);
@@ -179,13 +176,15 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
     if (numElem>1) {
       // should be numElem-1 but for each material 1 extra is #elements that is the first elem
       num += numElem;
+    } else {
+      gmData->fElemSelectorConvStartIndexPerMat[im] = -1;
     }
   }
   // allocate memory:
   int size = num*numConvEkin;
   gmData->fElemSelectorConvNumData = size;
-  if (gmData->fElemSelectorConvData) {
-    delete gmData->fElemSelectorConvData;
+  if (size == 0) {
+    return;
   }
   gmData->fElemSelectorConvData = new double[size];
   G4VEmModel* emModel = ppModel;
@@ -193,8 +192,9 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
   for (int im=0; im<numHepEmMatData; ++im) {
     const struct G4HepEmMatData& matData = hepEmMatData->fMaterialData[im];
     int numElem = matData.fNumOfElement;
-    if (numElem<2) {
-      gmData->fElemSelectorConvStartIndexPerMat[im] = -1;
+    if (numElem < 2) {
+//      gmData->fElemSelectorConvStartIndexPerMat[im] = -1;
+      continue;
     }
     gmData->fElemSelectorConvStartIndexPerMat[im] = indxCont;
     gmData->fElemSelectorConvData[indxCont++]     = numElem;
