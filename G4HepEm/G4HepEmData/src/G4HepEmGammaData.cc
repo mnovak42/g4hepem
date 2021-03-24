@@ -86,16 +86,18 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
   // -- go for the conversion element selector related data
   int numElSelE   = onHOST->fElemSelectorConvEgridSize;
   int numElSelDat = onHOST->fElemSelectorConvNumData;
-  gmDataHTo_d->fElemSelectorConvEgridSize   = numElSelE;
-  gmDataHTo_d->fElemSelectorConvNumData     = numElSelDat;
-  gmDataHTo_d->fElemSelectorConvLogMinEkin  = onHOST->fElemSelectorConvLogMinEkin;
-  gmDataHTo_d->fElemSelectorConvEILDelta    = onHOST->fElemSelectorConvEILDelta;
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvStartIndexPerMat), sizeof( int ) * numHepEmMat ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvStartIndexPerMat,  onHOST->fElemSelectorConvStartIndexPerMat, sizeof( int ) * numHepEmMat, cudaMemcpyHostToDevice ) );
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvEgrid), sizeof( double ) * numElSelE ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvEgrid,  onHOST->fElemSelectorConvEgrid, sizeof( double ) * numElSelE,   cudaMemcpyHostToDevice ) );
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvData),  sizeof( double ) * numElSelDat ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvData,   onHOST->fElemSelectorConvData,  sizeof( double ) * numElSelDat, cudaMemcpyHostToDevice ) );
+  if (numElSelDat > 0) {
+    gmDataHTo_d->fElemSelectorConvEgridSize   = numElSelE;
+    gmDataHTo_d->fElemSelectorConvNumData     = numElSelDat;
+    gmDataHTo_d->fElemSelectorConvLogMinEkin  = onHOST->fElemSelectorConvLogMinEkin;
+    gmDataHTo_d->fElemSelectorConvEILDelta    = onHOST->fElemSelectorConvEILDelta;
+    gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvStartIndexPerMat), sizeof( int ) * numHepEmMat ) );
+    gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvStartIndexPerMat,  onHOST->fElemSelectorConvStartIndexPerMat, sizeof( int ) * numHepEmMat, cudaMemcpyHostToDevice ) );
+    gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvEgrid), sizeof( double ) * numElSelE ) );
+    gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvEgrid,  onHOST->fElemSelectorConvEgrid, sizeof( double ) * numElSelE,   cudaMemcpyHostToDevice ) );
+    gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvData),  sizeof( double ) * numElSelDat ) );
+    gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvData,   onHOST->fElemSelectorConvData,  sizeof( double ) * numElSelDat, cudaMemcpyHostToDevice ) );
+  }
   //
   // Finaly copy the top level, i.e. the main struct with the already
   // appropriate pointers to device side memory locations but stored on the host

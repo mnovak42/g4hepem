@@ -114,24 +114,30 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   // allocate memory for Ionisation related data on the _d and copy form _h
   const int numIoniData = onHOST->fElemSelectorIoniNumData;
   elDataHTo_d->fElemSelectorIoniNumData = numIoniData;
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniData),                sizeof( double ) * numIoniData     ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut,  onHOST->fElemSelectorIoniStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorIoniData,                 onHOST->fElemSelectorIoniData,                sizeof( double ) * numIoniData,     cudaMemcpyHostToDevice ) );
+  if (numIoniData > 0) {
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniData),                sizeof( double ) * numIoniData     ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut,  onHOST->fElemSelectorIoniStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorIoniData,                 onHOST->fElemSelectorIoniData,                sizeof( double ) * numIoniData,     cudaMemcpyHostToDevice ) );
+  }
   // the same for SB brem
   const int numBremSBData = onHOST->fElemSelectorBremSBNumData;
   elDataHTo_d->fElemSelectorBremSBNumData = numBremSBData;
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBData),                sizeof( double ) * numBremSBData   ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut,  onHOST->fElemSelectorBremSBStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremSBData,                 onHOST->fElemSelectorBremSBData,                sizeof( double ) * numBremSBData,   cudaMemcpyHostToDevice ) );
+  if (numBremSBData > 0) {
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBData),                sizeof( double ) * numBremSBData   ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut,  onHOST->fElemSelectorBremSBStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremSBData,                 onHOST->fElemSelectorBremSBData,                sizeof( double ) * numBremSBData,   cudaMemcpyHostToDevice ) );
+  }
   // the same for RB brem
   const int numBremRBData = onHOST->fElemSelectorBremRBNumData;
   elDataHTo_d->fElemSelectorBremRBNumData = numBremRBData;
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBData),                sizeof( double ) * numBremRBData   ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut,  onHOST->fElemSelectorBremRBStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBData,                 onHOST->fElemSelectorBremRBData,                sizeof( double ) * numBremRBData,   cudaMemcpyHostToDevice ) );
+  if (numBremRBData > 0) {
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
+    gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBData),                sizeof( double ) * numBremRBData   ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut,  onHOST->fElemSelectorBremRBStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
+    gpuErrchk ( cudaMemcpy (   elDataHTo_d->fElemSelectorBremRBData,                 onHOST->fElemSelectorBremRBData,                sizeof( double ) * numBremRBData,   cudaMemcpyHostToDevice ) );
+  }
   //
   // Finaly copy the top level, i.e. the main struct with the already
   // appropriate pointers to device side memory locations but stored on the host
