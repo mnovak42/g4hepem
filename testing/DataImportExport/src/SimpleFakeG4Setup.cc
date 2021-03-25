@@ -1,4 +1,4 @@
-#include "MockG4.h"
+#include "SimpleFakeG4Setup.h"
 
 #include "G4Types.hh"
 
@@ -18,11 +18,11 @@
 #include "G4ProductionCuts.hh"
 #include "G4ProductionCutsTable.hh"
 
-G4PVPlacement* MockG4()
+void SimpleFakeG4Setup(double secondaryProductionThreshold)
 {
   // This largely follows G4HepEM's testing methods
   // Want nested regions with common materials to make sure we can connect these
-  // up
+  // up, with Region
 
   // -- Materials (Matched to TestEm3)
   G4Material* g4Galactic =
@@ -80,8 +80,7 @@ G4PVPlacement* MockG4()
   // --- Create production - cuts object and set the secondary production
   // threshold.
   G4ProductionCuts* productionCuts = new G4ProductionCuts();
-  constexpr G4double ProductionCut = 1 * mm;
-  productionCuts->SetProductionCut(ProductionCut);
+  productionCuts->SetProductionCut(secondaryProductionThreshold);
 
   // --- Register a default region
   G4Region* reg = new G4Region("default");
@@ -95,7 +94,7 @@ G4PVPlacement* MockG4()
   absReg->UsedInMassGeometry(true);
 
   auto* absProductionCuts = new G4ProductionCuts();
-  absProductionCuts->SetProductionCut(0.7 * CLHEP::mm);
+  absProductionCuts->SetProductionCut(secondaryProductionThreshold*0.25);
 
   absReg->SetProductionCuts(absProductionCuts);
 
@@ -103,6 +102,4 @@ G4PVPlacement* MockG4()
   G4ProductionCutsTable* theCoupleTable =
     G4ProductionCutsTable::GetProductionCutsTable();
   theCoupleTable->UpdateCoupleTable(worldPhysical);
-
-  return worldPhysical;
 }
