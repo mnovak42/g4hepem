@@ -6,61 +6,28 @@
 void AllocateElectronData (struct G4HepEmElectronData** theElectronData) {
   // clean away previous (if any)
   FreeElectronData(theElectronData);
-  *theElectronData   = new G4HepEmElectronData;
-  // eloss
-  (*theElectronData)->fELossEnergyGrid                       = nullptr;
-  (*theElectronData)->fELossData                             = nullptr;
-  // mac-xsec
-  (*theElectronData)->fResMacXSecStartIndexPerMatCut         = nullptr;
-  (*theElectronData)->fResMacXSecData                        = nullptr;
-  // elemen selectors per models:
-  // - Moller-Bhabha ionisation
-  (*theElectronData)->fElemSelectorIoniStartIndexPerMatCut   = nullptr;
-  (*theElectronData)->fElemSelectorIoniData                  = nullptr;
-  // - Seltzer-Berger model for e-/e+ bremsstrahlung
-  (*theElectronData)->fElemSelectorBremSBStartIndexPerMatCut = nullptr;
-  (*theElectronData)->fElemSelectorBremSBData                = nullptr;
-  // - relativistic (improved Bethe-Heitler) model for e-/e+ bremsstrahlung
-  (*theElectronData)->fElemSelectorBremRBStartIndexPerMatCut = nullptr;
-  (*theElectronData)->fElemSelectorBremRBData                = nullptr;
+  *theElectronData = MakeElectronData();
+}
+
+G4HepEmElectronData* MakeElectronData() {
+  // Default construction handles everything we need, but add
+  // additional initialization here if required
+  return new G4HepEmElectronData;
 }
 
 
 void FreeElectronData (struct G4HepEmElectronData** theElectronData)  {
-  if (*theElectronData) {
-    // eloss
-    if ((*theElectronData)->fELossEnergyGrid) {
-      delete[] (*theElectronData)->fELossEnergyGrid;
-    }
-    if ((*theElectronData)->fELossData) {
-      delete[] (*theElectronData)->fELossData;
-    }
-    // mac-xsec
-    if ((*theElectronData)->fResMacXSecData) {
-      delete[] (*theElectronData)->fResMacXSecData;
-    }
-    if ((*theElectronData)->fResMacXSecStartIndexPerMatCut) {
-      delete[] (*theElectronData)->fResMacXSecStartIndexPerMatCut;
-    }
-    // element selectors:
-    if ((*theElectronData)->fElemSelectorIoniStartIndexPerMatCut) {
-      delete[] (*theElectronData)->fElemSelectorIoniStartIndexPerMatCut;
-    }
-    if ((*theElectronData)->fElemSelectorIoniData) {
-      delete[] (*theElectronData)->fElemSelectorIoniData;
-    }
-    if ((*theElectronData)->fElemSelectorBremSBStartIndexPerMatCut) {
-      delete[] (*theElectronData)->fElemSelectorBremSBStartIndexPerMatCut;
-    }
-    if ((*theElectronData)->fElemSelectorBremSBData) {
-      delete[] (*theElectronData)->fElemSelectorBremSBData;
-    }
-    if ((*theElectronData)->fElemSelectorBremRBStartIndexPerMatCut) {
-      delete[] (*theElectronData)->fElemSelectorBremRBStartIndexPerMatCut;
-    }
-    if ((*theElectronData)->fElemSelectorBremRBData) {
-      delete[] (*theElectronData)->fElemSelectorBremRBData;
-    }
+  if (*theElectronData != nullptr) {
+    delete[] (*theElectronData)->fELossEnergyGrid;
+    delete[] (*theElectronData)->fELossData;
+    delete[] (*theElectronData)->fResMacXSecData;
+    delete[] (*theElectronData)->fResMacXSecStartIndexPerMatCut;
+    delete[] (*theElectronData)->fElemSelectorIoniStartIndexPerMatCut;
+    delete[] (*theElectronData)->fElemSelectorIoniData;
+    delete[] (*theElectronData)->fElemSelectorBremSBStartIndexPerMatCut;
+    delete[] (*theElectronData)->fElemSelectorBremSBData;
+    delete[] (*theElectronData)->fElemSelectorBremRBStartIndexPerMatCut;
+    delete[] (*theElectronData)->fElemSelectorBremRBData;
 
     delete *theElectronData;
     *theElectronData = nullptr;

@@ -40,27 +40,27 @@
 /** Data that describes a single matrial-cuts couple in ``G4HepEm``. */
 struct G4HepEmMCCData {
   /** Secondary \f$e^-\f$ production threshold energy [MeV]. */
-  double  fSecElProdCutE;
+  double  fSecElProdCutE = 0.0;
   /** Secondary \f$\gamma\f$ production threshold energy [MeV]. */
-  double  fSecGamProdCutE;
+  double  fSecGamProdCutE = 0.0;
   /** Logarithm of the above secondary \f$\gamma\f$ production threshold. */
-  double  fLogSecGamCutE;
+  double  fLogSecGamCutE = 0.0;
   /** Index of its material realted data: index of its G4HepEmMatData in the G4HepEmMaterialData. */
-  int     fHepEmMatIndex;
+  int     fHepEmMatIndex = -1;
   /** Index of the corresponding G4MaterialCutsCouple object.*/
-  int     fG4MatCutIndex;
+  int     fG4MatCutIndex = -1;
 };
 
 // Data for all matrial cuts couple that are used by G4HepEm.
 struct G4HepEmMatCutData {
   /** Number of G4MaterialCutsCouple objects in ``Geant4`` (irrespectively if used or not).  */
-  int      fNumG4MatCuts;
+  int      fNumG4MatCuts = 0;
   /** Number of G4HepEmMCCData structure in ``G4HepEm`` (only the used G4MaterialCutsCouple objects are translated). */
-  int      fNumMatCutData;
+  int      fNumMatCutData = 0;
   /** Array that translates a Geant4 G4MaterialCutsCouple object index to the correspondig G4HepEmMCCData index in the collection below.*/
-  int*     fG4MCIndexToHepEmMCIndex;  // [fNumG4MatCuts]
+  int*     fG4MCIndexToHepEmMCIndex = nullptr;  // [fNumG4MatCuts]
   /** Collection of G4HepEmMCCData structures for all material-cuts couples used in the current geometry.*/
-  struct G4HepEmMCCData* fMatCutData; // [fNumMatCutData]
+  struct G4HepEmMCCData* fMatCutData = nullptr; // [fNumMatCutData]
 };
 
 /**
@@ -76,12 +76,26 @@ struct G4HepEmMatCutData {
   *   the correspondig pointer will be set to a memory location with a freshly allocated
   *   G4HepEmMatCutData structure. If the pointer is not null at input, the pointed
   *   memory is freed before the new allocation.
-  * @param numG4MatCuts number of Geant4 material-cuts couple objects (irrespectively if used or not).
+  * @param[in] numG4MatCuts number of Geant4 material-cuts couple objects (irrespectively if used or not).
   *   It determines the maximum value of the G4MaterialCutsCouple object index.
-  * @param numUsedG4MatCuts number of Geant4 material-cuts couple objects used in the current geometry.
+  * @param[in] numUsedG4MatCuts number of Geant4 material-cuts couple objects used in the current geometry.
   *   It determines the number of the G4HepEmMCCData structures.
   */
 void AllocateMatCutData(struct G4HepEmMatCutData** theMatCutData, int numG4MatCuts, int numUsedG4MatCuts);
+
+
+/**
+ * Initializes a new @ref G4HepEmMatCutData structure
+ *
+ * This function constructs and returns an instance of G4HepEmMatCutData to hold a given number of indices
+ * to Geant4 material-cuts couple objects and their corresponding G4HepEmMCCData instance.
+ * It is the callees responsibility to free the instance using @ref FreeMatCutData.
+ *
+  * @param[in] numG4MatCuts number of Geant4 material-cuts couple objects
+  * @param[in] numUsedG4MatCuts number of Geant4 material-cuts couple objects used in the current geometry.
+  * @return Pointer to instance of @ref G4HepEmMatCutData
+ */
+G4HepEmMatCutData* MakeMatCutData(int numG4MatCuts, int numUsedG4MatCuts);
 
 /**
   * Frees a G4HepEmMatCutData structure.
@@ -98,9 +112,6 @@ void AllocateMatCutData(struct G4HepEmMatCutData** theMatCutData, int numG4MatCu
   *  at termination.
   */
 void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData);
-
-
-
 
 
 #ifdef G4HepEm_CUDA_BUILD

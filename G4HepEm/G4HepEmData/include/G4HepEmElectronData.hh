@@ -80,7 +80,7 @@
 
 struct G4HepEmElectronData {
   /** Number of G4HepEm material - cuts: number of G4HepEmMCCData structures stored in the G4HepEmMatCutData::fMatCutData array. */
-  int        fNumMatCuts;
+  int        fNumMatCuts = 0;
 
 //// === ENERGY LOSS DATA
   /**
@@ -91,13 +91,13 @@ struct G4HepEmElectronData {
    */
 ///@{
   /** Number of discrete kinetic energy values in the grid (\f$N\f$). */
-  int        fELossEnergyGridSize;
+  int        fELossEnergyGridSize = 0;
   /** Logarithm of the minimum kinetic energy value of the grid (\f$\ln(E_0)\f$)*/
-  double     fELossLogMinEkin;     // log of the E_0
+  double     fELossLogMinEkin = 0.0;     // log of the E_0
   /** Inverse of the log-scale delta value (\f$ 1/[log(E_{N-1}/E_0)/(N-1)]\f$). */
-  double     fELossEILDelta;
+  double     fELossEILDelta = 0.0;
   /** The grid of the discrete kinetic energy values (\f$E_0, E_1,\ldots, E_{N-1}\f$).*/
-  double*    fELossEnergyGrid;
+  double*    fELossEnergyGrid = nullptr; // [fELossEnergyGridSize]
   /** The energy loss data: **restricted dE/dx, range and inverse range** data.
     *
     * The restricted dE/dx, range (and corresponding inverse range) data values,
@@ -149,7 +149,7 @@ struct G4HepEmElectronData {
     * terms of memory consumption and speed) when accessing the restricted energy loss
     * related, i.e. stopping power, range and inverse range data in the \f$e^-/e^+\f$ stepping.
     */
-  double*    fELossData; // [5xfELossEnergyGridSize x fNumMatCuts]
+  double*    fELossData = nullptr; // [5xfELossEnergyGridSize x fNumMatCuts]
 /// @} */ // end: eloss
   //
 
@@ -161,9 +161,9 @@ struct G4HepEmElectronData {
    */
 ///@{
   /** Total number of restricted macroscopic cross sections realted data stored in the single G4HepEmElectronData::fResMacXSecData array.*/
-  int        fResMacXSecNumData;
+  int        fResMacXSecNumData = 0;
   /** Start index of the macroscopic cross section data, for the material - cuts couple with the given index, in the G4HepEmElectronData::fResMacXSecData array.*/
-  int*       fResMacXSecStartIndexPerMatCut;  // [fNumMatCuts]
+  int*       fResMacXSecStartIndexPerMatCut = nullptr;  // [fNumMatCuts]
   /** The restricted macroscopic cross section data for **ionisation** and **bremsstrahlung** for all material - cuts couples.
    *
    * All the restricted macroscopic cross section data are stored continuously in this G4HepEmElectronData::fResMacXSecData single array.
@@ -228,7 +228,7 @@ struct G4HepEmElectronData {
    * accessing the restricted macroscopic cross section data in the \f$e^-/e^+\f$ stepping.
    *
    */
-  double*    fResMacXSecData; // [fResMacXSecNumData]
+  double*    fResMacXSecData = nullptr; // [fResMacXSecNumData]
 /// @} */ // end: macroscopic cross section
 
 //// === TARGET ELEMENT SELECTOR
@@ -285,25 +285,25 @@ struct G4HepEmElectronData {
    */
 ///@{
   /** Total number of element selector data for the Moller-Bhabha model for e-/e+ ionisation.*/
-  int       fElemSelectorIoniNumData;
+  int       fElemSelectorIoniNumData = 0;
   /** Indices, at which data starts for a given material - cuts couple.*/
-  int*      fElemSelectorIoniStartIndexPerMatCut;     // [#material-cuts couple]
+  int*      fElemSelectorIoniStartIndexPerMatCut = nullptr;     // [fNumMatCuts]
   /** Element selector data for all material - cuts couples with multiple element material.*/
-  double*   fElemSelectorIoniData;                    // [fElemSelectorIoniNumData]
+  double*   fElemSelectorIoniData = nullptr;                    // [fElemSelectorIoniNumData]
 
   /** Total number of element selector data for the Seltzer-Berger model for e-/e+ bremsstrahlung.*/
-  int       fElemSelectorBremSBNumData;
+  int       fElemSelectorBremSBNumData = 0;
   /** Indices, at which data starts for a given material - cuts couple.*/
-  int*      fElemSelectorBremSBStartIndexPerMatCut;   // [#material-cuts couple]
+  int*      fElemSelectorBremSBStartIndexPerMatCut = nullptr;   // [fNumMatCuts]
   /** Element selector data for all material - cuts couples with multiple element material.*/
-  double*   fElemSelectorBremSBData;                  // [fElemSelectorBremSBNumData]
+  double*   fElemSelectorBremSBData = nullptr;                  // [fElemSelectorBremSBNumData]
 
   /** Total number of element selector data for the relativistic (improved Bethe-Heitler) model for e-/e+ bremsstrahlung.*/
-  int       fElemSelectorBremRBNumData;
+  int       fElemSelectorBremRBNumData = 0;
   /** Indices, at which data starts for a given material - cuts couple.*/
-  int*      fElemSelectorBremRBStartIndexPerMatCut;   // [#material-cuts couple]
+  int*      fElemSelectorBremRBStartIndexPerMatCut = nullptr;   // [fNumMatCuts]
   /** Element selector data for all material - cuts couples with multiple element material.*/
-  double*   fElemSelectorBremRBData;                  // [fElemSelectorBremRBNumData]
+  double*   fElemSelectorBremRBData = nullptr;                  // [fElemSelectorBremRBNumData]
 /// @} */ // end: target element selectors
 };
 
@@ -325,6 +325,17 @@ struct G4HepEmElectronData {
   *   dynamic memory members, is freed before the new allocation.
   */
 void AllocateElectronData (struct G4HepEmElectronData** theElectronData);
+
+/**
+ * Initializes a new @ref G4HepEmElectronData structure
+ *
+ * This function default constructs an instance of G4HepEmElectronData and returns
+ * a pointer to the freshly constructed instance. It is the callees responsibility
+ * to free the instance using @ref FreeElectronData.
+ *
+ * @return Pointer to instance of @ref G4HepEmElectronData
+ */
+G4HepEmElectronData* MakeElectronData();
 
 /**
   * Frees a G4HepEmElectronData structure.

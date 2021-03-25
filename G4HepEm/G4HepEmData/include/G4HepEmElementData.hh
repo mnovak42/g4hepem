@@ -36,47 +36,47 @@
 struct G4HepEmElemData {
 
   /** The atomic number (Z) of the element. */
-  double  fZet;
+  double  fZet = -1.0;
 
   /** \f$Z^{1/3}\f$ */
-  double  fZet13;
+  double  fZet13 = 0.0;
 
   /** \f$Z^{2/3}\f$ */
-  double  fZet23;
+  double  fZet23 = 0.0;
 
   /** Coulomb correction \f$ f_C \f$ */
-  double  fCoulomb;
+  double  fCoulomb = 0.0;
 
   /** \f$ \ln(Z) \f$  */
-  double  fLogZ;
+  double  fLogZ = 0.0;
 
   /** \f$ F_{\text{el}}-f_c+F_{\text{inel}}/Z \f$  */
-  double  fZFactor1;
+  double  fZFactor1 = 0.0;
 
   /** \f$ \exp \left[ \frac{42.038-F_{\text{low}}}{8.29} \right] -0.958 \f$ with \f$ Z_{\text{low}} = \frac{8}{3}\log(Z) \f$ */
-  double  fDeltaMaxLow;
+  double  fDeltaMaxLow = 0.0;
 
   /** \f$ \exp \left[ \frac{42.038-F_{\text{high}}}{8.29} \right] -0.958 \f$ with \f$ F_{\text{high}} = 8[\log(Z)/3 + f_C] \f$ */
-  double  fDeltaMaxHigh;
+  double  fDeltaMaxHigh = 0.0;
 
   /** LPM variable \f$ 1/ln [ \sqrt{2}s1 ] \f$ */
-  double  fILVarS1;
+  double  fILVarS1 = 0.0;
 
   /** LPM variable \f$ 1/ln[s1] \f$ */
-  double  fILVarS1Cond;
+  double  fILVarS1Cond = 0.0;
 
 };
 
 // Data for all elements that are used by G4HepEm.
 struct G4HepEmElementData {
   /** Maximum capacity of the below G4HepEmElemData structure container (max Z that can be stored).*/
-  int     fMaxZet;
+  int     fMaxZet = 0;
   /** Collection of G4HepEmElemData structures indexed by the atomic number Z. */
-  struct G4HepEmElemData* fElementData;  // [fMaxZet]
+  struct G4HepEmElemData* fElementData = nullptr;  // [fMaxZet]
 };
 
 /**
-  * Allocates and pre-initialises the G4HepEmMaterialData structure.
+  * Allocates and pre-initialises an existing @ref G4HepEmMaterialData structure.
   *
   * This method is invoked from the InitMaterialAndCoupleData() function declared
   * in the G4HepEmMaterialInit header file. The input argument address of the
@@ -84,12 +84,23 @@ struct G4HepEmElementData {
   * member of the `master` G4HepEmRunManager and the initialisation should be
   * done by the master G4HepEmRunManager.
   *
-  * @param theElementData address of a G4HepEmElementData structure pointer. At termination,
+  * @param [in][out] theElementData address of a G4HepEmElementData structure pointer. At termination,
   *   the correspondig pointer will be set to a memory location with a freshly allocated
   *   G4HepEmElementData structure. If the pointer was not null at input, the pointed
   *   memory is freed before the new allocation.
   */
 void AllocateElementData(struct G4HepEmElementData** theElementData);
+
+/**
+ * Initializes a new @ref G4HepEmMaterialData structure
+ *
+ * This function default constructs an instance of G4HepEmMaterialData and returns
+ * a pointer to the freshly constructed instance. It is the callees responsibility
+ * to free the instance using @ref FreeElementData.
+ *
+ * @return Pointer to instance of @ref G4HepEmMaterialData
+ */
+G4HepEmElementData* MakeElementData();
 
 /**
   * Frees a G4HepEmElementData structure.
@@ -101,7 +112,7 @@ void AllocateElementData(struct G4HepEmElementData** theElementData);
   * The input argument is supposed to be the address of the corresponding pointer
   * member of the G4HepEmData member of the `master` G4HepEmRunManager.
   *
-  * @param theElementData memory address that stores pointer to a G4HepEmElementData
+  * @param [in][out] theElementData memory address that stores pointer to a G4HepEmElementData
   *  structure. The memory is freed and the input address will store a null pointer
   *  at termination.
   */

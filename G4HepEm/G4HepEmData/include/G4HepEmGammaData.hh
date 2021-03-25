@@ -14,34 +14,34 @@
 
 struct G4HepEmGammaData {
   /** Number of G4HepEm materials: number of G4HepEmMatData structures stored in the G4HepEmMaterialData::fMaterialData array. */
-  int           fNumMaterials;
+  int           fNumMaterials = 0;
 
 //// === conversion related data. Grid: 146 bins form 2mc^2 - 100 TeV
   const int     fConvEnergyGridSize = 147;
-  double        fConvLogMinEkin;    // = 0.021759358706830;  // log(2mc^2)
-  double        fConvEILDelta;      // = 7.935247775833226;  // 1./[log(emax/emin)/146]
-  double*       fConvEnergyGrid;    // the enrgy grid
+  double        fConvLogMinEkin = 0.0;    // = 0.021759358706830;  // log(2mc^2)
+  double        fConvEILDelta = 0.0;      // = 7.935247775833226;  // 1./[log(emax/emin)/146]
+  double*       fConvEnergyGrid = nullptr;    // [fConvEnergyGrid]
 
 //// === compton related data. 84 bins (7 per decades) from 100 eV - 100 TeV
   const int     fCompEnergyGridSize = 85;
-  double        fCompLogMinEkin;     // = -9.210340371976182; // log(0.0001) i.e. log(100 eV)
-  double        fCompEILDelta;       // =  3.040061373322763; // 1./[log(emax/emin)/84]
-  double*       fCompEnergyGrid;     // the enrgy grid
+  double        fCompLogMinEkin = 0.0;     // = -9.210340371976182; // log(0.0001) i.e. log(100 eV)
+  double        fCompEILDelta = 0.0;       // =  3.040061373322763; // 1./[log(emax/emin)/84]
+  double*       fCompEnergyGrid = nullptr;     // [fCompEnergyGridSize]
 
   // the macroscopic cross sections for all materials and for [conversion,compton]
   // at each material
-  double*       fConvCompMacXsecData;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize)]
+  double*       fConvCompMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize)]
 
 //// === element selector for conversion (note: KN compton interaction do not know anything about Z)
-  int           fElemSelectorConvEgridSize;
-  int           fElemSelectorConvNumData;          // total number of data i.e. lenght of fElemSelectorConvData
-  double        fElemSelectorConvLogMinEkin;
-  double        fElemSelectorConvEILDelta;         //
-  int*          fElemSelectorConvStartIndexPerMat; // [#materials]
-  double*       fElemSelectorConvEgrid;            // common energy grid for all element selectors
+  int           fElemSelectorConvEgridSize = 0;
+  int           fElemSelectorConvNumData = 0;          // total number of data i.e. lenght of fElemSelectorConvData
+  double        fElemSelectorConvLogMinEkin = 0.0;
+  double        fElemSelectorConvEILDelta = 0.0;         //
+  int*          fElemSelectorConvStartIndexPerMat = nullptr; // [fNumMaterials]
+  double*       fElemSelectorConvEgrid = nullptr;            // [fElemSelectorConvEgridSize]
 
   /** Element selector data for all materials */
-  double*       fElemSelectorConvData;             // [fElemSelectorConvEGridSize]
+  double*       fElemSelectorConvData = nullptr;             // [fElemSelectorConvNumData]
 };
 
 /**
@@ -61,6 +61,17 @@ struct G4HepEmGammaData {
   *   dynamic memory members, is freed before the new allocation.
   */
 void AllocateGammaData (struct G4HepEmGammaData** theGammaData);
+
+/**
+ * Initializes a new @ref G4HepEmGammaData structure
+ *
+ * This function default constructs an instance of G4HepEmGammaData and returns
+ * a pointer to the freshly constructed instance. It is the callees responsibility
+ * to free the instance using @ref FreeGammaData.
+ *
+ * @return Pointer to instance of @ref G4HepEmGammaData
+ */
+G4HepEmGammaData* MakeGammaData();
 
 /**
   * Frees a G4HepEmGammaData structure.

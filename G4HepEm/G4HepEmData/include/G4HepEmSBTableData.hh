@@ -5,15 +5,14 @@
 
 // tables for sampling energy transfer for the Seltzer-Berger brem model
 
-
 struct G4HepEmSBTableData {
   // pre-prepared sampling tables are available:
   const int               fMaxZet           = 99; // max Z number
   const int               fNumElEnergy      = 65; // # e- kine (E_k) per Z
   const int               fNumKappa         = 54; // # red. photon eners per E_k
   // min/max electron kinetic energy usage limits
-  double                  fLogMinElEnergy;
-  double                  fILDeltaElEnergy;
+  double                  fLogMinElEnergy = 0.0;
+  double                  fILDeltaElEnergy = 0.0;
 
   // e- kinetic energy and reduced photon energy grids and tehir logarithms
   double                  fElEnergyVect[65];   // [fNumElEnergy]
@@ -21,15 +20,16 @@ struct G4HepEmSBTableData {
   double                  fKappaVect[54];      // [fNumKappa]
   double                  fLKappaVect[54];     // [fNumKappa]
 
-  int                     fNumHepEmMatCuts;              // #hepEm-MC
-  int                     fNumElemsInMatCuts;            // #elements-in-all-hepEm-MC
-  int*                    fGammaCutIndxStartIndexPerMC;  // [ #hepEm-MC]
-  int*                    fGammaCutIndices;              // for each mat-cut and for each of their elements in the corresponding elemnt SB-table [ #elements-in-all-hepEm-MC]
+  int                     fNumHepEmMatCuts = 0;              // #hepEm-MC
+  int                     fNumElemsInMatCuts = 0;            // #elements-in-all-hepEm-MC
+  int*                    fGammaCutIndxStartIndexPerMC = nullptr;  // [fNumHepEmMatCuts]
+  int*                    fGammaCutIndices = nullptr;              // [fNumElemsInMatCuts]
+                                                                   // for each mat-cut and for each of their elements in the corresponding elemnt SB-table [ #elements-in-all-hepEm-MC]
 
   // data starts index for a given Z
-  int                     fNumSBTableData;         // # all data stored in fSBTableData
+  int                     fNumSBTableData = 0;     // # all data stored in fSBTableData
   int                     fSBTablesStartPerZ[121]; // max Z is 99 so all values above 99 will cast to 99 if any
-  double*                 fSBTableData;            // [fNumSBTableData]
+  double*                 fSBTableData = nullptr;  // [fNumSBTableData]
   // for each Z:
   // - [0] #data
   // - [1] minE-grid index for table
@@ -44,6 +44,10 @@ struct G4HepEmSBTableData {
 
 // Allocates some of the dynamic part of the G4HepEmSBTableData structure (completed and filled in G4HepEmElectronInit)
 void AllocateSBTableData(struct G4HepEmSBTableData** theSBTableData, int numHepEmMatCuts, int numElemsInMC, int numElemsUnique);
+
+// Makes a new instance of G4HepEmSBTableData with the requested sizes for the dynamic components
+G4HepEmSBTableData* MakeSBTableData(int numHepEmMatCuts, int numElemsInMC, int numElemsUnique);
+
 
 // Clears all the dynamic part of the G4HepEmSBTableData structure (filled in G4HepEmElectronInit)
 void FreeSBTableData (struct G4HepEmSBTableData** theSBTableData);
