@@ -1,6 +1,6 @@
-#include "G4HepEmSerialization.hh"
+#include "G4HepEmDataJsonIO.hh"
 
-#include "G4HepEmJsonSerialization.hh"
+#include "G4HepEmDataJsonIOImpl.hh"
 
 #include <iostream>
 

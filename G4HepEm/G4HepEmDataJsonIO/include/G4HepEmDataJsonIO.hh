@@ -1,12 +1,12 @@
-#ifndef G4HepEmSerialization_HH
-#define G4HepEmSerialization_HH
+#ifndef G4HepEmDataJsonIO_HH
+#define G4HepEmDataJsonIO_HH
 
 #include <iosfwd>
 
 class G4HepEmData;
 
 /**
- * @file    G4HepEmDataSerialization.hh
+ * @file    G4HepEmDataJsonIO.hh
  * @author  B. Morgan
  * @date    2021
  *
@@ -36,4 +36,4 @@ bool G4HepEmDataToJson(std::ostream& os, const G4HepEmData* data);
  */
 G4HepEmData* G4HepEmDataFromJson(std::istream& is);
 
-#endif // G4HepEmDataSerialization_HH
+#endif // G4HepEmDataDataJsonIO_HH

@@ -2,8 +2,8 @@
 #include "TestUtils/G4SetUp.hh"
 #include "SimpleFakeG4Setup.h"
 
-#include "G4HepEmSerialization.hh"
-#include "G4HepEmComparison.h"
+#include "G4HepEmDataJsonIO.hh"
+#include "G4HepEmDataComparison.h"
 
 // G4 includes
 #include "globals.hh"

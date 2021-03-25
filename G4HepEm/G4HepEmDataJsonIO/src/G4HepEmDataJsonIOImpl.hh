@@ -1,5 +1,5 @@
-#ifndef G4HepEmJsonSerialization_H
-#define G4HepEmJsonSerialization_H
+#ifndef G4HepEmDataJsonIOImpl_H
+#define G4HepEmDataJsonIOImpl_H
 
 #include <exception>
 
