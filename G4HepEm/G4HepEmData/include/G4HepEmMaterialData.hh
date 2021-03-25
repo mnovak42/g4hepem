@@ -48,15 +48,15 @@ struct G4HepEmMatData {
   /** The list of number-of-atoms-per-unit-volume for each element this material is composed of.*/
   double*   fNumOfAtomsPerVolumeVect = nullptr; // [fNumOfElement]
   /** The mass density (\f$\rho\f$) of the material in Geant4 internal units. */
-  double    fDensity;
+  double    fDensity = 0.0;
   /** Density correction factor (\f$C_{Mg}\rho_{e^-}\f$) used in the `dielectric suppression`
     * of bremsstrahlung photon emission (\f$C_{Mg}=4\pi r_0 \hbar c/(mc^2)\f$ is the `Migdal constant`
     * and \f$\rho_{e^-}\f$ is the electron density of the material). */
-  double    fDensityCorFactor;
+  double    fDensityCorFactor = 0.0;
   /** Electron density (\f$\rho_{e^-}\f$) of the material in Geant4 internal units.*/
-  double    fElectronDensity;
+  double    fElectronDensity = 0.0;
   /** Radiation length. */
-  double    fRadiationLength;
+  double    fRadiationLength = 0.0;
 };
 
 // Data for all materials used in the current geometry.

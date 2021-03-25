@@ -11,8 +11,8 @@ struct G4HepEmSBTableData {
   const int               fNumElEnergy      = 65; // # e- kine (E_k) per Z
   const int               fNumKappa         = 54; // # red. photon eners per E_k
   // min/max electron kinetic energy usage limits
-  double                  fLogMinElEnergy;
-  double                  fILDeltaElEnergy;
+  double                  fLogMinElEnergy = 0.0;
+  double                  fILDeltaElEnergy = 0.0;
 
   // e- kinetic energy and reduced photon energy grids and tehir logarithms
   double                  fElEnergyVect[65];   // [fNumElEnergy]

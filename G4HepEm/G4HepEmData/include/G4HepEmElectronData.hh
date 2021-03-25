@@ -93,9 +93,9 @@ struct G4HepEmElectronData {
   /** Number of discrete kinetic energy values in the grid (\f$N\f$). */
   int        fELossEnergyGridSize = 0;
   /** Logarithm of the minimum kinetic energy value of the grid (\f$\ln(E_0)\f$)*/
-  double     fELossLogMinEkin;     // log of the E_0
+  double     fELossLogMinEkin = 0.0;     // log of the E_0
   /** Inverse of the log-scale delta value (\f$ 1/[log(E_{N-1}/E_0)/(N-1)]\f$). */
-  double     fELossEILDelta;
+  double     fELossEILDelta = 0.0;
   /** The grid of the discrete kinetic energy values (\f$E_0, E_1,\ldots, E_{N-1}\f$).*/
   double*    fELossEnergyGrid = nullptr; // [fELossEnergyGridSize]
   /** The energy loss data: **restricted dE/dx, range and inverse range** data.

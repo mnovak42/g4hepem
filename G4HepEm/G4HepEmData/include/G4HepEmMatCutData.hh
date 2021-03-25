@@ -40,11 +40,11 @@
 /** Data that describes a single matrial-cuts couple in ``G4HepEm``. */
 struct G4HepEmMCCData {
   /** Secondary \f$e^-\f$ production threshold energy [MeV]. */
-  double  fSecElProdCutE;
+  double  fSecElProdCutE = 0.0;
   /** Secondary \f$\gamma\f$ production threshold energy [MeV]. */
-  double  fSecGamProdCutE;
+  double  fSecGamProdCutE = 0.0;
   /** Logarithm of the above secondary \f$\gamma\f$ production threshold. */
-  double  fLogSecGamCutE;
+  double  fLogSecGamCutE = 0.0;
   /** Index of its material realted data: index of its G4HepEmMatData in the G4HepEmMaterialData. */
   int     fHepEmMatIndex = -1;
   /** Index of the corresponding G4MaterialCutsCouple object.*/

@@ -39,31 +39,31 @@ struct G4HepEmElemData {
   double  fZet = -1.0;
 
   /** \f$Z^{1/3}\f$ */
-  double  fZet13;
+  double  fZet13 = 0.0;
 
   /** \f$Z^{2/3}\f$ */
-  double  fZet23;
+  double  fZet23 = 0.0;
 
   /** Coulomb correction \f$ f_C \f$ */
-  double  fCoulomb;
+  double  fCoulomb = 0.0;
 
   /** \f$ \ln(Z) \f$  */
-  double  fLogZ;
+  double  fLogZ = 0.0;
 
   /** \f$ F_{\text{el}}-f_c+F_{\text{inel}}/Z \f$  */
-  double  fZFactor1;
+  double  fZFactor1 = 0.0;
 
   /** \f$ \exp \left[ \frac{42.038-F_{\text{low}}}{8.29} \right] -0.958 \f$ with \f$ Z_{\text{low}} = \frac{8}{3}\log(Z) \f$ */
-  double  fDeltaMaxLow;
+  double  fDeltaMaxLow = 0.0;
 
   /** \f$ \exp \left[ \frac{42.038-F_{\text{high}}}{8.29} \right] -0.958 \f$ with \f$ F_{\text{high}} = 8[\log(Z)/3 + f_C] \f$ */
-  double  fDeltaMaxHigh;
+  double  fDeltaMaxHigh = 0.0;
 
   /** LPM variable \f$ 1/ln [ \sqrt{2}s1 ] \f$ */
-  double  fILVarS1;
+  double  fILVarS1 = 0.0;
 
   /** LPM variable \f$ 1/ln[s1] \f$ */
-  double  fILVarS1Cond;
+  double  fILVarS1Cond = 0.0;
 
 };
 
