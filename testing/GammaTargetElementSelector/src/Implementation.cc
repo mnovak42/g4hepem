@@ -60,7 +60,7 @@ bool TestGammaElemSelectorData ( const struct G4HepEmData* hepEmData ) {
     //       are composed from more than a single element!
     int targetElemIndx = 0;
     if (numOfElement > 1) {
-      targetElemIndx = SelectTargetAtom( theGammaData, tsInImat[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i]);
+      targetElemIndx = G4HepEmGammaInteractionConversion::SelectTargetAtom( theGammaData, tsInImat[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i]);
     }
     tsOutResElemIndx[i] = targetElemIndx;
     // check the selected element index aganst the number of elements the material is composed of

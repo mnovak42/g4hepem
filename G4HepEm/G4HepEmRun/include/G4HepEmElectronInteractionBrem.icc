@@ -32,7 +32,8 @@
 // 2. RB: - the Bethe-Heitler DCS with modifications such as screening and Coulomb
 //          corrections, emission in the field of the atomic electrons and LPM suppression.
 //          Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron, bool isSBmodel) {
+void G4HepEmElectronInteractionBrem::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData,
+                                             bool iselectron, bool isSBmodel) {
   //
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
@@ -47,15 +48,15 @@ void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
   //
   // == Sampling of the emitted photon energy
   const double eGamma = isSBmodel
-                        ? SampleETransferBremSB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron)
-                        : SampleETransferBremRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
+                        ? SampleETransferSB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron)
+                        : SampleETransferRB(hepEmData, thePrimEkin, theLogEkin, theMCIndx, tlData->GetRNGEngine(), iselectron);
   // get a secondary photon track and sample directions (all will be already in lab. frame)
   G4HepEmTrack* theSecTrack = tlData->AddSecondaryGammaTrack()->GetTrack();
   double*    theSecGammaDir = theSecTrack->GetDirection();
   double*    thePrimElecDir = thePrimaryTrack->GetDirection();
   //
   // == Sampling of the emitted photon and post interaction e-/e+ directions
-  SampleDirectionsBrem(thePrimEkin, eGamma, theSecGammaDir, thePrimElecDir, tlData->GetRNGEngine());
+  SampleDirections(thePrimEkin, eGamma, theSecGammaDir, thePrimElecDir, tlData->GetRNGEngine());
   //
   // == Update primary and set secondary gamma track properties
   //    note: the directions are already set in SampleDirections
@@ -69,9 +70,9 @@ void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
 }
 
 
-G4HepEmHostDevice
-double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theMCIndx, G4HepEmRandomEngine* rnge, bool iselectron) {
+double G4HepEmElectronInteractionBrem::SampleETransferSB(struct G4HepEmData* hepEmData, double thePrimEkin,
+                                                         double theLogEkin, int theMCIndx,
+                                                         G4HepEmRandomEngine* rnge, bool iselectron) {
   const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
   const double          theGamCut = theMCData.fSecGamProdCutE;
   const double       theLogGamCut = theMCData.fLogSecGamCutE;
@@ -79,7 +80,7 @@ double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, 
   // sample target element
   const G4HepEmElectronData* theElData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   const int elemIndx = (theMData.fNumOfElement > 1)
-                       ? SelectTargetAtomBrem(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), true)
+                       ? SelectTargetAtom(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), true)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
@@ -180,9 +181,9 @@ double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, 
    return eGamma;
 }
 
-G4HepEmHostDevice
-double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theMCIndx, G4HepEmRandomEngine* rnge, bool iselectron) {
+double G4HepEmElectronInteractionBrem::SampleETransferRB(struct G4HepEmData* hepEmData, double thePrimEkin,
+                                                             double theLogEkin, int theMCIndx,
+                                                             G4HepEmRandomEngine* rnge, bool iselectron) {
   const G4HepEmMCCData& theMCData = hepEmData->fTheMatCutData->fMatCutData[theMCIndx];
   const double          theGamCut = theMCData.fSecGamProdCutE;
 //  const double       theLogGamCut = theMCData.fLogSecGamCutE;
@@ -192,7 +193,7 @@ double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, 
   // sample target element
   const G4HepEmElectronData*  theElData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
   const int elemIndx = (theMData.fNumOfElement > 1)
-                       ? SelectTargetAtomBrem(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), false)
+                       ? SelectTargetAtom(theElData, theMCIndx, thePrimEkin, theLogEkin, rnge->flat(), false)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
@@ -262,7 +263,9 @@ double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, 
 
 
 // should be called only for mat-cuts with more than one elements in their material
-int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, const double urndn, const bool isbremSB) {
+int G4HepEmElectronInteractionBrem::SelectTargetAtom(const struct G4HepEmElectronData* elData, const int imc,
+                                                     const double ekin, const double lekin, const double urndn,
+                                                     const bool isbremSB) {
   // start index for this mat-cut and this model (-1 is no elememnt selector i.e. single element material)
   const int   indxStart = isbremSB
                           ? elData->fElemSelectorBremSBStartIndexPerMatCut[imc]
@@ -293,7 +296,9 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
 }
 
 
-void SampleDirectionsBrem(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge) {
+void G4HepEmElectronInteractionBrem::SampleDirections(const double thePrimEkin, const double theSecGammaEkin,
+                                                      double* theSecGammaDir, double* thePrimElecDir,
+                                                      G4HepEmRandomEngine* rnge) {
   // sample photon direction (modified Tsai sampling):
   const double cost = SampleCostModifiedTsai(thePrimEkin, rnge);
   const double sint = std::sqrt((1.0-cost)*(1.0+cost));
@@ -320,7 +325,7 @@ void SampleDirectionsBrem(const double thePrimEkin, const double theSecGammaEkin
 // find lower bin index of value: used in acse of CDF values i.e. val in [0,1)
 // while vector elements in [0,1]
 // note: every 3rd value of the vect contains the kappa-cumulutaive values
-int LinSearch(const double* vect, const int size, const double val) {
+int G4HepEmElectronInteractionBrem::LinSearch(const double* vect, const int size, const double val) {
   int i = 0;
   const int size3 = 3*size;
   while (i + 9 < size3) {

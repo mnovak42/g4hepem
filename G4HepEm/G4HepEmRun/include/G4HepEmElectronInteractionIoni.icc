@@ -16,7 +16,7 @@
 #include <iostream>
 
 
-void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
+void G4HepEmElectronInteractionIoni::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron) {
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack();
   double    thePrimEkin = thePrimaryTrack->GetEKin();
@@ -37,7 +37,7 @@ void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
   double*    thePrimElecDir = thePrimaryTrack->GetDirection();
   //
   // == Sample/copute the emitted secondary e- and post interaction primary e-/e+ directions
-  SampleDirectionsIoni(thePrimEkin, deltaEkin, theSecElecDir, thePrimElecDir, tlData->GetRNGEngine());
+  SampleDirections(thePrimEkin, deltaEkin, theSecElecDir, thePrimElecDir, tlData->GetRNGEngine());
   //
   // == Update primary e-/e+ and the secondary e- track properties
   //    note: the directions are already set in SampleDirections
@@ -47,7 +47,8 @@ void PerformElectronIoni(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, b
 }
 
 
-double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge) {
+double G4HepEmElectronInteractionIoni::SampleETransferMoller(const double elCut, const double primEkin,
+                                                             G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
   const double tmax    = 0.5*primEkin;
   const double xmin    = tmin / primEkin;
@@ -72,7 +73,8 @@ double SampleETransferMoller(const double elCut, const double primEkin, G4HepEmR
   return deltaEkin * primEkin;
 }
 
-double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmRandomEngine* rnge) {
+double G4HepEmElectronInteractionIoni::SampleETransferBhabha(const double elCut, const double primEkin,
+                                                             G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
   const double tmax    = primEkin;
   const double xmin    = tmin / primEkin;
@@ -106,7 +108,9 @@ double SampleETransferBhabha(const double elCut, const double primEkin, G4HepEmR
 }
 
 
-void SampleDirectionsIoni(const double thePrimEkin, const double deltaEkin, double* theSecElecDir, double* thePrimElecDir, G4HepEmRandomEngine* rnge) {
+void G4HepEmElectronInteractionIoni::SampleDirections(const double thePrimEkin, const double deltaEkin,
+                                                      double* theSecElecDir, double* thePrimElecDir,
+                                                      G4HepEmRandomEngine* rnge) {
     const double elInitETot = thePrimEkin + kElectronMassC2;
     const double elInitPTot = std::sqrt(thePrimEkin * (elInitETot + kElectronMassC2));
     const double  deltaPTot = std::sqrt(deltaEkin * (deltaEkin + 2.0 * kElectronMassC2));

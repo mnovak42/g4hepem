@@ -20,38 +20,43 @@ struct G4HepEmElectronData;
 // 2. RB: - the Bethe-Heitler DCS with modifications such as screening and Coulomb
 //          corrections, emission in the field of the atomic electrons and LPM suppression.
 //          Used between 1 GeV - 100 TeV primary e-/e+ kinetic energies.
-void PerformElectronBrem(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron, bool isSBmodel);
+class G4HepEmElectronInteractionBrem {
+private:
+  G4HepEmElectronInteractionBrem() = delete;
+
+public:
+  static void Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData, bool iselectron, bool isSBmodel);
 
 
-// Sampling of the energy transferred to the emitted photon using the numerical
-// Seltzer-Berger DCS.
-G4HepEmHostDevice
-double SampleETransferBremSB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
+  // Sampling of the energy transferred to the emitted photon using the numerical
+  // Seltzer-Berger DCS.
+  G4HepEmHostDevice
+  static double SampleETransferSB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                                  int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
 
-// Sampling of the energy transferred to the emitted photon using the Bethe-Heitler
-// DCS.
-G4HepEmHostDevice
-double SampleETransferBremRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                             int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
-
-
-// Target atom selector for the above bremsstrahlung intercations in case of
-// materials composed from multiple elements.
-G4HepEmHostDevice
-int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
-                         const double lekin, const double urndn, const bool isbremSB);
+  // Sampling of the energy transferred to the emitted photon using the Bethe-Heitler
+  // DCS.
+  G4HepEmHostDevice
+  static double SampleETransferRB(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
+                                  int theIMCIndx, G4HepEmRandomEngine* rnge, bool iselectron);
 
 
-G4HepEmHostDevice
-void SampleDirectionsBrem(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir,
-                          double* thePrimElecDir, G4HepEmRandomEngine* rnge);
+  // Target atom selector for the above bremsstrahlung intercations in case of
+  // materials composed from multiple elements.
+  G4HepEmHostDevice
+  static int SelectTargetAtom(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
+                              const double lekin, const double urndn, const bool isbremSB);
 
 
-// Simple linear search (with step of 3!) used in the photon energy sampling part
-// of the SB (Seltzer-Berger) brem model.
-G4HepEmHostDevice
-int LinSearch(const double* vect, const int size, const double val);
+  G4HepEmHostDevice
+  static void SampleDirections(const double thePrimEkin, const double theSecGammaEkin, double* theSecGammaDir,
+                               double* thePrimElecDir, G4HepEmRandomEngine* rnge);
 
+
+  // Simple linear search (with step of 3!) used in the photon energy sampling part
+  // of the SB (Seltzer-Berger) brem model.
+  G4HepEmHostDevice
+  static int LinSearch(const double* vect, const int size, const double val);
+};
 
 #endif // G4HepEmElectronInteractionBrem_HH

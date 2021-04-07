@@ -12,7 +12,7 @@
 //#include <iostream>
 
 
-void PerformPositronAnnihilation(G4HepEmTLData* tlData, bool isatrest) {  
+void G4HepEmPositronInteractionAnnihilation::Perform(G4HepEmTLData* tlData, bool isatrest) {
    if (isatrest) {
      AnnihilateAtRest(tlData);
    } else {
@@ -20,7 +20,7 @@ void PerformPositronAnnihilation(G4HepEmTLData* tlData, bool isatrest) {
    }
 }
 
-void AnnihilateAtRest(G4HepEmTLData* tlData) {
+void G4HepEmPositronInteractionAnnihilation::AnnihilateAtRest(G4HepEmTLData* tlData) {
   // compute kinematics of the first gamma (isotropic direction)
   const double cost = 2. * tlData->GetRNGEngine()->flat() - 1.;
   const double sint = std::sqrt((1. - cost)*(1. + cost));
@@ -48,10 +48,9 @@ void AnnihilateAtRest(G4HepEmTLData* tlData) {
   secGamma2->SetParentID(theParentID); 
 }
 
-void SampleEnergyAndDirectionsForAnnihilationInFlight(const double thePrimEkin, const double *thePrimDir,
-                                                      double *theGamma1Ekin, double *theGamma1Dir,
-                                                      double *theGamma2Ekin, double *theGamma2Dir,
-                                                      G4HepEmRandomEngine* rnge) {
+void G4HepEmPositronInteractionAnnihilation::SampleEnergyAndDirectionsInFlight(
+    const double thePrimEkin, const double *thePrimDir, double *theGamma1Ekin, double *theGamma1Dir,
+    double *theGamma2Ekin, double *theGamma2Dir, G4HepEmRandomEngine* rnge) {
   // compute kinetic limits
   const double tau     = thePrimEkin/kElectronMassC2;
   const double gam     = tau + 1.0;
@@ -96,7 +95,7 @@ void SampleEnergyAndDirectionsForAnnihilationInFlight(const double thePrimEkin, 
   theGamma2Dir[2] = pz*norm;
 }
 
-void AnnihilateInFlight(G4HepEmTLData* tlData) {
+void G4HepEmPositronInteractionAnnihilation::AnnihilateInFlight(G4HepEmTLData* tlData) {
   // get the primary e+ track  
   G4HepEmElectronTrack* thePrimaryElTrack = tlData->GetPrimaryElectronTrack(); 
   G4HepEmTrack* thePrimaryTrack = thePrimaryElTrack->GetTrack(); 
@@ -106,7 +105,7 @@ void AnnihilateInFlight(G4HepEmTLData* tlData) {
   G4HepEmTrack*  gTr1 = tlData->AddSecondaryGammaTrack()->GetTrack();
   G4HepEmTrack*  gTr2 = tlData->AddSecondaryGammaTrack()->GetTrack();
   double gamE1, gamE2;
-  SampleEnergyAndDirectionsForAnnihilationInFlight(thePrimEkin, thePrimDir, &gamE1, gTr1->GetDirection(), &gamE2, gTr2->GetDirection(), tlData->GetRNGEngine());
+  SampleEnergyAndDirectionsInFlight(thePrimEkin, thePrimDir, &gamE1, gTr1->GetDirection(), &gamE2, gTr2->GetDirection(), tlData->GetRNGEngine());
 
   gTr1->SetEKin(gamE1);
   gTr2->SetEKin(gamE2);

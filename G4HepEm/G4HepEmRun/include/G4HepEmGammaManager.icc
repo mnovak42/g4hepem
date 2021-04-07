@@ -100,13 +100,13 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
   // perform the discrete part of the winner interaction
   switch (iDProc) {
     case 0: // invoke gamma Conversion to e-/e+ pairs: {
-            PerformGammaConversion(tlData, hepEmData);
+            G4HepEmGammaInteractionConversion::Perform(tlData, hepEmData);
             break;
     case 1: // invoke Compton scattering of gamma:
-            PerformComptonScattering(tlData, hepEmData);
+            G4HepEmGammaInteractionCompton::Perform(tlData, hepEmData);
             break;
     case 2: // invoke photoelectric process: pure absorption at the moment (aktive if E_g < 250 keV)
-            PerformPhotoelectric(tlData, hepEmData);
+            G4HepEmGammaInteractionPhotoelectric::Perform(tlData, hepEmData);
             break;
 
   }

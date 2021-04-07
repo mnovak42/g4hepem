@@ -96,10 +96,10 @@ bool TestElemSelectorData ( const struct G4HepEmData* hepEmData, const struct G4
       if (numOfElement > 1) {
         switch (iModel) {
           case 1: // Seltzer-Berger bremsstrahlung (use SelectTargetAtomBrem from G4HepEmElectronInteractionBremSB)
-            targetElemIndx = SelectTargetAtomBrem( theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i], true);
+            targetElemIndx = G4HepEmElectronInteractionBrem::SelectTargetAtom( theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i], true);
             break;
           case 2: // Relativistic bremsstrahlung (use SelectTargetAtomBrem from G4HepEmElectronInteractionBremSB)
-            targetElemIndx = SelectTargetAtomBrem( theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i], false);
+            targetElemIndx = G4HepEmElectronInteractionBrem::SelectTargetAtom( theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i], tsInRngVals[i], false);
             break;
         }
       }

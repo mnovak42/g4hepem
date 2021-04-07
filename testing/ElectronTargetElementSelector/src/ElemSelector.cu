@@ -25,7 +25,7 @@ void TestElemSelectorDataBremKernel ( const struct G4HepEmElectronData* theElect
     const int numOfElement = theMatData.fNumOfElement;
     int targetElemIndx = 0;
     if (numOfElement > 1) {
-      targetElemIndx = SelectTargetAtomBrem( theElectronData_d, imc, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i], TisSBModel);
+      targetElemIndx = G4HepEmElectronInteractionBrem::SelectTargetAtom( theElectronData_d, imc, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i], TisSBModel);
     }
     tsOutRes_d[i] = targetElemIndx;
   }
