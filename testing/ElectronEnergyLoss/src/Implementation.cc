@@ -6,8 +6,6 @@
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmElectronData.hh"
 
-// don't worry it's just for testing
-#define private public
 #include "G4HepEmElectronManager.hh"
 
 #include <vector>
@@ -58,13 +56,12 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
     tsInEkin[i]    = std::exp(tsInLogEkin[i]);
   }
   //
-  // Use a G4HepEmElectronManager object to evaluate the range, dedx and inverse-range
+  // Use G4HepEmElectronManager to evaluate the range, dedx and inverse-range
   // values for the test cases.
-  G4HepEmElectronManager theElectronMgr;
   for (int i=0; i<numTestCases; ++i) {
-    tsOutResRange[i]    = theElectronMgr.GetRestRange(theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
-    tsOutResDEDX[i]     = theElectronMgr.GetRestDEDX (theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
-    tsOutResInvRange[i] = theElectronMgr.GetInvRange (theElectronData, tsInImc[i], tsOutResRange[i]);
+    tsOutResRange[i]    = G4HepEmElectronManager::GetRestRange(theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
+    tsOutResDEDX[i]     = G4HepEmElectronManager::GetRestDEDX (theElectronData, tsInImc[i], tsInEkin[i], tsInLogEkin[i]);
+    tsOutResInvRange[i] = G4HepEmElectronManager::GetInvRange (theElectronData, tsInImc[i], tsOutResRange[i]);
   }
 
 

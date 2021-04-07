@@ -7,10 +7,7 @@
 #include "G4HepEmMaterialData.hh"
 #include "G4HepEmGammaData.hh"
 
-// don't worry it's just for testing
-#define private public
 #include "G4HepEmGammaManager.hh"
-#undef private
 
 #include <cmath>
 #include <random>
@@ -66,12 +63,11 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
     tsInEkinComp[i]    = std::exp(tsInLogEkinComp[i]);
   }
   //
-  // Use a G4HepEmGammaManager object to evaluate the macroscopic cross sections
+  // Use G4HepEmGammaManager to evaluate the macroscopic cross sections
   // for conversion inot e-e+ pairs and Compton scattering.
-  G4HepEmGammaManager theGammaMgr;
   for (int i=0; i<numTestCases; ++i) {
-    tsOutMXConv[i] = theGammaMgr.GetMacXSec (theGammaData, tsInImat[i], tsInEkinConv[i], tsInLogEkinConv[i], 0); // conversion
-    tsOutMXComp[i] = theGammaMgr.GetMacXSec (theGammaData, tsInImat[i], tsInEkinComp[i], tsInLogEkinComp[i], 1); // Compton
+    tsOutMXConv[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinConv[i], tsInLogEkinConv[i], 0); // conversion
+    tsOutMXComp[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinComp[i], tsInLogEkinComp[i], 1); // Compton
   }
 
 

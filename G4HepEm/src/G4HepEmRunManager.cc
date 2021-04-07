@@ -40,9 +40,6 @@ G4HepEmRunManager::G4HepEmRunManager(bool ismaster) {
   fTheG4HepEmData                = nullptr;
   fTheG4HepEmTLData              = nullptr;
   //
-  fTheG4HepEmElectronManager     = nullptr;
-  fTheG4HepEmGammaManager        = nullptr;
-  //
   G4HepEmRunManager::gTheG4HepEmRunManagers.push_back(this);
 }
 
@@ -109,24 +106,15 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     switch (hepEmParticleIndx) {
       // === e- : use the G4HepEmElementInit::InitElectronData() method for e- initialization.
       case 0 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, true);
-               if (fTheG4HepEmElectronManager == nullptr) {
-                 fTheG4HepEmElectronManager = new G4HepEmElectronManager;
-               }
                fIsInitialisedForParticle[0] = true;
                break;
       // === e+ : use the G4HepEmElementInit::InitElectronData() method for e+ initialization.
       case 1 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, false);
-               if (fTheG4HepEmElectronManager == nullptr) {
-                 fTheG4HepEmElectronManager = new G4HepEmElectronManager;
-               }
                fIsInitialisedForParticle[1] = true;
                //fTheG4HepEmPositronManager = new G4HepEmElectronManager;
                break;
       // === Gamma: use the G4HepEmGammaInit::InitGammaData() method for gamma initialization.
       case 2 : InitGammaData(fTheG4HepEmData, fTheG4HepEmParameters);
-               if (fTheG4HepEmGammaManager == nullptr) {
-                 fTheG4HepEmGammaManager = new G4HepEmGammaManager;
-               }
                fIsInitialisedForParticle[2] = true;
                break;
       default: std::cerr << " **** ERROR in G4HepEmRunManager::Initialize: unknown particle " << std::endl;
@@ -143,8 +131,6 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     if (!fTheG4HepEmParameters) {
       fTheG4HepEmParameters = G4HepEmRunManager::GetMasterRunManager()->GetHepEmParameters();
       fTheG4HepEmData       = G4HepEmRunManager::GetMasterRunManager()->GetHepEmData();
-      fTheG4HepEmElectronManager = G4HepEmRunManager::GetMasterRunManager()->GetTheElectronManager();
-      fTheG4HepEmGammaManager    = G4HepEmRunManager::GetMasterRunManager()->GetTheGammaManager();
     }
     // Worker: 2. create a worker local data structure for this worker and set
     //            its RNG engine part if it has not been done yet.
@@ -168,12 +154,6 @@ void G4HepEmRunManager::Clear() {
       delete fTheG4HepEmData;
       fTheG4HepEmData = nullptr;
     }
-    if (fTheG4HepEmElectronManager)
-      delete fTheG4HepEmElectronManager;
-    fTheG4HepEmElectronManager = nullptr;
-    if (fTheG4HepEmGammaManager)
-      delete fTheG4HepEmGammaManager;
-    fTheG4HepEmGammaManager    = nullptr;
     fIsInitialisedForParticle[0] = false;
     fIsInitialisedForParticle[1] = false;
     fIsInitialisedForParticle[2] = false;
@@ -182,8 +162,6 @@ void G4HepEmRunManager::Clear() {
     // set shared ptr already cleaned in master
     fTheG4HepEmParameters      = nullptr;
     fTheG4HepEmData            = nullptr;
-    fTheG4HepEmElectronManager = nullptr;
-    fTheG4HepEmGammaManager    = nullptr;
     // clean local objects and set ptr
     if (fTheG4HepEmTLData)
       delete fTheG4HepEmTLData;

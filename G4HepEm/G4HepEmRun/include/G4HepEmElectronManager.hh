@@ -46,6 +46,8 @@ class  G4HepEmTrack;
  */
 
 class G4HepEmElectronManager {
+private:
+  G4HepEmElectronManager() = delete;
 
 public:
 
@@ -64,7 +66,7 @@ public:
     *   member. This member is also used to deliver the results of the function call, i.e. the computed physics
     *   step limit is written into the G4HepEmTLData::fElectronTrack (in its fGStepLength member).
     */
-  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
+  static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
 
   /** Function that provides the information regarding how far a given e-/e+ particle goes.
     *
@@ -81,7 +83,7 @@ public:
     *   the computed physics step limit is written into its fGStepLength member.
     */
   G4HepEmHostDevice
-  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+  static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
 
   /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
     *
@@ -97,7 +99,7 @@ public:
     * @return boolean whether the particle was stopped
     */
   G4HepEmHostDevice
-  bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+  static bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
 
   /** Function to check if a delta interaction happens instead of the discrete process.
     *
@@ -108,7 +110,7 @@ public:
     * @return boolean whether a delta interaction happens
     */
   G4HepEmHostDevice
-  bool CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand);
+  static bool CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand);
 
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *
@@ -124,11 +126,9 @@ public:
     *   member. All the results of this function call, i.e. the primary particle updated to its post-interaction(s)
     *   state as well as the possible secondary particles, are also delivered through this G4HepEmTLData.
     */
-  void   Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
+  static void Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
 
-
-
-private:
+  /// The following functions are not meant to be called directly by clients, only from tests.
 
   /**
     * Auxiliary function that evaluates and provides the `restricted range` for the given kinetic energy
@@ -143,32 +143,27 @@ private:
     */
 
   G4HepEmHostDevice
-  double  GetRestRange(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
+  static double GetRestRange(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
 
   G4HepEmHostDevice
-  double  GetRestDEDX(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
+  static double GetRestDEDX(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
 
   G4HepEmHostDevice
-  double  GetInvRange(const struct G4HepEmElectronData* elData, int imc, double range);
-
-  /*
-  double  GetRestMacXSecIoni(struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
-
-  double  GetRestMacXSecBrem(struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
-  */
+  static double GetInvRange(const struct G4HepEmElectronData* elData, int imc, double range);
 
   G4HepEmHostDevice
-  double  GetRestMacXSec(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, bool isioni);
+  static double GetRestMacXSec(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
+                               const double lekin, bool isioni);
 
   G4HepEmHostDevice
-  double  GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin, double lekin, bool isioni);
-
-  //void    GetRestMacXSecs(struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, double& mxIoni, double& mxBrem);
-  G4HepEmHostDevice
-  double ComputeMacXsecAnnihilation(const double ekin, const double elctronDensity);
+  static double GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin,
+                                          double lekin, bool isioni);
 
   G4HepEmHostDevice
-  double ComputeMacXsecAnnihilationForStepping(const double ekin, const double elctronDensity);
+  static double ComputeMacXsecAnnihilation(const double ekin, const double electronDensity);
+
+  G4HepEmHostDevice
+  static double ComputeMacXsecAnnihilationForStepping(const double ekin, const double electronDensity);
 
 };
 

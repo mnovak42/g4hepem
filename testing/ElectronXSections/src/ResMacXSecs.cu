@@ -4,8 +4,6 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmElectronData.hh"
 
-// don't worry it's just for testing
-#define private public
 #include "G4HepEmElectronManager.hh"
 
 #include <cuda_runtime.h>
@@ -20,8 +18,7 @@
                                  int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
                                  double* tsOutRes_d, bool isIoni, int numTestCases) {
    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
-     G4HepEmElectronManager theElectronMgr;
-     tsOutRes_d[i] = theElectronMgr.GetRestMacXSec (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i], isIoni);
+     tsOutRes_d[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i], isIoni);
    }
  }
 

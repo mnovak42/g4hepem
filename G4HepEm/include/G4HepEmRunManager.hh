@@ -93,10 +93,6 @@ public:
   struct G4HepEmParameters* GetHepEmParameters()   const  { return fTheG4HepEmParameters; }
   G4HepEmTLData*            GetTheTLData()         const  { return fTheG4HepEmTLData; }
 
-  G4HepEmElectronManager*   GetTheElectronManager() const { return fTheG4HepEmElectronManager; }
-
-  G4HepEmGammaManager*      GetTheGammaManager()    const { return fTheG4HepEmGammaManager; }
-
 private:
 
   /**
@@ -134,23 +130,6 @@ private:
    * Initialize() method
    */
   struct G4HepEmData*            fTheG4HepEmData;
-
-  /*
-   * A state-less collection of methods providing answers for the simulation like:
-   * - `HowFar`: how far a given e-/e+ goes till the next physics interactions i.e. sep-length
-   * - `Perform`  : performs all the interactions for e-/e+ including Ioni, Brem, MSC and
-   *             annihilation to 2 gammas in case of e+.
-   * These above methods recives (e.g. on the primary e-/e+ track) and provides
-   * back infomation (e.g. step length, secondary tracks and updated post-interaction
-   * primary track) through their G4HepEmTLData input argument. Such an object is
-   * created for each workers so they are worker local. The G4HepEmElectronTrack
-   * and G4HepEmGammaTrack stores all the state related infomation.
-   * Therefore, a single object form the G4HepEmElectronManager, created by the
-   * master run-manager,  is shared by all worker run-mamanger.
-   */
-  G4HepEmElectronManager*        fTheG4HepEmElectronManager;
-
-  G4HepEmGammaManager*           fTheG4HepEmGammaManager;
 
   /*
    * Processes for e-/e+: this is the top level object to all e-/e+ related
