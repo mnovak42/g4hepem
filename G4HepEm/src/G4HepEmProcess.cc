@@ -104,9 +104,9 @@ G4double G4HepEmProcess::PostStepGetPhysicalInteractionLength ( const G4Track& t
   thePrimaryTrack->SetOnBoundary(theG4PreStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary);
   //
   if (isGamma) {
-    fTheG4HepEmRunManager->GetTheGammaManager()->HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
+    G4HepEmGammaManager::HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   } else {
-    fTheG4HepEmRunManager->GetTheElectronManager()->HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
+    G4HepEmElectronManager::HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   }
   // returns with the geometrcal step length: straight line distance to make along the org direction
   return thePrimaryTrack->GetGStepLength();
@@ -127,7 +127,7 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
                                         : theTLData->GetPrimaryElectronTrack()->GetTrack();
   if (isGamma & onBoundary) {
     thePrimaryTrack->SetGStepLength(track.GetStepLength());
-    fTheG4HepEmRunManager->GetTheGammaManager()->UpdateNumIALeft(thePrimaryTrack);
+    G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
     return fParticleChangeForLoss;
   }
   // NOTE: this primary track is the same as in the last call in the HowFar()
@@ -139,9 +139,9 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
   thePrimaryTrack->SetOnBoundary(onBoundary);
   // invoke the physics interactions (all i.e. all along- and post-step as well as possible at rest)
   if (isGamma) {
-    fTheG4HepEmRunManager->GetTheGammaManager()->Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
+    G4HepEmGammaManager::Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   } else {
-    fTheG4HepEmRunManager->GetTheElectronManager()->Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
+    G4HepEmElectronManager::Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   }
   // energy, e-depo, momentum direction and status
   const double ekin = thePrimaryTrack->GetEKin();

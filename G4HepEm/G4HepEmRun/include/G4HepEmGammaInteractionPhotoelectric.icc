@@ -6,7 +6,7 @@
 #include  "G4HepEmData.hh"
 
 // simple gamma absorption at the moment
-void PerformPhotoelectric(G4HepEmTLData* tlData, struct G4HepEmData* /*hepEmData*/) {
+void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct G4HepEmData* /*hepEmData*/) {
   G4HepEmTrack* thePrimaryTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
   thePrimaryTrack->SetEnergyDeposit(thePrimaryTrack->GetEKin());
   thePrimaryTrack->SetEKin(0.0);

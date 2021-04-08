@@ -24,26 +24,27 @@ class  G4HepEmTrack;
  */
 
 class G4HepEmGammaManager {
+private:
+  G4HepEmGammaManager() = delete;
 
 public:
   // step length
-  void   HowFar(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/);
+  static void HowFar(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/);
 
   G4HepEmHostDevice
-  void   HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTrack* theTrack);
+  static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTrack* theTrack);
 
 
   // interactions
-  void   Perform(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/);
+  static void Perform(struct G4HepEmData* /*hepEmData*/, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* /*tlData*/);
 
   G4HepEmHostDevice
-  void   UpdateNumIALeft(G4HepEmTrack* theTrack);
+  static void UpdateNumIALeft(G4HepEmTrack* theTrack);
 
 
   G4HepEmHostDevice
-  double  GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin, const double lekin, const int iprocess);
-
-
+  static double GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin,
+                           const double lekin, const int iprocess);
 
 };
 

@@ -23,7 +23,7 @@ void GammaElemSelectorKernel ( const struct G4HepEmGammaData* theGammaData_d,
     const int numOfElement = theMatData.fNumOfElement;
     int targetElemIndx = 0;
     if (numOfElement > 1) {
-      targetElemIndx = SelectTargetAtom( theGammaData_d, indxMaterial, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i]);
+      targetElemIndx = G4HepEmGammaInteractionConversion::SelectTargetAtom( theGammaData_d, indxMaterial, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i]);
     }
     tsOutRes_d[i] = targetElemIndx;
   }

@@ -7,10 +7,7 @@
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmElectronData.hh"
 
-// don't worry it's just for testing
-#define private public
 #include "G4HepEmElectronManager.hh"
-#undef private
 
 #include <cmath>
 #include <random>
@@ -68,12 +65,11 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
     tsInEkinBrem[i]    = std::exp(tsInLogEkinBrem[i]);
   }
   //
-  // Use a G4HepEmElectronManager object to evaluate the restricted macroscopic
+  // Use G4HepEmElectronManager to evaluate the restricted macroscopic
   // cross sections for ionisation and bremsstrahlung for the test cases.
-  G4HepEmElectronManager theElectronMgr;
   for (int i=0; i<numTestCases; ++i) {
-    tsOutResMXIoni[i] = theElectronMgr.GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinIoni[i], tsInLogEkinIoni[i], true);
-    tsOutResMXBrem[i] = theElectronMgr.GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinBrem[i], tsInLogEkinBrem[i], false);
+    tsOutResMXIoni[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinIoni[i], tsInLogEkinIoni[i], true);
+    tsOutResMXBrem[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinBrem[i], tsInLogEkinBrem[i], false);
   }
 
 

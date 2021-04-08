@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-void PerformGammaConversion(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
+void G4HepEmGammaInteractionConversion::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
   G4HepEmTrack* thePrimaryTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
   const double       thePrimGmE = thePrimaryTrack->GetEKin();
   //
@@ -53,8 +53,9 @@ void PerformGammaConversion(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData
 }
 
 
-void SampleKinEnergies(struct G4HepEmData* hepEmData, double thePrimEkin, double theLogEkin,
-                      int theMCIndx, double& eKinEnergy, double& pKinEnergy, G4HepEmRandomEngine* rnge) {
+void G4HepEmGammaInteractionConversion::SampleKinEnergies(struct G4HepEmData* hepEmData, double thePrimEkin,
+                                                          double theLogEkin, int theMCIndx, double& eKinEnergy,
+                                                          double& pKinEnergy, G4HepEmRandomEngine* rnge) {
   // get the material data
   const int               matIndx = (hepEmData->fTheMatCutData->fMatCutData[theMCIndx]).fHepEmMatIndex;
   const G4HepEmMatData&  theMData = hepEmData->fTheMaterialData->fMaterialData[matIndx];
@@ -119,7 +120,9 @@ void SampleKinEnergies(struct G4HepEmData* hepEmData, double thePrimEkin, double
 }
 
 
-void SampleDirections(const double* orgGammaDir, double* secElDir, double* secPosDir, const double secElEkin, const double secPosEkin, G4HepEmRandomEngine* rnge) {
+void G4HepEmGammaInteractionConversion::SampleDirections(const double* orgGammaDir, double* secElDir,
+                                                         double* secPosDir, const double secElEkin,
+                                                         const double secPosEkin, G4HepEmRandomEngine* rnge) {
   // sample azimuthal angle (2Pi symmetric)
   const double  phi    = k2Pi*rnge->flat();
   const double cosPhi  = std::cos(phi);
@@ -145,8 +148,8 @@ void SampleDirections(const double* orgGammaDir, double* secElDir, double* secPo
 
 
 // should be called only for mat-cuts with more than one elements in their material
-int SelectTargetAtom(const struct G4HepEmGammaData* gmData, const int imat, const double ekin,
-                     const double lekin, const double urndn) {
+int G4HepEmGammaInteractionConversion::SelectTargetAtom(const struct G4HepEmGammaData* gmData, const int imat,
+                                                        const double ekin, const double lekin, const double urndn) {
   // start index for this material
   const int   indxStart = gmData->fElemSelectorConvStartIndexPerMat[imat];
   const double* theData = &(gmData->fElemSelectorConvData[indxStart]);
@@ -173,8 +176,9 @@ int SelectTargetAtom(const struct G4HepEmGammaData* gmData, const int imat, cons
 }
 
 
-double SampleEnergyRateNoLPM(const double normCond, const double epsMin, const double epsRange, const double deltaFactor,
-               const double invF10, const double invF20, const double fz, G4HepEmRandomEngine* rnge) {
+double G4HepEmGammaInteractionConversion::SampleEnergyRateNoLPM(
+    const double normCond, const double epsMin, const double epsRange, const double deltaFactor,
+    const double invF10, const double invF20, const double fz, G4HepEmRandomEngine* rnge) {
   double rndmv[3];
   double greject = 0.;
   double eps     = 0.;
@@ -196,9 +200,10 @@ double SampleEnergyRateNoLPM(const double normCond, const double epsMin, const d
 }
 
 
-double SampleEnergyRateWithLPM(const double normCond, const double epsMin, const double epsRange, const double deltaFactor,
-                 const double invF10, const double invF20, const double fz, G4HepEmRandomEngine* rnge,
-                 const double eGamma, const double lpmEnergy, const struct G4HepEmElemData* elemData) {
+double G4HepEmGammaInteractionConversion::SampleEnergyRateWithLPM(
+    const double normCond, const double epsMin, const double epsRange, const double deltaFactor,
+    const double invF10, const double invF20, const double fz, G4HepEmRandomEngine* rnge,
+    const double eGamma, const double lpmEnergy, const struct G4HepEmElemData* elemData) {
   const double         z23 = elemData->fZet23;
   const double     ilVarS1 = elemData->fILVarS1;
   const double ilVarS1Cond = elemData->fILVarS1Cond;
@@ -232,8 +237,7 @@ double SampleEnergyRateWithLPM(const double normCond, const double epsMin, const
 }
 
 
-G4HepEmHostDevice
-void ComputePhi12(const double delta, double &phi1, double &phi2) {
+void G4HepEmGammaInteractionConversion::ComputePhi12(const double delta, double &phi1, double &phi2) {
    if (delta > 1.4) {
      phi1 = 21.0190 - 4.145*std::log(delta + 0.958);
      phi2 = phi1;
@@ -245,24 +249,21 @@ void ComputePhi12(const double delta, double &phi1, double &phi2) {
 
 
 // Compute the value of the screening function 3*PHI1(delta) - PHI2(delta):
-G4HepEmHostDevice
-double ScreenFunction1(const double delta) {
+double G4HepEmGammaInteractionConversion::ScreenFunction1(const double delta) {
  return (delta > 1.4) ? 42.038 - 8.29*std::log(delta + 0.958)
                       : 42.184 - delta*(7.444 - 1.623*delta);
 }
 
 
 // Compute the value of the screening function 1.5*PHI1(delta) +0.5*PHI2(delta):
-G4HepEmHostDevice
-double ScreenFunction2(const double delta) {
+double G4HepEmGammaInteractionConversion::ScreenFunction2(const double delta) {
  return (delta > 1.4) ? 42.038 - 8.29*std::log(delta + 0.958)
                       : 41.326 - delta*(5.848 - 0.902*delta);
 }
 
 
 // Same as ScreenFunction1 and ScreenFunction2 but computes them at once
-G4HepEmHostDevice
-void ScreenFunction12(const double delta, double &f1, double &f2) {
+void G4HepEmGammaInteractionConversion::ScreenFunction12(const double delta, double &f1, double &f2) {
  if (delta > 1.4) {
    f1 = 42.038 - 8.29*std::log(delta + 0.958);
    f2 = f1;

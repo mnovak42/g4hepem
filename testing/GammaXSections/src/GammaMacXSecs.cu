@@ -4,8 +4,6 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmGammaData.hh"
 
-// don't worry it's just for testing
-#define private public
 #include "G4HepEmGammaManager.hh"
 
 #include <cuda_runtime.h>
@@ -20,8 +18,7 @@
                               int* tsInImat_d, double* tsInEkin_d, double* tsInLogEkin_d,
                               double* tsOutRes_d, int iprocess, int numTestCases) {
    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
-     G4HepEmGammaManager theGammaMgr;
-     tsOutRes_d[i] = theGammaMgr.GetMacXSec (theGammaData_d, tsInImat_d[i], tsInEkin_d[i], tsInLogEkin_d[i], iprocess);
+     tsOutRes_d[i] = G4HepEmGammaManager::GetMacXSec (theGammaData_d, tsInImat_d[i], tsInEkin_d[i], tsInLogEkin_d[i], iprocess);
    }
  }
 
