@@ -3,6 +3,7 @@
 
 #include <exception>
 
+#include "G4HepEmParameters.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmElementData.hh"
@@ -10,6 +11,7 @@
 #include "G4HepEmElectronData.hh"
 #include "G4HepEmSBTableData.hh"
 #include "G4HepEmGammaData.hh"
+#include "G4HepEmState.hh"
 
 #include "nlohmann/json.hpp"
 
@@ -43,8 +45,9 @@ struct dynamic_array
 template <typename T>
 dynamic_array<T> make_array(int n)
 {
-  if (n == 0) {
-    return {0, nullptr};
+  if(n == 0)
+  {
+    return { 0, nullptr };
   }
   return { n, new T[n] };
 }
@@ -109,6 +112,61 @@ namespace nlohmann
       auto d = make_array<T>(j.size());
       std::copy(j.begin(), j.end(), d.begin());
       return d;
+    }
+  };
+}  // namespace nlohmann
+
+// ===========================================================================
+// --- G4HepEmParameters
+namespace nlohmann
+{
+  // We *can* have direct to/from_json functions for G4HepEmParameters
+  // as it is simple. Use of adl_serializer is *purely* for consistency
+  // with other structures!
+  // We only support pointers as that's the form G4HepEmData expects
+  template <>
+  struct adl_serializer<G4HepEmParameters*>
+  {
+    static void to_json(json& j, const G4HepEmParameters* d)
+    {
+      if(d == nullptr)
+      {
+        j = nullptr;
+      }
+      else
+      {
+        j["fElectronTrackingCut"]  = d->fElectronTrackingCut;
+        j["fMinLossTableEnergy"]   = d->fMinLossTableEnergy;
+        j["fMaxLossTableEnergy"]   = d->fMaxLossTableEnergy;
+        j["fNumLossTableBins"]     = d->fNumLossTableBins;
+        j["fFinalRange"]           = d->fFinalRange;
+        j["fDRoverRange"]          = d->fDRoverRange;
+        j["fLinELossLimit"]        = d->fLinELossLimit;
+        j["fElectronBremModelLim"] = d->fElectronBremModelLim;
+      }
+    }
+
+    static G4HepEmParameters* from_json(const json& j)
+    {
+      if(j.is_null())
+      {
+        return nullptr;
+      }
+      else
+      {
+        auto* d = new G4HepEmParameters;
+
+        d->fElectronTrackingCut  = j.at("fElectronTrackingCut").get<double>();
+        d->fMinLossTableEnergy   = j.at("fMinLossTableEnergy").get<double>();
+        d->fMaxLossTableEnergy   = j.at("fMaxLossTableEnergy").get<double>();
+        d->fNumLossTableBins     = j.at("fNumLossTableBins").get<int>();
+        d->fFinalRange           = j.at("fFinalRange").get<double>();
+        d->fDRoverRange          = j.at("fDRoverRange").get<double>();
+        d->fLinELossLimit        = j.at("fLinELossLimit").get<double>();
+        d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
+
+        return d;
+      }
     }
   };
 }  // namespace nlohmann
@@ -743,6 +801,42 @@ namespace nlohmann
           j.at("fThePositronData").get<G4HepEmElectronData*>();
         d->fTheSBTableData = j.at("fTheSBTableData").get<G4HepEmSBTableData*>();
         d->fTheGammaData   = j.at("fTheGammaData").get<G4HepEmGammaData*>();
+        return d;
+      }
+    }
+  };
+}  // namespace nlohmann
+
+// --- G4HepEmState
+namespace nlohmann
+{
+  template <>
+  struct adl_serializer<G4HepEmState*>
+  {
+    static void to_json(json& j, const G4HepEmState* d)
+    {
+      if(d == nullptr)
+      {
+        j = nullptr;
+      }
+      else
+      {
+        j["fParameters"] = d->fParameters;
+        j["fData"]       = d->fData;
+      }
+    }
+
+    static G4HepEmState* from_json(const json& j)
+    {
+      if(j.is_null())
+      {
+        return nullptr;
+      }
+      else
+      {
+        G4HepEmState* d = new G4HepEmState;
+        d->fParameters  = j.at("fParameters").get<G4HepEmParameters*>();
+        d->fData        = j.at("fData").get<G4HepEmData*>();
         return d;
       }
     }
