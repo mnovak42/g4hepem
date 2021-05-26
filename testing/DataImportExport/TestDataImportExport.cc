@@ -1,9 +1,9 @@
 // local (and TestUtils) includes
 #include "TestUtils/G4SetUp.hh"
+#include "TestUtils/G4HepEmDataComparison.hh"
 #include "SimpleFakeG4Setup.h"
 
 #include "G4HepEmDataJsonIO.hh"
-#include "G4HepEmDataComparison.h"
 
 // G4 includes
 #include "globals.hh"
