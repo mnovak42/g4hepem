@@ -101,8 +101,8 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       //
       matData.fG4MatIndex              = matIndx;
       matData.fNumOfElement            = numOfElement;
-      matData.fElementVect             = new int[numOfElement];
-      matData.fNumOfAtomsPerVolumeVect = new double[numOfElement];
+      matData.fElementVect             = new int[numOfElement]{};
+      matData.fNumOfAtomsPerVolumeVect = new double[numOfElement]{};
       matData.fDensity                 = mat->GetDensity();
       matData.fDensityCorFactor        = 4.0*CLHEP::pi*CLHEP::classic_electr_radius*CLHEP::electron_Compton_length*CLHEP::electron_Compton_length*mat->GetElectronDensity();
       matData.fElectronDensity         = mat->GetElectronDensity();

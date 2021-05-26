@@ -51,7 +51,7 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   if (elData->fELossEnergyGrid) {
     delete[] elData->fELossEnergyGrid;
   }
-  elData->fELossEnergyGrid     = new double[numELoss];
+  elData->fELossEnergyGrid     = new double[numELoss]{};
   elData->fELossLogMinEkin     = std::log(hepEmParams->fMinLossTableEnergy);
   const double delta           = std::log(hepEmParams->fMaxLossTableEnergy/hepEmParams->fMinLossTableEnergy)/(numELoss-1.0);
   elData->fELossEILDelta       = 1.0/delta;
@@ -81,11 +81,11 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   //    their second derivative for a spline interpolation
   //  - fill these 4 later data into the elData structure for this mat-cut
   //
-  double* theDEDXArray       = new double[numELoss];
-  double* theRangeArray      = new double[numELoss];
-  double* theDEDXSDArray     = new double[numELoss];  // second derivatives for dedx
-  double* theRangeSDArray    = new double[numELoss];  // second derivatives for range
-  double* theInvRangeSDArray = new double[numELoss];  // second derivatives for inverse range
+  double* theDEDXArray       = new double[numELoss]{};
+  double* theRangeArray      = new double[numELoss]{};
+  double* theDEDXSDArray     = new double[numELoss]{};  // second derivatives for dedx
+  double* theRangeSDArray    = new double[numELoss]{};  // second derivatives for range
+  double* theInvRangeSDArray = new double[numELoss]{};  // second derivatives for inverse range
   //
   int numHepEmMCCData = hepEmMCData->fNumMatCutData;
   elData->fNumMatCuts = numHepEmMCCData;
@@ -98,7 +98,7 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
 //            << " for Range, dE/dx and inv-Range for the " << numHepEmMCCData
 //            << "\n material-cuts couples used in the geometry. ( 5x " << numELoss
 //            << " `double` value for each)." << std::endl;
-  elData->fELossData = new double[5*numELoss*numHepEmMCCData];
+  elData->fELossData = new double[5*numELoss*numHepEmMCCData]{};
   //
   // starts the computations for all mat-cut couples
   for (int imc=0; imc<numHepEmMCCData; ++imc) {
@@ -134,8 +134,8 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
     theRangeArray[0] = 2.0*elData->fELossEnergyGrid[0]/theDEDXArray[0];
     // - integrate the dE/dx by using a 16 point GL integral on [0,1] at each bin
     int ngl     = 16;
-    double* glX = new double[ngl];
-    double* glW = new double[ngl];
+    double* glX = new double[ngl]{};
+    double* glW = new double[ngl]{};
     G4HepEmInitUtils::Instance().GLIntegral(ngl, glX, glW);
     for (int i=0; i<numELoss-1; ++i) {
       // for each E_i, E_i+1 interval apply the GL by substitution
@@ -226,9 +226,9 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   // ON GPU, first the ioni energy grid, ioni sigmas, their sec-derive, then for brem
 
   // prepare some space (for sure enough) to store an energy grid and mac-xsec
-  double*  energyGrid = new double[hepEmParams->fNumLossTableBins+2];
-  double*  macXSec    = new double[hepEmParams->fNumLossTableBins+2];
-  double*  secDerivs  = new double[hepEmParams->fNumLossTableBins+2];
+  double*  energyGrid = new double[hepEmParams->fNumLossTableBins+2]{};
+  double*  macXSec    = new double[hepEmParams->fNumLossTableBins+2]{};
+  double*  secDerivs  = new double[hepEmParams->fNumLossTableBins+2]{};
   // also prepare a maximal size array: 2 x 3 x (N+2) for each mat-cuts where
   // the 2 is for ioni + brem, the 3 is for E,Sig,SD and N+2 is the max number
   // of possible such entires and the + 5 is the #data, max value and energy grid related
@@ -237,10 +237,10 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   // get the HepEm Material-cut couple data
   const struct G4HepEmMatCutData*  hepEmMCData = hepEmData->fTheMatCutData;
   int numHepEmMCCData = hepEmMCData->fNumMatCutData;
-  double*    xsecData = new double[2*3*(hepEmParams->fNumLossTableBins+2+5)*numHepEmMCCData];
+  double*    xsecData = new double[2*3*(hepEmParams->fNumLossTableBins+2+5)*numHepEmMCCData]{};
   //
   // allocate the arrays to store start indices per matrial-cuts couples
-  elData->fResMacXSecStartIndexPerMatCut = new int[numHepEmMCCData];
+  elData->fResMacXSecStartIndexPerMatCut = new int[numHepEmMCCData]{};
   // a continuous index
   int indxCont = 0;
   for (int imc=0; imc<numHepEmMCCData; ++imc) {
@@ -357,7 +357,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
 //            << "\n material-cuts couples used in the geometry. "
 //            << std::endl;
   elData->fResMacXSecNumData = indxCont;
-  elData->fResMacXSecData = new double[indxCont];
+  elData->fResMacXSecData = new double[indxCont]{};
   for (int i=0; i<indxCont; ++i) {
     elData->fResMacXSecData[i] = xsecData[i];
   }
@@ -399,14 +399,14 @@ void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerMod
     }
   }
   // allocate buffer
-  double* ioniData   = new double[(hepEmParams->fNumLossTableBins+4)*num];
-  double* bremSBData = new double[(hepEmParams->fNumLossTableBins+4)*num];
-  double* bremRBData = new double[(hepEmParams->fNumLossTableBins+4)*num];
+  double* ioniData   = new double[(hepEmParams->fNumLossTableBins+4)*num]{};
+  double* bremSBData = new double[(hepEmParams->fNumLossTableBins+4)*num]{};
+  double* bremRBData = new double[(hepEmParams->fNumLossTableBins+4)*num]{};
   //
   // allocate the arrays to store start indices per matrial-cuts couples
-  elData->fElemSelectorIoniStartIndexPerMatCut   = new int[numHepEmMCCData];
-  elData->fElemSelectorBremSBStartIndexPerMatCut = new int[numHepEmMCCData];
-  elData->fElemSelectorBremRBStartIndexPerMatCut = new int[numHepEmMCCData];
+  elData->fElemSelectorIoniStartIndexPerMatCut   = new int[numHepEmMCCData]{};
+  elData->fElemSelectorBremSBStartIndexPerMatCut = new int[numHepEmMCCData]{};
+  elData->fElemSelectorBremRBStartIndexPerMatCut = new int[numHepEmMCCData]{};
   //
   int numBinsPerDecade = G4EmParameters::Instance()->NumberOfBinsPerDecade();
   // a continuous index
@@ -474,7 +474,7 @@ void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerMod
   // write data to the final destination and clean all dynamically allocated auxilary memory
   elData->fElemSelectorIoniNumData = indxContIoni;
   if (indxContIoni > 0) {
-    elData->fElemSelectorIoniData    = new double[indxContIoni];
+    elData->fElemSelectorIoniData    = new double[indxContIoni]{};
     for (int i=0; i<indxContIoni; ++i) {
       elData->fElemSelectorIoniData[i] = ioniData[i];
     }
@@ -482,7 +482,7 @@ void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerMod
 
   elData->fElemSelectorBremSBNumData = indxContBremSB;
   if (indxContBremSB > 0) {
-    elData->fElemSelectorBremSBData    = new double[indxContBremSB];
+    elData->fElemSelectorBremSBData    = new double[indxContBremSB]{};
     for (int i=0; i<indxContBremSB; ++i) {
       elData->fElemSelectorBremSBData[i] = bremSBData[i];
     }
@@ -490,7 +490,7 @@ void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerMod
 
   elData->fElemSelectorBremRBNumData = indxContBremRB;
   if (indxContBremRB > 0) {
-    elData->fElemSelectorBremRBData    = new double[indxContBremRB];
+    elData->fElemSelectorBremRBData    = new double[indxContBremRB]{};
     for (int i=0; i<indxContBremRB; ++i) {
       elData->fElemSelectorBremRBData[i] = bremRBData[i];
     }

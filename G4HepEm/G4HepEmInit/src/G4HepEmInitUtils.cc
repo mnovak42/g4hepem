@@ -10,7 +10,7 @@ G4HepEmInitUtils& G4HepEmInitUtils::Instance() {
 }
 
 
-void G4HepEmInitUtils::GLIntegral(int npoints, double* abscissas, double* weights, 
+void G4HepEmInitUtils::GLIntegral(int npoints, double* abscissas, double* weights,
                                   double min, double max) {
   const double kPi      = 3.14159265358979323846;
   const double kEpsilon = 1.0E-13;
@@ -36,13 +36,13 @@ void G4HepEmInitUtils::GLIntegral(int npoints, double* abscissas, double* weight
     abscissas[npoints+1-i-1] = xm+xl*z;
     weights[i-1]            = 2.0*xl/((1.0-z*z)*pp*pp);
     weights[npoints+1-i-1]  = weights[i-1];
-  }                  
+  }
 }
 
 
 void G4HepEmInitUtils::PrepareSpline(int npoint, double* xdata, double* ydata, double* secderiv) {
   int     n   = npoint-1;
-  double *u   = new double[n];
+  double *u   = new double[n]{};
   double  p   = 0.0;
   double  sig = 0.0;
 
@@ -80,13 +80,13 @@ void G4HepEmInitUtils::PrepareSpline(int npoint, double* xdata, double* ydata, d
   secderiv[0]  = (secderiv[1] - sig*secderiv[2])/(1.0-sig);
 
   // delete auxilary array
-  delete[] u;  
-}                
+  delete[] u;
+}
 
 
 void G4HepEmInitUtils::PrepareSpline(int npoint, double* xdata, double* ydata) {
-  double* secderiv = new double[npoint];
-  double*        y = new double[npoint];
+  double* secderiv = new double[npoint]{};
+  double*        y = new double[npoint]{};
   for (int i=0; i<npoint; ++i) {
     y[i] = ydata[2*i];
   }
@@ -118,7 +118,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* xdata, double* ydata, d
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*secderiv[idx];
   const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;  
+  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
@@ -141,7 +141,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* xdata, double* ydata, d
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*ydata[idx2+1];
   const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;  
+  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
 }
 
 
@@ -165,7 +165,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* data, double x, double 
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*data[idx3+2];
   const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;  
+  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
 }
 
 
@@ -187,7 +187,7 @@ double G4HepEmInitUtils::GetSpline(double* xdata, double* ydata, double* secderi
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*secderiv[idx];
   const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;  
+  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
@@ -206,7 +206,7 @@ double G4HepEmInitUtils::GetSpline(double* xdata, double* ydata, double x, int i
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*ydata[idx2+1];
   const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;  
+  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
 }
 
 // same as above but both xdata, ydata and secderiv are stored in data array
@@ -225,7 +225,7 @@ double G4HepEmInitUtils::GetSpline(double* data, double x, int idx) {
   const double  a = 1.0 - b;
   const double c0 = (a*a*a-a)*data[idx3+2];
   const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;  
+  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
 }
 
 // this is used to get index for inverse range on host
