@@ -1,0 +1,3 @@
+add_executable(TestG4HepEmInit TestG4HepEmInit.cc)
+target_link_libraries(TestG4HepEmInit G4HepEm::g4HepEm TestUtils)
+add_test(NAME TestG4HepEmInit COMMAND TestG4HepEmInit)

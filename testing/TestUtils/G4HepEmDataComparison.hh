@@ -3,6 +3,7 @@
 
 #include <tuple>
 
+#include "G4HepEmParameters.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmElementData.hh"
@@ -39,6 +40,24 @@ bool compare_arrays(int lhsSize, const T* lhsData, int rhsSize,
   }
 
   return true;
+}
+
+// --- G4HepEmParameters
+bool operator==(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
+{
+  return std::tie(lhs.fElectronTrackingCut, lhs.fMinLossTableEnergy,
+                  lhs.fMaxLossTableEnergy, lhs.fNumLossTableBins,
+                  lhs.fFinalRange, lhs.fDRoverRange, lhs.fLinELossLimit,
+                  lhs.fElectronBremModelLim) ==
+         std::tie(rhs.fElectronTrackingCut, rhs.fMinLossTableEnergy,
+                  rhs.fMaxLossTableEnergy, rhs.fNumLossTableBins,
+                  rhs.fFinalRange, rhs.fDRoverRange, rhs.fLinELossLimit,
+                  rhs.fElectronBremModelLim);
+}
+
+bool operator!=(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
+{
+  return !(lhs == rhs);
 }
 
 // --- G4HepEmElemData

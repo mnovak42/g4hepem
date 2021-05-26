@@ -1,3 +1,3 @@
-add_executable(TestG4HepEmDataInterfaces TestG4HepEmDataInterfaces)
+add_executable(TestG4HepEmDataInterfaces TestG4HepEmDataInterfaces.cc)
 target_link_libraries(TestG4HepEmDataInterfaces G4HepEm::g4HepEmData GTest::GTest GTest::Main)
 add_test(NAME TestG4HepEmDataInterfaces COMMAND TestG4HepEmDataInterfaces)
