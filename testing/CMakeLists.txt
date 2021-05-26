@@ -2,6 +2,7 @@
 ## 1. TestUtils helper library
 ##
 add_library(TestUtils STATIC
+  TestUtils/G4HepEmDataComparison.hh
   TestUtils/G4SetUp.hh
   TestUtils/G4SetUp.cc
   TestUtils/Hist.hh)
@@ -26,6 +27,7 @@ add_subdirectory(ElectronXSections)
 add_subdirectory(GammaXSections)
 add_subdirectory(MaterialAndRelated)
 add_subdirectory(DataImportExport)
+add_subdirectory(DataInitialization)
 
 ## ----------------------------------------------------------------------------
 ## 3. Add the developer-only test applications
