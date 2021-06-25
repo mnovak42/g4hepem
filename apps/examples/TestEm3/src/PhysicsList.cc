@@ -265,13 +265,13 @@ void PhysicsList::AddDecay()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "G4PhysicsListHelper.hh"
-#include "G4RadioactiveDecay.hh"
+#include "G4RadioactiveDecayBase.hh"
 #include "G4GenericIon.hh"
 #include "G4NuclideTable.hh"
 
 void PhysicsList::AddRadioactiveDecay()
 {
-  G4RadioactiveDecay* radioactiveDecay = new G4RadioactiveDecay();
+  G4RadioactiveDecayBase* radioactiveDecay = new G4RadioactiveDecayBase();
 
   radioactiveDecay->SetARM(true);                //Atomic Rearangement
 
