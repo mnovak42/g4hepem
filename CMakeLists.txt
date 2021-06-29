@@ -64,6 +64,8 @@ endif()
 set(G4HepEm_CLHEP_TARGET CLHEP::CLHEP)
 if(TARGET Geant4::G4clhep)
   set(G4HepEm_CLHEP_TARGET Geant4::G4clhep)
+elseif (TARGET Geant4::G4clhep-static)
+  set(G4HepEm_CLHEP_TARGET Geant4::G4clhep-static)
 endif()
 
 #----------------------------------------------------------------------------
