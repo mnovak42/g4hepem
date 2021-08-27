@@ -43,6 +43,12 @@ set(sources
   src/SteppingVerbose.cc
   src/TrackingAction.cc
 )
+if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
+  set(sources ${sources}
+    src/PhysListG4EmTracking.cc
+    src/PhysListHepEmTracking.cc
+  )
+endif()
 
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries

@@ -16,6 +16,17 @@ set(G4HEPEM_sources
   src/G4HepEmRunManager.cc
 )
 
+if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
+  set(G4HEPEM_headers ${G4HEPEM_headers}
+    include/G4EmTrackingManager.hh
+    include/HepEmTrackingManager.hh
+  )
+  set(G4HEPEM_sources ${G4HEPEM_sources}
+    src/G4EmTrackingManager.cc
+    src/HepEmTrackingManager.cc
+  )
+endif()
+
 if(BUILD_STATIC_LIBS)
   add_library(g4HepEm STATIC ${G4HEPEM_sources})
 else()
