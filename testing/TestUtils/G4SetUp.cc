@@ -26,6 +26,7 @@
 #include "G4ProductionCutsTable.hh"
 #include "G4EmParameters.hh"
 
+#include "G4TransportationManager.hh"
 
 // builds a fake Geant4 geometry just to be able to produce material-cuts couple
 void FakeG4Setup ( G4double prodCutInLength, G4int verbose) {
@@ -38,6 +39,8 @@ void FakeG4Setup ( G4double prodCutInLength, G4int verbose) {
   G4Box*           sW = new G4Box ("Box",wDimX, wDimY, wDimZ);
   G4LogicalVolume* lW = new G4LogicalVolume(sW,wMat,"Box",0,0,0);
   G4PVPlacement*   pW = new G4PVPlacement(0,G4ThreeVector(),"Box",lW,0,false,0);
+  // set the world volume for the GetTransportationManager::G4Navigator 
+  G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->SetWorldVolume(pW);
   //
   // --- Build all NIST materials and set a logical volume for each
   const std::vector<G4String>& namesMat = G4NistManager::Instance()->GetNistMaterialNames();
@@ -117,6 +120,8 @@ const G4MaterialCutsCouple* FakeG4Setup ( G4double prodCutInLength, const G4Stri
   G4Box*           sW = new G4Box ("Box",wDimX, wDimY, wDimZ);
   G4LogicalVolume* lW = new G4LogicalVolume(sW,wMat,"Box",0,0,0);
   G4PVPlacement*   pW = new G4PVPlacement(0,G4ThreeVector(),"Box",lW,0,false,0);
+  // set the world volume for the GetTransportationManager::G4Navigator
+  G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->SetWorldVolume(pW);
   //
   // --- Create particles that has secondary production threshold
   G4Gamma::Gamma();
