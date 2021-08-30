@@ -57,6 +57,13 @@ struct G4HepEmMatData {
   double    fElectronDensity = 0.0;
   /** Radiation length. */
   double    fRadiationLength = 0.0;
+  /** The Sandia coefficients for this material */
+  double    fSandia1Energy = 0.0;
+  double    fSandia2Energy = 0.0;
+  double    fSandia1Cof[4]{};
+  double    fSandia2Cof[4]{};
+  /** The maximum binding energy of an element in this material */
+  double    fMaxBinding = 0.0;
 };
 
 // Data for all materials used in the current geometry.

@@ -92,7 +92,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
       |                | Annihilation    |:math:`e^+-e^- \to 2\gamma`| ``G4eplusAnnihilation``            | ``G4HepEmPositronInteractionAnnihilation``    |0 [#]_ - 100 TeV          |
       +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |:math:`\gamma`  | Photoelectric   | Livermore                 | ``G4LivermorePhotoElectricModel``  |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |0 [#]_ - 100 TeV          |
+      |:math:`\gamma`  | Photoelectric   | Biggs, Lighthill          | ``G4PEEffectFluoModel``            |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |0 [#]_ - 100 TeV          |
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
       |                | Compton scat.   | Klein - Nishina [#]_      | ``G4KleinNishinaCompton``          | ``G4HepEmGammaInteractionCompton``            |100 eV - 100 TeV          |
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
@@ -110,16 +110,11 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
 
    .. [#]  i.e. annihilation at rest.
 
-   .. [#]  Very simple absorption at the moment only till the final model is under development.
-      :math:`\gamma`-s below a given (:math:`E_\gamma = 250` [keV]) primary :math:`\gamma` energy
-      are absorbed just in order to prevent the production of unrealistically high number of
-      low energy secondary :math:`e^-` in Compton scattering (due to the absence
-      of photoelectric absorption).
+   .. [#]  Simplified model taking into accont only the two highest intervals of
+      ``G4SandiaTable``.
 
-   .. [#]  Strictly speaking, used at primary :math:`\gamma` energies above the
-      binding energy or the outermost :math:`e^-`, but the cross section is
-      kept to constant even at lower :math:`\gamma` energies in ``Geant4`` in order
-      to ensure that the low energy :math:`\gamma`-s are absorbed.
+   .. [#]  Primary :math:`\gamma` energies below the highest binding energy are
+      absorbed without generating a secondary photoelectron.
 
    .. [#]  Electron bounding is accounted on the top of the free electron approximation
       of the Klein-Nishina model but only with a scattering function correction and
@@ -162,7 +157,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
                                    \cline{2-6}
                                    &  Annihilation                    & $e^+-e^-\to 2\gamma$       & \texttt{\scriptsize G4eplusAnnihilation}        &  \texttt{\scriptsize PositronInteractionAnnihilation} & 0\footnotemark - 100 TeV \\
        \hline
-       \multirow{4}{*}{$\gamma$}   &  Photoelectric                   & Livermore                  & \texttt{\scriptsize G4LivermorePhotoElectricModel} &  \texttt{\scriptsize GammaInteractionPhotoelectric}\footnotemark & 0\footnotemark - 100 TeV  \\
+       \multirow{4}{*}{$\gamma$}   &  Photoelectric                   & Biggs, Lighthill           & \texttt{\scriptsize G4PEEffectFluoModel}        &  \texttt{\scriptsize GammaInteractionPhotoelectric}\footnotemark & 0\footnotemark - 100 TeV  \\
                                    \cline{2-6}
                                    &  Compton scat.                   & Klein - Nishina\footnotemark  & \texttt{\scriptsize G4KleinNishinaCompton}    & \texttt{\scriptsize GammaInteractionCompton}     & 100 eV -   100 TeV        \\
                                    \cline{2-6}
@@ -182,16 +177,10 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
       \addtocounter{footnote}{1}
       \footnotetext{i.e. annihilation at rest.}
       \addtocounter{footnote}{1}
-      \footnotetext{Very simple absorption at the moment only till the final model is under development.
-         $\gamma$ below a given ($E_\gamma = 250$ [keV]) primary $\gamma$ energy
-         are absorbed just in order to prevent the production of unrealistically high number of
-         low energy secondary $e^-$ in Compton scattering (due to the absence
-         of photoelectric absorption)}
+      \footnotetext{Simplified model taking into accont only the two highest intervals of \texttt{G4SandiaTable}.}
       \addtocounter{footnote}{1}
-      \footnotetext{Strictly speaking, used at primary $\gamma$ energies above the
-         binding energy or the outermost $e^-$, but the cross section is
-         kept to constant even at lower $\gamma$ energies in \texttt{Geant4} in order
-         to ensure that the low energy $\gamma$-s are absorbed.}
+      \footnotetext{Primary $\gamma$ energies below the highest binding energy are
+           absorbed without generating a secondary photoelectron.}
       \addtocounter{footnote}{1}
       \footnotetext{Electron bounding is accounted on the top of the free electron approximation
          of the Klein-Nishina model but only with a scattering function correction and

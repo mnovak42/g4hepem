@@ -4,10 +4,76 @@
 
 #include  "G4HepEmTLData.hh"
 #include  "G4HepEmData.hh"
+#include  "G4HepEmMaterialData.hh"
+#include  "G4HepEmMatCutData.hh"
+#include  "G4HepEmRunUtils.hh"
 
-// simple gamma absorption at the moment
-void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct G4HepEmData* /*hepEmData*/) {
+void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
   G4HepEmTrack* thePrimaryTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
-  thePrimaryTrack->SetEnergyDeposit(thePrimaryTrack->GetEKin());
+  const double*     theGammaDir = thePrimaryTrack->GetDirection();
+  const double        theGammaE = thePrimaryTrack->GetEKin();
+
+  const int  theMCIndx = thePrimaryTrack->GetMCIndex();
+  const int theMatIndx = hepEmData->fTheMatCutData->fMatCutData[theMCIndx].fHepEmMatIndex;
+  const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[theMatIndx];
+
+  const double theLowEnergyThreshold = 0.000001; // 1 eV
+  // Only check the maximum binding energy of the current material. If the
+  // gamma energy is below that, the energy of the secondary photo electron
+  // will be so low that it won't travel far and we can skip generating it.
+  const double photoElecE = theGammaE - matData->fMaxBinding;
+  if (photoElecE > theLowEnergyThreshold) {
+    G4HepEmTrack* theSecTrack = tlData->AddSecondaryElectronTrack()->GetTrack();
+    double*       theSecElDir = theSecTrack->GetDirection();
+    SamplePhotoElectronDirection(photoElecE, theGammaDir, theSecElDir, tlData->GetRNGEngine());
+    theSecTrack->SetEKin(photoElecE);
+    theSecTrack->SetParentID(thePrimaryTrack->GetID());
+    thePrimaryTrack->SetEnergyDeposit(matData->fMaxBinding);
+  } else {
+    thePrimaryTrack->SetEnergyDeposit(theGammaE);
+  }
   thePrimaryTrack->SetEKin(0.0);
+}
+
+void G4HepEmGammaInteractionPhotoelectric::SamplePhotoElectronDirection(const double kinE, const double* theGammaDir, double* theDir, G4HepEmRandomEngine* rnge) {
+  // -- Sample from SauterGavrila angular distribution, code taken from Geant4:
+  // Initial algorithm according Penelope 2008 manual and
+  // F.Sauter Ann. Physik 9, 217(1931); 11, 454(1931).
+  // Modified according Penelope 2014 manual
+  const double tau = kinE/kElectronMassC2;
+  const double gamma = 1.0 + tau;
+  const double beta = std::sqrt(tau*(tau + 2.0))/gamma;
+
+  // ac corresponds to "A" of Eq. (2.31)
+  //
+  const double ac = (1.0 - beta)/beta;
+  const double a1 = 0.5*beta*gamma*tau*(gamma-2.0);
+  const double a2 = ac + 2.0;
+  // gtmax = maximum of the rejection function according to Eq. (2.28),
+  // obtained for tsam=0
+  const double gtmax = 2.0*(a1 + 1.0/ac);
+
+  double tsam = 0.0;
+  double gtr  = 0.0;
+
+  //2) sampling. Eq. (2.31) of Penelope Manual
+  // tsam = 1-std::cos(theta)
+  // gtr = rejection function according to Eq. (2.28)
+  double rndm[2];
+  do {
+    rnge->flatArray(2, rndm);
+    tsam = 2.0*ac * (2.0*rndm[0] + a2*std::sqrt(rndm[0])) / (a2*a2 - 4.0*rndm[0]);
+    gtr = (2.0 - tsam) * (a1 + 1.0/(ac+tsam));
+    // Loop checking, 03-Aug-2015, Vladimir Ivanchenko
+  } while(rndm[1]*gtmax > gtr);
+
+  const double costheta = 1.0 - tsam;
+
+  const double sint = std::sqrt(tsam*(2.0 - tsam));
+  const double phi  = CLHEP::twopi*rnge->flat();
+
+  theDir[0] = sint * std::cos(phi);
+  theDir[1] = sint * std::sin(phi);
+  theDir[2] = costheta;
+  RotateToReferenceFrame(theDir, theGammaDir);
 }
