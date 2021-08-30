@@ -50,6 +50,10 @@ struct G4HepEmParameters {
     * in case of \f$e^-/e^+\f$ primary particles.*/
   double fElectronBremModelLim;
 
+  // MSC range and safety factor parameters
+  double fMSCRangeFactor;
+  double fMSCSafetyFactor;
+
 };
 
 #endif // G4HepEmParameters_HH

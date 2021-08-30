@@ -18,6 +18,8 @@
 
 #include "G4HepEmRandomEngine.hh"
 
+#include "G4TransportationManager.hh"
+#include "G4SafetyHelper.hh"
 
 #include <iostream>
 
@@ -123,6 +125,8 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     if  (!fTheG4HepEmTLData) {
       fTheG4HepEmTLData = new G4HepEmTLData;
       fTheG4HepEmTLData->SetRandomEngine(theRNGEngine);
+      fTheG4HepEmTLData->SetSafetyHelper(G4TransportationManager::GetTransportationManager()->GetSafetyHelper());
+      fTheG4HepEmTLData->GetSafetyHelper()->InitialiseHelper();
     }
   } else {
     //
@@ -137,6 +141,8 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     if  (!fTheG4HepEmTLData) {
       fTheG4HepEmTLData = new G4HepEmTLData;
       fTheG4HepEmTLData->SetRandomEngine(theRNGEngine);
+      fTheG4HepEmTLData->SetSafetyHelper(G4TransportationManager::GetTransportationManager()->GetSafetyHelper());
+      fTheG4HepEmTLData->GetSafetyHelper()->InitialiseHelper();
     }
   }
 }

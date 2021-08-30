@@ -49,6 +49,8 @@ public:
     fNumIALeft[1] = o.fNumIALeft[1];
     fNumIALeft[2] = o.fNumIALeft[2];
 
+    fSafety       = o.fSafety;
+
     fID           = o.fID;
     fIDParent     = o.fIDParent;
 
@@ -160,6 +162,12 @@ public:
   double* GetNumIALeft()                      {return fNumIALeft; }
 
 
+  G4HepEmHostDevice
+  void    SetSafety(double s) { fSafety = s; }
+  G4HepEmHostDevice
+  double  GetSafety() const   { return fSafety; }
+
+
   // ID
   G4HepEmHostDevice
   void    SetID(int id) { fID = id;   }
@@ -172,12 +180,11 @@ public:
   G4HepEmHostDevice
   int     GetParentID() const { return fIDParent; }
 
-
+  // Material-cut index
   G4HepEmHostDevice
   void    SetMCIndex(int imc) { fMCIndex = imc;  }
   G4HepEmHostDevice
   int     GetMCIndex() const { return fMCIndex; }
-
 
   G4HepEmHostDevice
   void    SetWinnerProcessIndex(int ip) { fPIndxWon = ip; }
@@ -239,6 +246,7 @@ private:
   double   fGStepLength;   // step length along the original direction (straight line)
   double   fMFPs[3];       // pair, compton, photo-electric in case of photon
   double   fNumIALeft[3];  // ioni, brem, (e+-e- annihilation) in case of e- (e+)
+  double   fSafety;
 
   int      fID;
   int      fIDParent;

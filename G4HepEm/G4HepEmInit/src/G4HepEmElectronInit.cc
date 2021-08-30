@@ -109,6 +109,10 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
     std::cout << "     ---  BuildSBBremTables ... " << std::endl;
     BuildSBBremSTables(hepEmData, hepEmPars, modelSB);
   }
+  if (!hepEmData->fTheGSTableData) {
+    std::cout << "     ---  BuildGSTables ... " << std::endl;
+    BuildGSTables(hepEmData, hepEmPars);
+  }
 
   // delete all g4 models
   delete modelMB;

@@ -10,7 +10,9 @@ struct G4HepEmElectronData;
 
 class  G4HepEmTLData;
 class  G4HepEmElectronTrack;
-class  G4HepEmTrack; 
+class  G4HepEmMSCTrackData;
+class  G4HepEmTrack;
+class  G4HepEmRandomEngine;
 
 /**
  * @file    G4HepEmElectronManager.hh
@@ -83,7 +85,7 @@ public:
     *   the computed physics step limit is written into its fGStepLength member.
     */
   G4HepEmHostDevice
-  static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+  static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
 
   /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
     *
@@ -99,7 +101,7 @@ public:
     * @return boolean whether the particle was stopped
     */
   G4HepEmHostDevice
-  static bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+  static bool PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
 
   /** Function to check if a delta interaction happens instead of the discrete process.
     *
@@ -165,6 +167,12 @@ public:
   G4HepEmHostDevice
   static double ComputeMacXsecAnnihilationForStepping(const double ekin, const double electronDensity);
 
+  G4HepEmHostDevice
+  static void   ConvertTrueToGeometricLength(const G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData,
+                                             double ekin, double range, int imc, bool iselectron);
+
+  G4HepEmHostDevice
+  static void   ConvertGeometricToTrueLength(G4HepEmMSCTrackData* mscData, double range, double gStepToConvert);
 };
 
 

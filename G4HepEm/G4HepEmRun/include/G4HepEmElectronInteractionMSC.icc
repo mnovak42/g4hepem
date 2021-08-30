@@ -1,0 +1,517 @@
+
+
+#include "G4HepEmElectronInteractionMSC.hh"
+
+#include "G4HepEmTLData.hh"
+#include "G4HepEmRandomEngine.hh"
+
+#include "G4HepEmMSCTrackData.hh"
+
+#include "G4HepEmConstants.hh"
+#include "G4HepEmMath.hh"
+
+#include "G4HepEmData.hh"
+#include "G4HepEmParameters.hh"
+#include "G4HepEmElectronData.hh"
+#include "G4HepEmGSTableData.hh"
+
+#include "G4HepEmMatCutData.hh"
+
+// The msc step limit will be written into the G4HepEmMSCTrackData::fTrueStepLength member of
+// of the input track. If msc limits the step, this is shorter than the track->GetPStepLength.
+// Note, that in all cases, the final physical step length will need to be coverted to geometrical
+// one that is done in the G4HepEmElectronManager.
+void G4HepEmElectronInteractionMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmParameters* hepEmPars,
+    G4HepEmMSCTrackData* mscData, double pStepLength, double ekin, double lekin, int imc, double range,
+    double presafety, bool onBoundary, bool iselectron, G4HepEmRandomEngine* rnge) {
+  // Set initial values:
+  //  : lengths are already initialised to the current minimum physics step  which is the true, minimum
+  //    step length from all other physics
+//  mscData->fTrueStepLength      = pStepLength;
+//  mscData->fZPathLength         = pStepLength;
+//  mscData->SetDisplacement(0., 0., 0.);
+//  mscData->SetNewDirection(0., 0., 1.);
+  mscData->fIsNoScatteringInMSC = false;
+  mscData->fIsNoDisplace        = false;
+  //
+  // Compute and store integrated quantities such as elastic, first transport mfps,
+  // screening parameter, G1 and the DPWA corrections to them: we need the log kinetic
+  // energy, material index, if it's e- or e+ and the G4HepEmGSTableData.
+  const int     imat = (hepEmData->fTheMatCutData->fMatCutData[imc]).fHepEmMatIndex;
+  ComputeParameters(imat, ekin, lekin,
+                    mscData->fLambel, mscData->fLambtr1, mscData->fScra, mscData->fG1,
+                    mscData->fPWACorToQ1, mscData->fPWACorToG2PerG1,
+                    hepEmData->fTheGSTableData, iselectron);
+  // set distance to be the range at the moment !!! (range should be computed here otherwise)
+  const double distance = range;
+  //
+  // Compute the MSC step limit if any
+  //
+  // far from boundary ==> optimisation: don't sample dispalcement
+  if (distance < presafety) {
+    mscData->fIsNoDisplace = true;
+  } else {
+    // set the initial range value value to the current one if just enetring to a new
+    // volume or performing the very first step with this particle
+    if (mscData->fIsFirstStep || onBoundary || mscData->fInitialRange>1.0E+20) {
+      mscData->fInitialRange = range;
+    }
+    // step limit
+    const double rf = hepEmPars->fMSCRangeFactor;
+    const double sf = hepEmPars->fMSCSafetyFactor;
+    double   tlimit = G4HepEmMax(rf * mscData->fInitialRange, sf * presafety);
+    // first step randomization
+    // NOTE: we should probably randomize only if the step was limited by msc
+    if (mscData->fIsFirstStep || onBoundary) {
+      mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, RandomizeTrueStepLength(tlimit, rnge));
+    } else {
+      mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, tlimit);
+    }
+  }
+  // msc step limit is done!
+  //
+  // reset first step flag
+  mscData->fIsFirstStep = false;
+  // convert the true (physics) step length to geometrical one (i.e. the pojection of the transport vector
+  // along the original direction)
+  // NOTE: this conversion is done in the G4HepEmElectronManager
+  // ConvertTrueToGeometricLength(...)
+}
+
+
+void G4HepEmElectronInteractionMSC::SampleScattering(G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData,
+   double pStepLength, double ekin, double eloss, int imc, bool iselectron, G4HepEmRandomEngine* rnge) {
+   // init
+   mscData->fIsNoScatteringInMSC = false;
+   // compute effective energy and step length
+   const double meanEkin = ekin  - 0.5 * eloss; // mean energy along the full step
+   // other parameters for energy loss corrections
+   const double tau  = meanEkin / kElectronMassC2;
+   const double tau2 = tau * tau;
+   const double eps0 = eloss / ekin;      // energy loss fraction to the begin step energy
+   const double epsm = eloss / meanEkin;  // energy loss fraction to the mean step energy
+   //
+   const double efEkin = meanEkin * (1. - epsm * epsm * (6. + 10. * tau + 5. * tau2) / (24. * tau2 + 48. * tau + 72.));
+   const double    dum = 0.166666 * (4. + tau * (6. + tau * (7. + tau * (4. + tau)))) * (epsm / ((tau + 1.) * (tau + 2.))) *
+                         (epsm / ((tau + 1.) * (tau + 2.)));
+   const double efStep = pStepLength * (1. - dum);
+   // obtain integrated quantities and compute scattering parameters lambdan and Q1
+   double lambel;
+   double lambtr1;
+   double scra;
+   double g1;
+   double pwaCorToQ1;
+   double pwaCorToG2PerG1;
+   G4HepEmGSTableData* gsTable = hepEmData->fTheGSTableData;
+   const int imat = (hepEmData->fTheMatCutData->fMatCutData[imc]).fHepEmMatIndex;
+   ComputeParameters(imat, efEkin, std::log(efEkin), lambel, lambtr1, scra, g1,
+                     pwaCorToQ1, pwaCorToG2PerG1, gsTable, iselectron);
+   // s/lambda_el i.e. mean number of elastic scattering along the step
+   double lambdan = 0.;
+   if (lambel > 0.0) {
+     lambdan = efStep / lambel;
+   }
+   if (lambdan <= 1.0e-12) {
+     mscData->fIsNoScatteringInMSC = true;
+     return;
+   }
+   // 2.* lambdan *scrA*((1.+scrA)*log(1.+1./scrA)-1.);
+   double Qn1 = lambdan * g1;
+   //
+   // Sample scattering angles: new direction, relative to the orriginal one is in {uss,vss,wss}
+   double cosTheta1 = 1.0, sinTheta1 = 0.0, cosTheta2 = 1.0, sinTheta2 = 0.0;
+   double cosPhi1 = 1.0, sinPhi1 = 0.0, cosPhi2 = 1.0, sinPhi2 = 0.0;
+   // if we are above the upper grid limit with lambdaxG1=true-length/first-trans-mfp
+   // => izotropic distribution: lambG1_max =7.99 but set it to 7
+   double rndArray[2];
+   if (0.5 * Qn1 > 7.0) {
+     // get 2 random numbers
+     rnge->flatArray(2, rndArray);
+     cosTheta1 = 1. - 2. * rndArray[0];
+     sinTheta1 = std::sqrt((1. - cosTheta1) * (1. + cosTheta1));
+     cosTheta2 = 1. - 2. * rndArray[1];
+     sinTheta2 = std::sqrt((1. - cosTheta2) * (1. + cosTheta2));
+   } else {
+     // sample 2 scattering cost1, sint1, cost2 and sint2 for half path
+     // backup GS angular dtr data starting pointer if the first was an msc sampling
+     // (this is becasue the same will be used if the second is also an msc step)
+     double *gsDtr    = nullptr;
+     double transfPar = 0.;
+     const double halfLambdan = 0.5 * lambdan;
+     const double halfQn1     = 0.5 * Qn1;
+     const double expn = std::exp(-halfLambdan);
+     bool isMsc = SampleAngularDeflection(halfLambdan, expn, halfQn1, scra, cosTheta1, sinTheta1, transfPar, &gsDtr, rnge, gsTable, true);
+                  SampleAngularDeflection(halfLambdan, expn, halfQn1, scra, cosTheta2, sinTheta2, transfPar, &gsDtr, rnge, gsTable, !isMsc);
+     if (cosTheta1 + cosTheta2 >= 2.) { // no scattering happened
+       mscData->fIsNoScatteringInMSC = true;
+       return;
+     }
+   }
+   // sample 2 azimuthal angles
+   // get 2 random numbers
+   rnge->flatArray(2, rndArray);
+   const double phi1 = k2Pi * rndArray[0];
+   sinPhi1     = std::sin(phi1);
+   cosPhi1     = std::cos(phi1);
+   const double phi2 = k2Pi * rndArray[1];
+   sinPhi2     = std::sin(phi2);
+   cosPhi2     = std::cos(phi2);
+   // compute final direction realtive to z-dir
+   const double  u2 = sinTheta2 * cosPhi2;
+   const double  v2 = sinTheta2 * sinPhi2;
+   const double u2p = cosTheta1 * u2 + sinTheta1 * cosTheta2;
+   const double uss = u2p * cosPhi1 - v2 * sinPhi1;
+   const double vss = u2p * sinPhi1 + v2 * cosPhi1;
+   const double wss = cosTheta1 * cosTheta2 - sinTheta1 * u2;
+   //
+   // set the new direction proposed by msc: will be applied if the step doesn't end on boundary
+   mscData->SetNewDirection(uss, vss, wss);
+   //
+   // Compute the dispalcement vector
+   if (mscData->fIsNoDisplace) {
+     return;
+   }
+   // compute final position
+   Qn1 *= pwaCorToQ1;
+   // gamma = G_2/G_1 based on G2 computed from A by using the Wentzel DCS form of G2
+   const double loga  = std::log(1. + 1. / scra);
+   const double gamma = pwaCorToG2PerG1*(6. * scra * (1. + scra) * (loga * (1. + 2. * scra) - 2.) / g1);
+   // sample eta from p(eta)=2*eta i.e. P(eta) = eta_square ;-> P(eta) = rand --> eta = sqrt(rand)   //
+   // compute alpha1 and alpha2 for energy loss correction
+   double temp1 = 2. + tau;
+   double temp  = (2. + tau * temp1) / ((tau + 1.) * temp1);
+   temp     = temp - (tau + 1.) / ((tau + 2.) * (loga * (1. + scra) - 1.));
+   temp     = temp * epsm;
+   temp1    = 1. - temp;
+   const double delta = 0.908248 - (0.102062 - 0.026375 * gamma) * Qn1 + 0.408248 * (
+                        eps0 * (tau + 1.) / ((tau + 2.) * (loga * (1. + scra) - 1.) * (loga * (1. + 2. * scra) - 2.))
+                        - 0.25 * temp * temp );
+   const double  eta  = std::sqrt(rnge->flat());
+   const double     b = eta * delta;
+   const double     c = eta * (1. - delta);
+   const double  eta1 = 0.5 * (1. - eta);
+   //
+   // calculate transport direction cosines:
+   // ut,vt,wt is the final position divided by the true step length
+   //
+   // long step correction
+   double par = 1.;
+   if (Qn1 < 0.7) {
+     par = 1.;
+   } else if (Qn1 < 7.0) {
+     par = -0.031376 * Qn1 + 1.01356;
+   } else {
+     par = 0.79;
+   }
+   const double w1v2 = cosTheta1 * v2;
+   const double ut = par*(b * sinTheta1 * cosPhi1 + c * (cosPhi1 * u2 - sinPhi1 * w1v2) + eta1 * uss * temp1);
+   const double vt = par*(b * sinTheta1 * sinPhi1 + c * (sinPhi1 * u2 + cosPhi1 * w1v2) + eta1 * vss * temp1);
+   const double wt = par*(eta1 * (1. + temp) + b * cosTheta1 + c * cosTheta2 + eta1 * wss * temp1);
+   //
+   // final position relative to the pre-step point in the scattering frame
+   // ut = x_f/s so needs to multiply by s
+   const double x_coord = ut * pStepLength;
+   const double y_coord = vt * pStepLength;
+   const double z_coord = wt * pStepLength;
+   //
+   // the fTheZPathLength was already set and was taken as transport along zet
+   // ( it was also updated if we did not go as far as we expected)
+   mscData->SetDisplacement(x_coord, y_coord, z_coord - mscData->fZPathLength);
+}
+
+
+double G4HepEmElectronInteractionMSC::RandomizeTrueStepLength(double tlimit, G4HepEmRandomEngine* rnge) {
+  double tempTLimit = tlimit;
+  do {
+    tempTLimit = rnge->Gauss(tlimit, 0.1 * tlimit);
+  } while ((tempTLimit < 0.) || (tempTLimit > 2. * tlimit));
+  return tempTLimit;
+}
+
+
+void G4HepEmElectronInteractionMSC::ComputeParameters(int imat, double ekin, double lekin, double &lambel, double &lambtr1, double &scra, double &g1,
+                                                      double &pwaCorToQ1, double &pwaCorToG2PerG1, const G4HepEmGSTableData* gsTable, bool iselectron) {
+  lambel              = 0.; // elastic mean free path
+  lambtr1             = 0.; // first transport mean free path
+  scra                = 0.; // screening parameter
+  g1                  = 0.; // first transport coef.
+  pwaCorToQ1          = 1.; // DPWA correction to Q-val
+  pwaCorToG2PerG1     = 1.; // DPWA correction to G2/G1
+  //
+  // originally this is minimum of 10 eV but we have anyway a trackng cut of 1 keV)
+  ekin = G4HepEmMax(ekin, 1.0E-3);
+  // total mometum square
+  const double   pt2 = ekin * (ekin + 2. * kElectronMassC2);
+  // beta square
+  const double beta2 = pt2 / (pt2 + kElectronMassC2*kElectronMassC2);
+  // Moliere's b_c
+  const double    bc = gsTable->fMoliereParams[2*imat];
+  const double   xc2 = gsTable->fMoliereParams[2*imat+1];
+  // get the PWA-correcton factors
+  double pwaCorToScrA = 1.;
+  GetPWACorrectionFactors(lekin, beta2, imat, pwaCorToScrA, pwaCorToQ1, pwaCorToG2PerG1, gsTable, iselectron);
+  // screening parameter:
+  //   due to the DPWA correction, the Screened-Rutherford DCS with this screening parameter
+  //   gives back the  DPWA first transport cross section
+  scra = xc2 / (4. * pt2 * bc) * pwaCorToScrA;
+  // elastic mean free path in Geant4 internal Length units: the neglected (1+screening parameter) term is corrected
+  lambel = beta2 * (1. + scra) * pwaCorToScrA / bc;
+  // first transport coefficient
+  g1 = 2. * scra * ((1. + scra) * std::log(1. / scra + 1.) - 1.);
+  // first transport mean free path
+  lambtr1 = lambel / g1;
+}
+
+
+void G4HepEmElectronInteractionMSC::GetPWACorrectionFactors(double logekin, double beta2, int imat, double& pwaCorToScrA, double& pwaCorToQ1,
+                                                            double& pwaCorToG2PerG1, const G4HepEmGSTableData* gsTable, bool iselectron) {
+  int ekinIndxLow    = 0;
+  double remRfaction = 0.;
+  if (beta2 >= gsTable->fPWACorMaxBeta2) {
+    ekinIndxLow = gsTable->fPWACorNumEkin - 1;
+    // remRfaction = -1.
+  } else if (beta2 >= gsTable->fPWACorMinBeta2) { // linear interpolation on \beta^2
+    remRfaction = (beta2 - gsTable->fPWACorMinBeta2) * gsTable->fPWACorInvDelBeta2;
+    ekinIndxLow = (int)remRfaction;
+    remRfaction -= ekinIndxLow;
+    ekinIndxLow += (gsTable->fPWACorNumEkin - gsTable->fPWACorNumBeta2);
+  } else if (logekin >= gsTable->fPWACorLogMinEkin) {
+    remRfaction = (logekin - gsTable->fPWACorLogMinEkin) * gsTable->fPWACorInvLogDelEkin;
+    ekinIndxLow = (int)remRfaction;
+    remRfaction -= ekinIndxLow;
+  } // the defaults otherwise i.e. use the lowest energy values when ekin is smaller than the minum ekin
+  //
+  // start of the correction data for this material
+  const int    iener = imat * 3 * gsTable->fPWACorNumEkin + 3 * ekinIndxLow;
+  const double *data = iselectron ? gsTable->fPWACorDataElectron : gsTable->fPWACorDataPositron;
+  pwaCorToScrA       = data[iener];
+  pwaCorToQ1         = data[iener+1];
+  pwaCorToG2PerG1    = data[iener+2];
+  if (remRfaction > 0.) {
+    pwaCorToScrA    += remRfaction * (data[iener + 3] - data[iener]);
+    pwaCorToQ1      += remRfaction * (data[iener + 4] - data[iener+1]);
+    pwaCorToG2PerG1 += remRfaction * (data[iener + 5] - data[iener+2]);
+  }
+}
+
+
+
+// samplig multiple scattering angles cos(theta) and sin(thata)
+//  - including no-scattering, single, "few" scattering cases as well
+// lambdaval : s/lambda_el
+// qval      : s/lambda_el G1
+// scra      : screening parameter
+// cost      : will be the smapled cos(theta)
+// sint      : will be the smapled sin(theta)
+// lekin     : logarithm of the current kinetic energy
+// beta2     : the corresponding beta square
+// matindx   : index of the current material
+// returns true if it was msc
+bool G4HepEmElectronInteractionMSC::SampleAngularDeflection(double lambdaval, double expn, double qval, double scra,
+                                      double& cost, double& sint, double& transfPar, double** dtrData,
+                                      G4HepEmRandomEngine* rnge, G4HepEmGSTableData* gsTable, bool isfirst) {
+  const double rand0 = rnge->flat();
+  //
+  // 1. No scattering case
+  if (rand0 < expn) {
+    cost = 1.0;
+    sint = 0.0;
+    return false;
+  }
+  //
+  //2. Single scattering case : sample from the single scattering PDF
+  if (rand0 < (1. + lambdaval) * expn) {
+    // cost is sampled in SingleScattering()
+    const double rand1 = rnge->flat();
+    // sample cost from the Screened-Rutherford DCS
+    cost = 1. - 2. * scra * rand1 / (1. - rand1 + scra);
+    // add protections
+    cost = G4HepEmMin(G4HepEmMax(cost, -1.), 1.);
+    // compute sin(theta) from the sampled cos(theta)
+    const double dum0 = 1. - cost;
+    sint = std::sqrt(dum0 * (2. - dum0));
+    return false;
+  }
+  //
+  //3. Handle this case:
+  //      -lambdaval < 1 i.e. mean #elastic events along the step is < 1 but
+  //       the currently sampled case is not 0 or 1 scattering. [Our minimal
+  //       lambdaval (that we have precomputed, transformed angular distributions
+  //       stored in a form of equally probabe intervalls together with rational
+  //       interp. parameters) is 1.]
+  //      -probability of having n elastic events follows Poisson stat. with
+  //       lambdaval parameter.
+  //      -the max. probability (when lambdaval=1) of having more than one
+  //       elastic events is 0.2642411 and the prob of having 2,3,..,n elastic
+  //       events decays rapidly with n. So set a max n to 10.
+  //      -sampling of this cases is done in a one-by-one single elastic event way
+  //       where the current #elastic event is sampled from the Poisson distr.
+  if (lambdaval < 1.) {
+    double prob, cumprob;
+    prob = cumprob = expn;
+    double curcost, cursint;
+    // init cos(theta) and sin(theta) to the zero scattering values
+    cost = 1.0;
+    sint = 0.0;
+    for (int iel = 1; iel < 10; ++iel) {
+      // prob of having iel scattering from Poisson
+      prob *= lambdaval / iel;
+      cumprob += prob;
+      //
+      // sample cos(theta) from the singe scattering pdf:
+      const double rand1 = rnge->flat();
+      // sample cost from the Screened-Rutherford DCS
+      curcost = 1. - 2. * scra * rand1 / (1. - rand1 + scra);
+      const double dum0 = 1. - curcost;
+      cursint = dum0 * (2. - dum0); // sin^2(theta)
+      //
+      // if we got current deflection that is not too small
+      // then update cos(theta) sin(theta)
+      if (cursint > 1.0e-20) {
+        cursint       = std::sqrt(cursint);
+        const double curphi = k2Pi * rnge->flat();
+        cost          = cost * curcost - sint * cursint * std::cos(curphi);
+        sint          = std::sqrt(G4HepEmMax(0., (1. - cost) * (1. + cost)));
+      }
+      //
+      // check if we have done enough scattering i.e. sampling from the Poisson
+      if (rand0 < cumprob) {
+        return false;
+      }
+    }
+    // if reached the max iter i.e. 10
+    return false;
+  }
+  //
+  // multiple scattering case with lambdavalue >= 1:
+  //   - use the precomputed and transformed Goudsmit-Saunderson angular
+  //     distributions to sample cos(theta)
+  cost = SampleMSCCosTheta(lambdaval, qval, scra, transfPar, dtrData, rnge, gsTable, isfirst);
+  // add protections
+  cost = G4HepEmMin(G4HepEmMax(cost, -1.), 1.);
+  // compute cos(theta) and sin(theta) from the sampled 1-cos(theta)
+  const double dum0 = 1. - cost;
+  sint = std::sqrt(dum0 * (2. - dum0));
+  // return true if it was msc
+  return true;
+}
+
+
+double G4HepEmElectronInteractionMSC::SampleMSCCosTheta(double lambdaval, double qval, double scra,
+                                double& transfpar, double** dtrData,
+                                G4HepEmRandomEngine* rnge, G4HepEmGSTableData* gsTable, bool isfirst) {
+  // determine the GS angular distribution if it is the first call (when sub-step sampling is used)
+  if (isfirst) {
+    *dtrData = GetGSAngularDtr(scra, lambdaval, qval, transfpar, rnge, gsTable);
+  }
+  double* dtr = *dtrData;
+  //
+  // sample cost from the GS angular distribution:
+  //
+  // check if isotropic theta (i.e. cost is uniform on [-1:1])
+  if (!dtr) {
+    return 1. - 2. * rnge->flat();
+  }
+  //
+  // sampling form the selected distribution
+  const double ndatm1 = dtr[0] - 1; // #data in this dtr - 1
+  const double delta  = 1. / ndatm1;
+  // determine lower cumulative bin inidex
+  const double rndm   = rnge->flat();
+  const int    indxl  = (int)(rndm * ndatm1);
+  const double aval   = rndm - indxl * delta;
+  const double dum0   = delta * aval;
+  //
+  const int    indx = 1 + 3 * indxl;
+  const double Ui   = dtr[indx];   // u_{i} - value
+  const double Ai   = dtr[indx+1]; // A_{i} - par
+  const double Bi   = dtr[indx+2]; // B_{i} - par
+  const double Uip1 = dtr[indx+3]; // u_{i+1} - value
+
+  const double dum1   = (1. + Ai + Bi) * dum0;
+  const double dum2   = delta * delta + Ai * dum0 + Bi * aval * aval;
+  const double sample = Ui + dum1 / dum2 * (Uip1 - Ui);
+  // transform back u to cos(theta) :
+  // this is the sampled cos(theta) = (2.0*para*sample)/(1.0-sample+para)
+//  const double cost = 1. - (2. * transfpar * sample) / (1. - sample + transfpar);
+  return 1. - (2. * transfpar * sample) / (1. - sample + transfpar);
+}
+
+double* G4HepEmElectronInteractionMSC::GetGSAngularDtr(double scra, double lambdaval, double qval,
+                                                       double &transfpar, G4HepEmRandomEngine* rnge, G4HepEmGSTableData* gsTable) {
+  double* dtr  = nullptr;
+  // isotropic cost above gQMAX2 (i.e. dtr stays nullptr)
+  if (qval > gsTable->fQMAX2) return dtr;
+
+  int lamIndx = -1; // lambda value index
+  int qIndx   = -1; // lambda value index
+  // init to second grid Q values
+  int numQVal    = gsTable->fQNUM2;
+  double minQVal = gsTable->fQMIN2;
+  double invDelQ = gsTable->fInvDeltaQ2;
+  double pIndxH  = 0.; // probability of taking higher index
+  // check if first or second grid needs to be used
+  bool first = false;
+  if (qval < minQVal) { // first grid
+    first = true;
+    // protect against qval<fQMIN1
+    if (qval < gsTable->fQMIN1) {
+      qval  = gsTable->fQMIN1;
+      qIndx = 0;
+      // pIndxH = 0.;
+    }
+    // set to first grid Q values
+    numQVal = gsTable->fQNUM1;
+    minQVal = gsTable->fQMIN1;
+    invDelQ = gsTable->fInvDeltaQ1;
+  }
+  // make sure that lambda = s/lambda_el is in [gLAMBMIN,gLAMBMAX)
+  // lambda<gLAMBMIN=1 is already handeled before so lambda>= gLAMBMIN for sure
+  if (lambdaval >= gsTable->fLAMBMAX) {
+    lambdaval = gsTable->fLAMBMAX - 1.e-8;
+    lamIndx   = gsTable->fLAMBNUM - 1;
+  }
+  const double lLambda = std::log(lambdaval);
+  //
+  // determine lower lambda (=s/lambda_el) index: linear interp. on log(lambda) scale
+  if (lamIndx < 0) {
+    pIndxH  = (lLambda - gsTable->fLogLambda0) * gsTable->fInvLogDeltaLambda;
+    lamIndx = (int)(pIndxH);    // lower index of the lambda bin
+    pIndxH  = pIndxH - lamIndx; // probability of taking the higher index distribution
+    if (rnge->flat() < pIndxH) {
+      ++lamIndx;
+    }
+  }
+  //
+  // determine lower Q (=s/lambda_el G1) index: linear interp. on Q
+  if (qIndx < 0) {
+    pIndxH = (qval - minQVal) * invDelQ;
+    qIndx  = (int)(pIndxH); // lower index of the Q bin
+    pIndxH = pIndxH - qIndx;
+    if (rnge->flat() < pIndxH) {
+      ++qIndx;
+    }
+  }
+  // set indx
+  const int indx = lamIndx * numQVal + qIndx;
+  if (first) {
+    const int is = gsTable->fDtrDataStarts1[indx];
+    dtr = &(gsTable->fGSDtrData1[is]);
+  } else {
+    const int is = gsTable->fDtrDataStarts2[indx];
+    dtr = &(gsTable->fGSDtrData2[is]);
+  }
+  dtr = (dtr[0] == 0) ? nullptr : dtr;
+  // dtr might be nullptr that indicates isotropic cot distribution because:
+  // - if the selected lamIndx, qIndx correspond to L(=s/lambda_el) and Q(=s/lambda_el G1) such that G1(=Q/L) > 1
+  //   G1 should always be < 1 and if G1 is ~1 -> the dtr is isotropic (this can only happen in case of the 2. grid)
+  //
+  // compute the transformation parameter
+  if (lambdaval > 10.0) {
+    transfpar = 0.5 * (-2.77164 + lLambda * (2.94874 - lLambda * (0.1535754 - lLambda * 0.00552888)));
+  } else {
+    transfpar = 0.5 * (1.347 + lLambda * (0.209364 - lLambda * (0.45525 - lLambda * (0.50142 - lLambda * 0.081234))));
+  }
+  transfpar *= (lambdaval + 4.0) * scra;
+  return dtr;
+}

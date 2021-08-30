@@ -4,6 +4,7 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmParameters.hh"
 #include "G4HepEmTLData.hh"
+#include "G4HepEmRandomEngine.hh"
 
 #include "G4HepEmConstants.hh"
 #include "G4HepEmMatCutData.hh"
@@ -15,12 +16,16 @@
 #include "G4HepEmRunUtils.hh"
 #include "G4HepEmTrack.hh"
 #include "G4HepEmElectronTrack.hh"
+#include "G4HepEmMSCTrackData.hh"
 #include "G4HepEmGammaTrack.hh"
 #include "G4HepEmElectronInteractionIoni.hh"
 #include "G4HepEmElectronInteractionBrem.hh"
+#include "G4HepEmElectronInteractionMSC.hh"
 #include "G4HepEmPositronInteractionAnnihilation.hh"
 
 // tlData GetPrimaryElectronTrack needs to be set needs to be set based on the G4Track;
+
+//#define NOMSC
 
 
 // Note: pStepLength will be set here i.e. this is the first access to it that
@@ -34,10 +39,10 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
       theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
     }
   }
-  HowFar(hepEmData, hepEmPars, theElTrack);
+  HowFar(hepEmData, hepEmPars, theElTrack, tlData->GetRNGEngine());
 }
 
-void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge) {
   int indxWinnerProcess = -1;  // init to continous
   // === 1. Continuous energy loss limit
   double pStepLength    = kALargeValue;
@@ -78,20 +83,61 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
     theTrack->SetMFP(mfp, ip);
     // sample the proposed step length
     const double dStepLimit = mfp*theTrack->GetNumIALeft(ip);
-//    std::cout << " ip = " << ip << " mxsec = " << mxsec << " dStepLimit = " << dStepLimit << std::endl;
     if (dStepLimit<pStepLength) {
       pStepLength = dStepLimit;
       indxWinnerProcess = ip;
     }
   }
   //
-  // Now MSC should be called to see if ot limits the step
+  // Now MSC is called to see:
+  // - if it limits the (true, i.e. physical) step length further
+  // Then we perform the physical --> geometric step length conversion here:
+  //  - it provides the projection of the transport vector along the original
+  //    direction.
+  // Note, this later also part of the MSC model and might also limit the true
+  // step length further (see my note inside ConvertTrueToGeometricLength though).
+  // Therefore, the check if MSC limited the step must be done after
+  // the physical -->  geometric (i.e. true to geom.) conversion.
   //
+#ifndef NOMSC
+  G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
+  // init some mscData for the case if we skipp calling msc due to very small step
+  mscData->fTrueStepLength      = pStepLength;
+  mscData->fZPathLength         = pStepLength;
+  mscData->fIsActive            = false;
+  mscData->SetDisplacement(0., 0., 0.);
+  mscData->SetNewDirection(0., 0., 1.);
+  // no msc in case of very small steps
+  const double kGeomMinLength = 5.E-8; // 0.05 [nm]
+  if (pStepLength > kGeomMinLength && theEkin > 1.0E-3) {
+    mscData->fIsActive = true;
+    G4HepEmElectronInteractionMSC::StepLimit(hepEmData, hepEmPars, mscData, pStepLength, theEkin, theLEkin,
+                     theIMC, range, theTrack->GetSafety(), theTrack->GetOnBoundary(), isElectron, rnge);
+    // If msc limited the true step length, then the G4HepEmMSCTrackData::fTrueStepLength member of
+    // the input electron track is < pStepLengt. Otherwise its = pStepLengt.
+    // Call the True --> Geometric conversion since that might limits further the true step Length:
+    //   - convert the physical step length to geometrical one. The result will be
+    //     written into mscData::fZPathLength.
+    ConvertTrueToGeometricLength(hepEmData, mscData, theEkin, range, theIMC, isElectron);
+    // check now if msc limited the step:
+    const double mscTruStepLength = mscData->fTrueStepLength;
+    if (mscTruStepLength < pStepLength) {
+       // indicate continuous step limit as msc limited the step and set the new pStepLengt
+      indxWinnerProcess = -1;
+      pStepLength = mscTruStepLength;
+    }
+  }
+  // set geometrical step length (protect agains wrong conversion, i.e. if gL > pL)
+  theTrack->SetGStepLength(G4HepEmMin(mscData->fZPathLength, pStepLength));
+
+  // finally set the true (physical) step length and the winner process index of this primary track
   theElTrack->SetPStepLength(pStepLength);
-  theTrack->SetGStepLength(pStepLength);
   theTrack->SetWinnerProcessIndex(indxWinnerProcess);
-  //
-  //
+#else
+  theElTrack->SetPStepLength(pStepLength);
+  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
+  theTrack->SetGStepLength(pStepLength);
+#endif
 }
 
 // Here I can have my own transportation to be called BUT at the moment I cannot
@@ -99,19 +145,81 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
 
 // Note: energy deposit will be set here i.e. this is the first access to it that
 //       will clear the previous step value.
-bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
+bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge) {
   //
-  // === 1. MSC should be invoked to obtain the physics step lenght
+  // === 1. MSC should be invoked to obtain the physics step Length
   G4HepEmTrack*   theTrack = theElTrack->GetTrack();
+  // call MSC::ConvertGeometricToTrueLength that will provide the true (i.e. physical)
+  // step length in the G4HepEmMSCTrackData::fTrueStepLength member.
+  // NOTE: in case the step was NOT limited by boundary, we know the true step length since
+  //       the particle went as far as we expected.
+  const bool        isElectron = (theTrack->GetCharge() < 0.0);
+  const double        theEkin  = theTrack->GetEKin();
+  const double        theRange = theElTrack->GetRange();
+  G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
+
+#ifndef NOMSC
   const double gStepLength = theTrack->GetGStepLength();
-  const double pStepLength = gStepLength;
-  // P-STEP LENGTH SHOUDL BE SET IN EL-TRACK
+  double pStepLength = gStepLength;
+  bool isScattering = false;
+  if (mscData->fIsActive) {
+    pStepLength = mscData->fTrueStepLength;
+    isScattering = true;
+    // if we hit boundary or stopped before we wanted for any reasons: convert geom. -> true
+    if (gStepLength < mscData->fZPathLength) {
+      // the converted geom --> true step Length will be written into mscData::fTrueStepLength
+      ConvertGeometricToTrueLength(mscData, theRange, gStepLength);
+      // protect against wront true --> geom --> true conevrsion: physical step
+      // cannot be longer than before converted to geometrical
+      pStepLength = G4HepEmMin(pStepLength, mscData->fTrueStepLength);
+    }
+    // optimisation: do not sample msc and dispalcement in case of last (rangeing out) or short steps
+    const double kGeomMinLength = 5.E-8; // 0.05 [nm]
+    if (pStepLength <= kGeomMinLength || theRange <= pStepLength) {
+      isScattering = false;
+    }
+  }
+
+/*
+  if (isScattering) {
+    const G4HepEmElectronData* elData0 = isElectron
+                                        ? hepEmData->fTheElectronData
+                                        : hepEmData->fThePositronData;
+
+    const double postStepRange = theRange - pStepLength;
+    double eloss0 = theEkin - GetInvRange(elData0, theTrack->GetMCIndex(), postStepRange);
+
+    G4HepEmElectronInteractionMSC::SampleScattering(hepEmData, mscData, pStepLength, theEkin, eloss0, theTrack->GetMCIndex(), isElectron, rnge);
+    // NOTE: displacement will be applied in the caller where we have access to the required Geant4 functionality
+    //       (and if its length is longer than a small minimal length and we are not ended up on boundary)
+    //
+    // rotate direction and displacement vectors (if any) and update new direction of the primary
+    if (!(mscData->fIsNoScatteringInMSC)) {
+      RotateToReferenceFrame(mscData->fDirection, theTrack->GetDirection());
+      if (!(mscData->fIsNoDisplace)) {
+        RotateToReferenceFrame(mscData->fDisplacement, theTrack->GetDirection());
+      }
+      // upadte new direction
+      theTrack->SetDirection(mscData->fDirection);
+    }
+  }
+*/
+#else
+    double pStepLength = theTrack->GetGStepLength();
+#endif
+  // set the results of the geom ---> true in the primary e- etrack
+  theElTrack->SetPStepLength(pStepLength);
+  //
   if (pStepLength<=0.0) {
     return false;
   }
+  // compute the energy loss first based on the new step length: it will be needed in the
+  // MSC scatteirng and displacement computation here as well (that is done only if not
+  // the last step with the particle).
+  // But update the number of interaction length left before.
   //
   // === 2. The `number-of-interaction-left` needs to be updated based on the actual
-  //        physical step lenght
+  //        physical step Length
   double*    numInterALeft = theTrack->GetNumIALeft();
   double*       preStepMFP = theTrack->GetMFP();
   numInterALeft[0] -= pStepLength/preStepMFP[0];
@@ -119,9 +227,6 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   numInterALeft[2] -= pStepLength/preStepMFP[2];
   //
   // === 3. Continuous energy loss needs to be computed
-  const bool isElectron = (theTrack->GetCharge() < 0.0);
-  const double theRange = theElTrack->GetRange();
-  const double theEkin  = theTrack->GetEKin();
   // 3./1. stop tracking when reached the end (i.e. it has been ranged out by the limit)
   // @TODO: actually the tracking cut is around 1 keV and the min-table energy is 100 eV so the second should never
   //        under standard EM constructor configurations
@@ -135,8 +240,9 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   const G4HepEmElectronData* elData = isElectron
                                       ? hepEmData->fTheElectronData
                                       : hepEmData->fThePositronData;
-  int      theIMC = theTrack->GetMCIndex();
-  double theLEkin = theTrack->GetLogEKin();
+   // NOTE: this is the pre-step IMC !!!
+  const int      theIMC = theTrack->GetMCIndex();
+  const double theLEkin = theTrack->GetLogEKin();
   double eloss = pStepLength*GetRestDEDX(elData, theIMC, theEkin, theLEkin);
   // 3/2. use integral if linear energy loss is over the limit fraction
   if (eloss > theEkin*hepEmPars->fLinELossLimit) {
@@ -156,7 +262,32 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   eloss = G4HepEmMax(eloss, 0.0);
   theTrack->SetEKin(finalEkin);
   theTrack->SetEnergyDeposit(eloss);
+
+#ifndef NOMSC
+  //
+  // Complete here the MSC part by computing the net angular deflection and dispalcement
+  //
+  // Smaple scattering in MSC and compute the new direction and displacement vectors (if any)
+  // The new direction and dispalcement vectors, proposed by MSC, are given in mscData::fDirection and
+  // mscData::fDisplacement.
+  if (isScattering) {
+    G4HepEmElectronInteractionMSC::SampleScattering(hepEmData, mscData, pStepLength, theEkin, eloss, theIMC, isElectron, rnge);
+    // NOTE: displacement will be applied in the caller where we have access to the required Geant4 functionality
+    //       (and if its length is longer than a small minimal length and we are not ended up on boundary)
+    //
+    // rotate direction and displacement vectors (if any) and update new direction of the primary
+    if (!(mscData->fIsNoScatteringInMSC)) {
+      RotateToReferenceFrame(mscData->fDirection, theTrack->GetDirection());
+      if (!(mscData->fIsNoDisplace)) {
+        RotateToReferenceFrame(mscData->fDisplacement, theTrack->GetDirection());
+      }
+      // upadte new direction
+      theTrack->SetDirection(mscData->fDirection);
+    }
+  }
+#endif
   return false;
+
 }
 
 bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand) {
@@ -180,7 +311,9 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   G4HepEmTrack*   theTrack = theElTrack->GetTrack();
   const bool isElectron = (theTrack->GetCharge() < 0.0);
 
-  bool stopped = PerformContinuous(hepEmData, hepEmPars, theElTrack);
+  if (theTrack->GetGStepLength()<=0.) return;
+
+  bool stopped = PerformContinuous(hepEmData, hepEmPars, theElTrack, tlData->GetRNGEngine());
   if (stopped) {
     // call annihilation for e+ !!!
     if (!isElectron) {
@@ -309,4 +442,100 @@ double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, con
 double G4HepEmElectronManager::ComputeMacXsecAnnihilationForStepping(const double ekin, const double electronDensity) {
   // compute mxsec for the reduced energy (assuming that the mac-xsec decreasing with ekin)
   return ComputeMacXsecAnnihilation(0.8*ekin, electronDensity);
+}
+
+void G4HepEmElectronManager::ConvertTrueToGeometricLength(const G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData,
+                                                         double ekin, double range, int imc, bool iselectron) {
+  mscData->fPar1 = -1.;
+  mscData->fPar2 =  0.;
+  mscData->fPar3 =  0.;
+  // NOTE: in theory, the continuous e-loss limits the step length such its at most the range.
+  //       So this line below should never have any effects! Since this is the only part that
+  //       might limits the true step length in the true --> geom conversion, we might drop this
+  //       that makes possible the decision if MSC limited the step even before this conversion.
+  mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, range);
+  //  do the true -> geom transformation
+  mscData->fZPathLength = mscData->fTrueStepLength;
+  // z = t for very small true-path-length
+  const double kTlimitMinfix2 = 1.0E-6;
+  if (mscData->fTrueStepLength < kTlimitMinfix2) {
+    return;
+  }
+  //
+  const double kTauSmall = 1.0e-16;
+  const double kDtrl     = 0.05;
+  const double tau   = mscData->fTrueStepLength / mscData->fLambtr1;
+  if (tau < kTauSmall) {
+    mscData->fZPathLength = G4HepEmMin(mscData->fTrueStepLength, mscData->fLambtr1);
+  } else if (mscData->fTrueStepLength < range * kDtrl) {
+    const double kTauLim = 1.0e-6;
+    if (tau < kTauLim) {
+      mscData->fZPathLength = mscData->fTrueStepLength * (1. - 0.5 * tau);
+    } else {
+      mscData->fZPathLength = mscData->fLambtr1 * (1. - std::exp(-tau));
+    }
+  } else if (ekin < kElectronMassC2 || mscData->fTrueStepLength == range) {
+    mscData->fPar1 = 1. / range;
+    mscData->fPar2 = 1. / (mscData->fPar1 * mscData->fLambtr1);
+    mscData->fPar3 = 1. + mscData->fPar2;
+    if (mscData->fTrueStepLength < range) {
+      mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3) *
+                             (1. - std::pow(1. - mscData->fPar1 * mscData->fTrueStepLength, mscData->fPar3));
+    } else {
+      mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3);
+    }
+  } else {
+    const double rfin = G4HepEmMax(range - mscData->fTrueStepLength, 0.01 * range);
+    const G4HepEmElectronData* elData = iselectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
+    const double t1   = GetInvRange(elData, imc, rfin);
+    const int    imat = (hepEmData->fTheMatCutData->fMatCutData[imc]).fHepEmMatIndex;
+    double dum0, dum1, dum2, dum3, dum4;
+    double lambda1;
+    G4HepEmElectronInteractionMSC::ComputeParameters(imat, t1, std::log(t1), dum0, lambda1,
+                                                     dum1, dum2, dum3, dum4, hepEmData->fTheGSTableData, iselectron);
+    mscData->fPar1 = (mscData->fLambtr1 - lambda1) / (mscData->fLambtr1 * mscData->fTrueStepLength); // alpha
+    mscData->fPar2 = 1. / (mscData->fPar1 * mscData->fLambtr1);
+    mscData->fPar3 = 1. + mscData->fPar2;
+    mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3) *
+                           (1. - std::pow(1. - mscData->fPar1 * mscData->fTrueStepLength, mscData->fPar3));
+  }
+  mscData->fZPathLength = G4HepEmMin(mscData->fZPathLength, mscData->fLambtr1);
+}
+
+void G4HepEmElectronManager::ConvertGeometricToTrueLength(G4HepEmMSCTrackData* mscData, double range, double gStepToConvert) {
+  // step was not defined by transportation: i.e. physics so we know everything,
+  // i.e. fTrueStepLength is known because the particle went as far as we expected
+  // NOTE: this is done directly now in the caller
+//  if (!onBoundary) {
+//    return;
+//  }
+//   return;
+  // else: convert geom -> true by using the mean value
+  // get the geometrical step length
+  mscData->fZPathLength = gStepToConvert;
+  // t = z for very small step
+  const double kTLimitMinfix2 = 1.0E-6; // 1 [nm]
+  if (gStepToConvert < kTLimitMinfix2) {
+    mscData->fTrueStepLength = gStepToConvert;
+  } else {
+    // recalculation
+    const double kTauSmall = 1.0e-16;
+    double tlength = gStepToConvert;
+    if (gStepToConvert > mscData->fLambtr1 * kTauSmall) {
+      if (mscData->fPar1 < 0.) {
+        tlength = -mscData->fLambtr1 * std::log(1. - gStepToConvert / mscData->fLambtr1);
+      } else {
+        const double dum = mscData->fPar1 * mscData->fPar3 * gStepToConvert;
+        if (dum < 1.) {
+          tlength = (1. - std::pow(1. - dum, 1. / mscData->fPar3)) / mscData->fPar1;
+        } else {
+          tlength = range;
+        }
+      }
+      if (tlength < gStepToConvert || tlength > mscData->fTrueStepLength) {
+        tlength = gStepToConvert;
+      }
+    }
+    mscData->fTrueStepLength = tlength;
+  }
 }

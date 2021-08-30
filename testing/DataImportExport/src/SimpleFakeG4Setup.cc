@@ -18,6 +18,8 @@
 #include "G4ProductionCuts.hh"
 #include "G4ProductionCutsTable.hh"
 
+#include "G4TransportationManager.hh"
+
 void SimpleFakeG4Setup(double secondaryProductionThreshold)
 {
   // This largely follows G4HepEM's testing methods
@@ -42,6 +44,9 @@ void SimpleFakeG4Setup(double secondaryProductionThreshold)
   auto* worldLogical = new G4LogicalVolume(worldBox, g4Galactic, "World");
   auto* worldPhysical =
     new G4PVPlacement(0, G4ThreeVector(), worldLogical, "World", 0, false, 0);
+
+  // set the world volume for the GetTransportationManager::G4Navigator
+  G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->SetWorldVolume(worldPhysical);
 
   // Lead "Outer Absorber"
   auto* outerAbsBox = new G4Box("OuterAbsorber", outerAbsHalfLength,
