@@ -10,7 +10,7 @@
 class  G4HepEmRunManager;
 class  G4HepEmRandomEngine;
 
-class  G4ParticleChangeForLoss;
+class  G4ParticleChange;
 
 
 /**
@@ -103,7 +103,7 @@ private:
   G4HepEmRunManager*       fTheG4HepEmRunManager;
   G4HepEmRandomEngine*     fTheG4HepEmRandomEngine;
 
-  G4ParticleChangeForLoss* fParticleChangeForLoss;
+  G4ParticleChange* fParticleChange;
 
 };
 

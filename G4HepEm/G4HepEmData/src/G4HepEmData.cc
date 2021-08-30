@@ -8,6 +8,7 @@
 
 #include "G4HepEmElectronData.hh"
 #include "G4HepEmSBTableData.hh"
+#include "G4HepEmGSTableData.hh"
 
 #include "G4HepEmGammaData.hh"
 
@@ -24,6 +25,8 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
 
   theHepEmData->fTheSBTableData      = nullptr;
 
+  theHepEmData->fTheGSTableData      = nullptr;
+
   theHepEmData->fTheGammaData        = nullptr;
 
 #ifdef G4HepEm_CUDA_BUILD
@@ -35,6 +38,8 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
   theHepEmData->fThePositronData_gpu = nullptr;
 
   theHepEmData->fTheSBTableData_gpu  = nullptr;
+
+  theHepEmData->fTheGSTableData_gpu  = nullptr;
 
   theHepEmData->fTheGammaData_gpu    = nullptr;
 #endif // G4HepEm_CUDA_BUILD
@@ -55,6 +60,8 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
 
   FreeSBTableData  ( &(theHepEmData->fTheSBTableData)  );
 
+  FreeGSTableData  ( &(theHepEmData->fTheGSTableData)  );
+
   FreeGammaData    ( &(theHepEmData->fTheGammaData)  );
 
 #ifdef G4HepEm_CUDA_BUILD
@@ -66,6 +73,8 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
   FreeElectronDataOnDevice ( &(theHepEmData->fThePositronData_gpu) );
 
   FreeSBTableDataOnDevice  ( &(theHepEmData->fTheSBTableData_gpu)  );
+
+  FreeGSTableDataOnDevice  ( &(theHepEmData->fTheGSTableData_gpu)  );
 
   FreeGammaDataOnDevice    ( &(theHepEmData->fTheGammaData_gpu)  );
 #endif // G4HepEm_CUDA_BUILD
@@ -96,7 +105,10 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
   // 6. Copy SB-brem sampling tables to the GPU
   CopySBTableDataToDevice( onCPU->fTheSBTableData,   &(onCPU->fTheSBTableData_gpu));
 
-  // 7. Copy gamma related data to the GPU
+  // 7. Copy GS-MSC sampling tables to the GPU
+  CopyGSTableDataToDevice( onCPU->fTheGSTableData,   &(onCPU->fTheGSTableData_gpu));
+
+  // 8. Copy gamma related data to the GPU
   CopyGammaDataToDevice( onCPU->fTheGammaData,     &(onCPU->fTheGammaData_gpu));
 
 }

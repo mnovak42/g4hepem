@@ -6,7 +6,8 @@
 //#include "CLHEP/Random/RandomEngine.h"
 
 G4HepEmTLData::G4HepEmTLData() {
-  fRNGEngine = nullptr;
+  fRNGEngine    = nullptr;
+  fSafetyHelper = nullptr;
   fElectronSecondaryTracks.resize(2);
   fNumSecondaryElectronTracks = 0;
 
@@ -17,6 +18,5 @@ G4HepEmTLData::G4HepEmTLData() {
 
 
 G4HepEmTLData::~G4HepEmTLData() {
-  // fRNGEngine is not own by this structure
+  // fRNGEngine is not own by this structure neither safety helper
 }
-
