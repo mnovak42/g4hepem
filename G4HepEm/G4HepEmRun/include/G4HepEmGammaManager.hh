@@ -46,6 +46,9 @@ public:
   static double GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin,
                            const double lekin, const int iprocess);
 
+  G4HepEmHostDevice
+  static double GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin);
+
 };
 
 #endif // G4HepEmGammaManager_HH

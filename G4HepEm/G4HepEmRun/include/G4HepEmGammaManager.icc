@@ -47,10 +47,7 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
   // conversion, compton and photoelectric
   mxSecs[0] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 0);
   mxSecs[1] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 1);
-  // NOTE: there is no-photoelectric at the moment!
-  //       But photons with an energy below 250.0 [keV] are absorbed by setting
-  //       the (fake absorption) process macroscopic cross section to a large value.
-  mxSecs[2] = (theEkin > 0.25) ? 0.0 : kALargeValue;
+  mxSecs[2] = GetMacXSecPE(hepEmData, theMatIndx, theEkin);
   // compute mfp and see if we need to sample the `number-of-interaction-left`
   // before we use it to get the current discrete proposed step length
   int indxWinnerProcess = -1;             // init to nothing
@@ -105,7 +102,7 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
     case 1: // invoke Compton scattering of gamma:
             G4HepEmGammaInteractionCompton::Perform(tlData, hepEmData);
             break;
-    case 2: // invoke photoelectric process: pure absorption at the moment (aktive if E_g < 250 keV)
+    case 2: // invoke photoelectric process:
             G4HepEmGammaInteractionPhotoelectric::Perform(tlData, hepEmData);
             break;
 
@@ -141,4 +138,17 @@ double  G4HepEmGammaManager::GetMacXSec(const struct G4HepEmGammaData* gmData, c
     default:
             return 0.0;
   }
+}
+
+double G4HepEmGammaManager::GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin) {
+  const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[imat];
+  if (ekin <= matData->fSandia1Energy) {
+    return kALargeValue;
+  }
+  const double* sandiaCof = &matData->fSandia1Cof[0];
+  if (ekin > matData->fSandia2Energy) {
+    sandiaCof = &matData->fSandia2Cof[0];
+  }
+  const double inv = 1 / ekin;
+  return inv * (sandiaCof[0] + inv * (sandiaCof[1] + inv * (sandiaCof[2] + inv * sandiaCof[3])));
 }

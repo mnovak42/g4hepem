@@ -65,8 +65,7 @@ void PhysListHepEm::ConstructProcess() {
 
     if (particleName == "gamma") {
 
-      // Add G4HepEm process to gamma: includes Conversion, Compton and an simple
-      // absorption when E_g < 250 [keV].
+      // Add G4HepEm process to gamma: includes Conversion, Compton and photoelectric effect.
       particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
 

@@ -33,7 +33,7 @@
 
 #include "G4ComptonScattering.hh"
 #include "G4GammaConversion.hh"
-#include "GammaAbsorption.hh"
+#include "G4PhotoElectricEffect.hh"
 
 #include "G4eMultipleScattering.hh"
 #include "G4GoudsmitSaundersonMscModel.hh"
@@ -90,19 +90,20 @@ void PhysListG4Em::ConstructProcess()
   // Add gamma EM processes
   particle = G4Gamma::Gamma();
 
-  ph->RegisterProcess(new G4ComptonScattering(), particle);
+  ph->RegisterProcess(new G4PhotoElectricEffect, particle);
+  ph->RegisterProcess(new G4ComptonScattering, particle);
   ph->RegisterProcess(new G4GammaConversion, particle);
-  ph->RegisterProcess(new GammaAbsorption, particle);
+
   //
   // Add e- EM processes
   particle = G4Electron::Electron();
 
   G4eMultipleScattering*         msc = new G4eMultipleScattering;
-  G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel();
+  G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel;
   msc->SetEmModel(msc1);
-  ph->RegisterProcess(msc,particle);
-  ph->RegisterProcess(new G4eIonisation(), particle);
-  ph->RegisterProcess(new G4eBremsstrahlung(), particle);
+  ph->RegisterProcess(msc, particle);
+  ph->RegisterProcess(new G4eIonisation, particle);
+  ph->RegisterProcess(new G4eBremsstrahlung, particle);
 
   //
   // Add e+ EM processes
@@ -110,12 +111,11 @@ void PhysListG4Em::ConstructProcess()
   particle = G4Positron::Positron();
 
   msc = new G4eMultipleScattering;
-  msc1 = new G4GoudsmitSaundersonMscModel();
-
+  msc1 = new G4GoudsmitSaundersonMscModel;
   msc->SetEmModel(msc1);
-  ph->RegisterProcess(msc,particle);
-  ph->RegisterProcess(new G4eIonisation(), particle);
-  ph->RegisterProcess(new G4eBremsstrahlung(), particle);
-  ph->RegisterProcess(new G4eplusAnnihilation(), particle);
+  ph->RegisterProcess(msc, particle);
+  ph->RegisterProcess(new G4eIonisation, particle);
+  ph->RegisterProcess(new G4eBremsstrahlung, particle);
+  ph->RegisterProcess(new G4eplusAnnihilation, particle);
 
 }

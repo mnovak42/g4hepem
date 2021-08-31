@@ -219,9 +219,11 @@ public:
 
     fMFPs[0]      = -1.0;
     fMFPs[1]      = -1.0;
+    fMFPs[2]      = -1.0;
 
     fNumIALeft[0] = -1.0;
     fNumIALeft[1] = -1.0;
+    fNumIALeft[2] = -1.0;
 
     fID           =  -1;
     fIDParent     =  -1;

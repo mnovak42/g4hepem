@@ -10,6 +10,7 @@
 
 // g4 includes
 #include "G4ProductionCutsTable.hh"
+#include "G4SandiaTable.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4Material.hh"
 #include "G4Element.hh"
@@ -107,11 +108,26 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fDensityCorFactor        = 4.0*CLHEP::pi*CLHEP::classic_electr_radius*CLHEP::electron_Compton_length*CLHEP::electron_Compton_length*mat->GetElectronDensity();
       matData.fElectronDensity         = mat->GetElectronDensity();
       matData.fRadiationLength         = mat->GetRadlen();
+      // Copy last two intervals of Sandia coefficients.
+      G4SandiaTable* sandia  = mat->GetSandiaTable();
+      int nbOfIntervals      = sandia->GetMatNbOfIntervals();
+      matData.fSandia1Energy = sandia->GetSandiaCofForMaterial(nbOfIntervals - 2, 0);
+      matData.fSandia2Energy = sandia->GetSandiaCofForMaterial(nbOfIntervals - 1, 0);
+      for (int i = 0; i < 4; i++) {
+        // i + 1 because the first entry is the energy (which we don't care about).
+        matData.fSandia1Cof[i] = sandia->GetSandiaCofForMaterial(nbOfIntervals - 2, i + 1);
+        matData.fSandia2Cof[i] = sandia->GetSandiaCofForMaterial(nbOfIntervals - 1, i + 1);
+      }
       //
+      double maxBinding = 0;
       for (size_t ie=0; ie<numOfElement; ++ie) {
         G4int izet = ((*elmVec)[ie])->GetZasInt();
         matData.fElementVect[ie] = izet;
         matData.fNumOfAtomsPerVolumeVect[ie] = nAtomPerVolVec[ie];
+        double maxShell = ((*elmVec)[ie])->GetAtomicShell(0);
+        if (maxShell > maxBinding) {
+          maxBinding = maxShell;
+        }
         // fill element data as well if haven't done yet
         izet = std::min ( izet, (G4int)hepEmData->fTheElementData->fMaxZet );
         struct G4HepEmElemData& elData = hepEmData->fTheElementData->fElementData[izet];
@@ -134,6 +150,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
           elData.fILVarS1      = 1./std::log(varS1);
         }
       }
+      matData.fMaxBinding = maxBinding;
       //
       theUsedG4MatIndices[matIndx] = numUsedG4Mat;
       mccData.fHepEmMatIndex = theUsedG4MatIndices[matIndx];
