@@ -71,16 +71,9 @@ void     G4HepEmProcess::StartTracking(G4Track* track) {
     // reset number of interaction length left to -1
   const G4ParticleDefinition* partDef = track->GetParticleDefinition();
   if (std::abs(partDef->GetPDGEncoding())==11) {          // e- and e+
-    double* numInterALeft = fTheG4HepEmRunManager->GetTheTLData()->GetPrimaryElectronTrack()->GetTrack()->GetNumIALeft();
-    numInterALeft[0] = -1.0;
-    numInterALeft[1] = -1.0;
-    numInterALeft[2] = -1.0;
+    fTheG4HepEmRunManager->GetTheTLData()->GetPrimaryElectronTrack()->ReSet();
   } else if (partDef->GetPDGEncoding()==22) {   // gamma
-    double* numInterALeft = fTheG4HepEmRunManager->GetTheTLData()->GetPrimaryGammaTrack()->GetTrack()->GetNumIALeft();
-    numInterALeft[0] = -1.0;
-    numInterALeft[1] = -1.0;
-    numInterALeft[2] = -1.0;
-//    numInterALeft[3] = -1.0;
+    fTheG4HepEmRunManager->GetTheTLData()->GetPrimaryGammaTrack()->ReSet();
   }
 }
 
