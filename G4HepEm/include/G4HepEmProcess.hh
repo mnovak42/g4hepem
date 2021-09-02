@@ -3,8 +3,6 @@
 #ifndef G4HepEmProcess_HH
 #define G4HepEmProcess_HH
 
-#include <iostream>
-
 #include "G4VProcess.hh"
 
 class  G4HepEmRunManager;
@@ -12,6 +10,7 @@ class  G4HepEmRandomEngine;
 
 class  G4ParticleChange;
 
+#include <vector>
 
 /**
  * @file    G4HepEmProcess.hh
@@ -60,6 +59,7 @@ public:
    // including the process-global and process local inits.
    void BuildPhysicsTable(const G4ParticleDefinition&) override;
 
+   void PreparePhysicsTable(const G4ParticleDefinition&) override;
 
    // Interface method called by G4 tracking before a new track (primary of popped
    // up from the secondary track stack) starts to be inserted into the stepping loop
@@ -105,6 +105,10 @@ private:
 
   G4ParticleChange* fParticleChange;
 
+  const std::vector<G4double>* theCutsGamma = nullptr;
+  const std::vector<G4double>* theCutsElectron = nullptr;
+  const std::vector<G4double>* theCutsPositron = nullptr;
+  G4bool applyCuts = false;
 };
 
 #endif
