@@ -309,6 +309,10 @@ bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTr
 void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
   G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack*   theTrack = theElTrack->GetTrack();
+  // Set default values to cover all early returns due to protection against
+  // zero step lengths, conversion errors, etc.
+  theTrack->SetEnergyDeposit(0);
+  theElTrack->SetPStepLength(theTrack->GetGStepLength());
   const bool isElectron = (theTrack->GetCharge() < 0.0);
 
   if (theTrack->GetGStepLength()<=0.) return;
