@@ -92,7 +92,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
       |                | Annihilation    |:math:`e^+-e^- \to 2\gamma`| ``G4eplusAnnihilation``            | ``G4HepEmPositronInteractionAnnihilation``    |0 [#]_ - 100 TeV          |
       +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |:math:`\gamma`  | Photoelectric   | Biggs, Lighthill          | ``G4PEEffectFluoModel``            |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |0 [#]_ - 100 TeV          |
+      |:math:`\gamma`  | Photoelectric   | Livermore                 | ``G4LivermorePhotoElectricModel``  |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |0 [#]_ - 100 TeV          |
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
       |                | Compton scat.   | Klein - Nishina [#]_      | ``G4KleinNishinaCompton``          | ``G4HepEmGammaInteractionCompton``            |100 eV - 100 TeV          |
       |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
@@ -118,8 +118,8 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
 
    .. [#]  i.e. annihilation at rest.
 
-   .. [#]  Simplified model taking into accont only the two highest intervals of
-      ``G4SandiaTable``.
+   .. [#]  A simplified version of the ``G4PEEffectFluoModel`` has been implemented in ``G4HepEm`` by taking into account
+       only the two highest intervals of ``G4SandiaTable``.
 
    .. [#]  Primary :math:`\gamma` energies below the highest binding energy are
       absorbed without generating a secondary photoelectron.
@@ -165,7 +165,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
                                    \cline{2-6}
                                    &  Annihilation                    & $e^+-e^-\to 2\gamma$       & \texttt{\scriptsize G4eplusAnnihilation}        &  \texttt{\scriptsize PositronInteractionAnnihilation} & 0\footnotemark - 100 TeV \\
        \hline
-       \multirow{4}{*}{$\gamma$}   &  Photoelectric                   & Biggs, Lighthill           & \texttt{\scriptsize G4PEEffectFluoModel}        &  \texttt{\scriptsize GammaInteractionPhotoelectric}\footnotemark & 0\footnotemark - 100 TeV  \\
+       \multirow{4}{*}{$\gamma$}   &  Photoelectric                   & Livermore                  & \texttt{\scriptsize G4LivermorePhotoElectricModel}        &  \texttt{\scriptsize GammaInteractionPhotoelectric}\footnotemark & 0\footnotemark - 100 TeV  \\
                                    \cline{2-6}
                                    &  Compton scat.                   & Klein - Nishina\footnotemark  & \texttt{\scriptsize G4KleinNishinaCompton}    & \texttt{\scriptsize GammaInteractionCompton}     & 100 eV -   100 TeV        \\
                                    \cline{2-6}
@@ -193,7 +193,8 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
       \addtocounter{footnote}{1}
       \footnotetext{i.e. annihilation at rest.}
       \addtocounter{footnote}{1}
-      \footnotetext{Simplified model taking into accont only the two highest intervals of \texttt{G4SandiaTable}.}
+      \footnotetext{A simplified version of the \texttt{G4PEEffectFluoModel} model has been implemented in \texttt{G4HepEm} by taking into account
+          only the two highest intervals of \texttt{G4SandiaTable}.}
       \addtocounter{footnote}{1}
       \footnotetext{Primary $\gamma$ energies below the highest binding energy are
            absorbed without generating a secondary photoelectron.}
