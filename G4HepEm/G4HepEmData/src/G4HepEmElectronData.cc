@@ -38,6 +38,8 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData)  {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEmElectronData** onDEVICE) {
   if ( !onHOST ) return;
   // clean away previous (if any)
@@ -47,17 +49,13 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   // Create a G4HepEmElectronData structure on the host to store pointers to _d
   // side arrays on the _h side.
   struct G4HepEmElectronData* elDataHTo_d = new G4HepEmElectronData;
-  // get and set number of material-cuts
-  int numHepEmMatCuts = onHOST->fNumMatCuts;
-  elDataHTo_d->fNumMatCuts = numHepEmMatCuts;
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(elDataHTo_d, onHOST, sizeof(G4HepEmElectronData));
   //
   // === ELoss data:
   //
+  const int numHepEmMatCuts = onHOST->fNumMatCuts;
   const int numELossGridData = onHOST->fELossEnergyGridSize;
-  // set non-pointer members  of the host side strcuture
-  elDataHTo_d->fELossEnergyGridSize = numELossGridData;
-  elDataHTo_d->fELossLogMinEkin     = onHOST->fELossLogMinEkin;
-  elDataHTo_d->fELossEILDelta       = onHOST->fELossEILDelta;
   // allocate memory on _d for the ELoss energy grid and all ELoss data and copy
   // them from form _h
   const int numELossData = 5*numELossGridData*numHepEmMatCuts;
@@ -70,7 +68,6 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   //
   // allocate memory for all the macroscopic cross section related data on _d and compy from _h
   const int numResMacXSecs = onHOST->fResMacXSecNumData;
-  elDataHTo_d->fResMacXSecNumData = numResMacXSecs;
   gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fResMacXSecStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
   gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fResMacXSecData),                sizeof( double ) * numResMacXSecs  ) );
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fResMacXSecStartIndexPerMatCut,  onHOST->fResMacXSecStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
@@ -80,7 +77,6 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   //
   // allocate memory for Ionisation related data on the _d and copy form _h
   const int numIoniData = onHOST->fElemSelectorIoniNumData;
-  elDataHTo_d->fElemSelectorIoniNumData = numIoniData;
   if (numIoniData > 0) {
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniData),                sizeof( double ) * numIoniData     ) );
@@ -89,7 +85,6 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   }
   // the same for SB brem
   const int numBremSBData = onHOST->fElemSelectorBremSBNumData;
-  elDataHTo_d->fElemSelectorBremSBNumData = numBremSBData;
   if (numBremSBData > 0) {
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBData),                sizeof( double ) * numBremSBData   ) );
@@ -98,7 +93,6 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   }
   // the same for RB brem
   const int numBremRBData = onHOST->fElemSelectorBremRBNumData;
-  elDataHTo_d->fElemSelectorBremRBNumData = numBremRBData;
   if (numBremRBData > 0) {
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut), sizeof( int )    * numHepEmMatCuts ) );
     gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBData),                sizeof( double ) * numBremRBData   ) );

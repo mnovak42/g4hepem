@@ -27,6 +27,8 @@ void FreeElementData(struct G4HepEmElementData** theElementData) {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyElementDataToGPU(struct G4HepEmElementData* onCPU, struct G4HepEmElementData** onGPU) {
   // clean away previous (if any)
   if ( *onGPU != nullptr) {
@@ -41,7 +43,8 @@ void CopyElementDataToGPU(struct G4HepEmElementData* onCPU, struct G4HepEmElemen
   // `struct G4HepEmElemData* fElementData` array member, then copy to the
   // corresponding structure
   struct G4HepEmElementData* elData_h = new G4HepEmElementData;
-  elData_h->fMaxZet      = onCPU->fMaxZet;
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(elData_h, onCPU, sizeof(G4HepEmElementData));
   elData_h->fElementData = arrayHto_d;
   gpuErrchk ( cudaMalloc ( onGPU, sizeof( struct G4HepEmElementData ) ) );
   gpuErrchk ( cudaMemcpy ( *onGPU, elData_h, sizeof( struct G4HepEmElementData ), cudaMemcpyHostToDevice ) );
