@@ -31,6 +31,8 @@ void FreeGammaData (struct G4HepEmGammaData** theGammaData)  {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaData** onDEVICE) {
   if ( !onHOST ) return;
   // clean away previous (if any)
@@ -40,20 +42,17 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
   // Create a G4HepEmGammaData structure on the host to store pointers to _d
   // side arrays on the _h side.
   struct G4HepEmGammaData* gmDataHTo_d = new G4HepEmGammaData;
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(gmDataHTo_d, onHOST, sizeof(G4HepEmGammaData));
   // get and set number of materials
   int numHepEmMat = onHOST->fNumMaterials;
-  gmDataHTo_d->fNumMaterials    = numHepEmMat;
   // -- go for the conversion related data
   int numConvData = onHOST->fConvEnergyGridSize;
-  gmDataHTo_d->fConvLogMinEkin  = onHOST->fConvLogMinEkin;
-  gmDataHTo_d->fConvEILDelta    = onHOST->fConvEILDelta;
   // allocate memory on _d for the conversion energy grid and copy them form _h
   gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fConvEnergyGrid), sizeof( double ) * numConvData ) );
   gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fConvEnergyGrid,  onHOST->fConvEnergyGrid, sizeof( double ) * numConvData, cudaMemcpyHostToDevice ) );
   // -- go for the Compton related data
   int numCompData = onHOST->fCompEnergyGridSize;
-  gmDataHTo_d->fCompLogMinEkin  = onHOST->fCompLogMinEkin;
-  gmDataHTo_d->fCompEILDelta    = onHOST->fCompEILDelta;
   // allocate memory on _d for the Compton energy grid and copy them form _h
   gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fCompEnergyGrid), sizeof( double ) * numCompData ) );
   gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fCompEnergyGrid,  onHOST->fCompEnergyGrid, sizeof( double ) * numCompData, cudaMemcpyHostToDevice ) );
@@ -66,10 +65,6 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
   int numElSelE   = onHOST->fElemSelectorConvEgridSize;
   int numElSelDat = onHOST->fElemSelectorConvNumData;
   if (numElSelDat > 0) {
-    gmDataHTo_d->fElemSelectorConvEgridSize   = numElSelE;
-    gmDataHTo_d->fElemSelectorConvNumData     = numElSelDat;
-    gmDataHTo_d->fElemSelectorConvLogMinEkin  = onHOST->fElemSelectorConvLogMinEkin;
-    gmDataHTo_d->fElemSelectorConvEILDelta    = onHOST->fElemSelectorConvEILDelta;
     gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvStartIndexPerMat), sizeof( int ) * numHepEmMat ) );
     gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvStartIndexPerMat,  onHOST->fElemSelectorConvStartIndexPerMat, sizeof( int ) * numHepEmMat, cudaMemcpyHostToDevice ) );
     gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvEgrid), sizeof( double ) * numElSelE ) );

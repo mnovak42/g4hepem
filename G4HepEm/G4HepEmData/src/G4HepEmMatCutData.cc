@@ -40,6 +40,8 @@ void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData) {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutData** onGPU) {
   // clean away previous (if any)
   if ( *onGPU != nullptr) {
@@ -54,7 +56,8 @@ void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutDa
   // `struct G4HepEmMCCData* fMaterialData` array member, then copy to the
   // corresponding structure
   struct G4HepEmMatCutData* mcData_h = new G4HepEmMatCutData;
-  mcData_h->fNumMatCutData = onCPU->fNumMatCutData;
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(mcData_h, onCPU, sizeof(G4HepEmMatCutData));
   mcData_h->fMatCutData    = arrayHto_d;
   gpuErrchk ( cudaMalloc ( onGPU, sizeof( struct G4HepEmMatCutData ) ) );
   gpuErrchk ( cudaMemcpy ( *onGPU, mcData_h, sizeof( struct G4HepEmMatCutData ), cudaMemcpyHostToDevice ) );

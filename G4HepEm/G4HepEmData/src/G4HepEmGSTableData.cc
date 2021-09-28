@@ -41,6 +41,8 @@ void FreeGSTableData(struct G4HepEmGSTableData** theGSTableData) {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyGSTableDataToDevice(struct G4HepEmGSTableData* onHOST, struct G4HepEmGSTableData** onDEVICE) {
   if ( !onHOST ) return;
   // clean away previous (if any)
@@ -50,23 +52,12 @@ void CopyGSTableDataToDevice(struct G4HepEmGSTableData* onHOST, struct G4HepEmGS
   // Create a G4HepEmGSTableData structure on the host to store pointers to _d
   // side arrays on the _h side.
   struct G4HepEmGSTableData* gsTablesHTo_d = new G4HepEmGSTableData;
-  //
-  // set member values
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(gsTablesHTo_d, onHOST, sizeof(G4HepEmGSTableData));
   const int numMaterials         = onHOST->fNumMaterials;
   const int numDtrData1          = onHOST->fNumDtrData1;
   const int numDtrData2          = onHOST->fNumDtrData2;
   const int numPWACorData        = onHOST->fPWACorDataNum;
-  gsTablesHTo_d->fNumDtrData1    = numMaterials;
-  gsTablesHTo_d->fNumDtrData2    = numDtrData1;
-  gsTablesHTo_d->fNumMaterials   = numDtrData2;
-  gsTablesHTo_d->fPWACorDataNum  = numPWACorData;
-  // copy fix-size array values
-  for (int i=0; i<960; ++i) {
-    gsTablesHTo_d->fDtrDataStarts1[i] = onHOST->fDtrDataStarts1[i];
-  }
-  for (int i=0; i<2048; ++i) {
-    gsTablesHTo_d->fDtrDataStarts2[i] = onHOST->fDtrDataStarts2[i];
-  }
   //
   // allocate device side memory for the dynamic arrys
   gpuErrchk ( cudaMalloc ( &(gsTablesHTo_d->fGSDtrData1),    sizeof( double ) * numDtrData1    ) );

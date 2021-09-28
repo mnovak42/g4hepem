@@ -47,6 +47,8 @@ void FreeMaterialData (struct G4HepEmMaterialData** theMatData) {
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+#include <cstring>
+
 void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMaterialData** onGPU) {
   // clean away previous (if any)
   FreeMaterialDataOnGPU ( onGPU );
@@ -65,13 +67,9 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
   struct G4HepEmMatData* dataHtoD_h = new G4HepEmMatData;
   for (int imd=0; imd<numMatData; ++imd) {
     struct G4HepEmMatData& mData_h = onCPU->fMaterialData[imd];
+    // Set non-pointer members via a memcpy of the entire structure.
+    memcpy(dataHtoD_h, &mData_h, sizeof(G4HepEmMatData));
     int numElem = mData_h.fNumOfElement;
-    dataHtoD_h->fG4MatIndex       = mData_h.fG4MatIndex;
-    dataHtoD_h->fNumOfElement     = mData_h.fNumOfElement;
-    dataHtoD_h->fDensity          = mData_h.fDensity;
-    dataHtoD_h->fDensityCorFactor = mData_h.fDensityCorFactor;
-    dataHtoD_h->fElectronDensity  = mData_h.fElectronDensity;
-    dataHtoD_h->fRadiationLength  = mData_h.fRadiationLength;
     //
     gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fElementVect), sizeof( int )*numElem ) );
     gpuErrchk ( cudaMemcpy ( dataHtoD_h->fElementVect, mData_h.fElementVect, sizeof( int )*numElem, cudaMemcpyHostToDevice ) );
@@ -86,7 +84,8 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
   // `struct G4HepEmMatData* fMaterialData` array member, then copy to the
   // corresponding structure from _h to _d
   struct G4HepEmMaterialData* matData_h = new G4HepEmMaterialData;
-  matData_h->fNumMaterialData = numMatData;
+  // Set non-pointer members via a memcpy of the entire structure.
+  memcpy(matData_h, onCPU, sizeof(G4HepEmMaterialData));
   matData_h->fMaterialData    = arrayHto_d;
   gpuErrchk ( cudaMalloc ( onGPU, sizeof( struct G4HepEmMaterialData ) ) );
   gpuErrchk ( cudaMemcpy ( *onGPU, matData_h, sizeof( struct G4HepEmMaterialData ), cudaMemcpyHostToDevice ) );
