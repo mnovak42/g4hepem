@@ -133,10 +133,12 @@ bool operator==(const G4HepEmMatData& lhs, const G4HepEmMatData& rhs)
 {
   if(std::tie(lhs.fG4MatIndex, lhs.fNumOfElement, lhs.fDensity,
               lhs.fDensityCorFactor, lhs.fElectronDensity,
-              lhs.fRadiationLength) !=
+              lhs.fRadiationLength, lhs.fSandia1Energy, lhs.fSandia2Energy,
+              lhs.fMaxBinding) !=
      std::tie(rhs.fG4MatIndex, rhs.fNumOfElement, rhs.fDensity,
               rhs.fDensityCorFactor, rhs.fElectronDensity,
-              rhs.fRadiationLength))
+              rhs.fRadiationLength, rhs.fSandia1Energy, rhs.fSandia2Energy,
+              rhs.fMaxBinding))
   {
     return false;
   }
@@ -149,6 +151,19 @@ bool operator==(const G4HepEmMatData& lhs, const G4HepEmMatData& rhs)
 
   if(!compare_arrays(lhs.fNumOfElement, lhs.fNumOfAtomsPerVolumeVect,
                      rhs.fNumOfElement, rhs.fNumOfAtomsPerVolumeVect))
+  {
+    return false;
+  }
+
+  const int numSandiaCof = 4;
+  if(!compare_arrays(numSandiaCof, lhs.fSandia1Cof, numSandiaCof,
+                     rhs.fSandia1Cof))
+  {
+    return false;
+  }
+
+  if(!compare_arrays(numSandiaCof, lhs.fSandia2Cof, numSandiaCof,
+                     rhs.fSandia2Cof))
   {
     return false;
   }
@@ -170,7 +185,7 @@ bool operator==(const G4HepEmMaterialData& lhs, const G4HepEmMaterialData& rhs)
   }
 
   if(!compare_arrays(lhs.fNumMaterialData, lhs.fMaterialData,
-                     lhs.fNumMaterialData, lhs.fMaterialData))
+                     rhs.fNumMaterialData, rhs.fMaterialData))
   {
     return false;
   }

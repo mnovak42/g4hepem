@@ -297,6 +297,11 @@ namespace nlohmann
       j["fDensityCorfactor"] = d.fDensityCorFactor;
       j["fElectronDensity"]  = d.fElectronDensity;
       j["fRadiationLength"]  = d.fRadiationLength;
+      j["fSandia1Energy"]    = d.fSandia1Energy;
+      j["fSandia2Energy"]    = d.fSandia2Energy;
+      j["fSandia1Cof"]       = d.fSandia1Cof;
+      j["fSandia2Cof"]       = d.fSandia2Cof;
+      j["fMaxBinding"]       = d.fMaxBinding;
     }
 
     static G4HepEmMatData from_json(const json& j)
@@ -316,6 +321,11 @@ namespace nlohmann
       j.at("fDensityCorfactor").get_to(d.fDensityCorFactor);
       j.at("fElectronDensity").get_to(d.fElectronDensity);
       j.at("fRadiationLength").get_to(d.fRadiationLength);
+      j.at("fSandia1Energy").get_to(d.fSandia1Energy);
+      j.at("fSandia2Energy").get_to(d.fSandia2Energy);
+      j.at("fSandia1Cof").get_to(d.fSandia1Cof);
+      j.at("fSandia2Cof").get_to(d.fSandia2Cof);
+      j.at("fMaxBinding").get_to(d.fMaxBinding);
 
       return d;
     }
