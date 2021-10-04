@@ -23,6 +23,7 @@
 #include "G4ParticleChange.hh"
 
 #include "G4SafetyHelper.hh"
+#include "G4TransportationManager.hh"
 
 #include "G4EmParameters.hh"
 #include "G4ProductionCutsTable.hh"
@@ -41,6 +42,9 @@ G4HepEmProcess::G4HepEmProcess()
   fTheG4HepEmRunManager   = new G4HepEmRunManager(G4Threading::IsMasterThread());
   fTheG4HepEmRandomEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
   fParticleChange  = new G4ParticleChange();
+
+  fSafetyHelper = G4TransportationManager::GetTransportationManager()->GetSafetyHelper();
+  fSafetyHelper->InitialiseHelper();
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
@@ -116,7 +120,7 @@ G4double G4HepEmProcess::PostStepGetPhysicalInteractionLength ( const G4Track& t
     //thePrimaryTrack->SetSafety(theG4PreStepPoint->GetSafety());
     G4HepEmGammaManager::HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   } else {
-    const double preSafety = onBoundary ? 0. : theTLData->GetSafetyHelper()->ComputeSafety(track.GetPosition());
+    const double preSafety = onBoundary ? 0. : fSafetyHelper->ComputeSafety(track.GetPosition());
     thePrimaryTrack->SetSafety(preSafety);
     G4HepEmElectronManager::HowFar(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
   }
@@ -180,7 +184,7 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
         // apply displacement
         bool isPositionChanged  = true;
         const double      dispR = std::sqrt(dLength2);
-        const double postSafety = 0.99*theTLData->GetSafetyHelper()->ComputeSafety(position, dispR);
+        const double postSafety = 0.99*fSafetyHelper->ComputeSafety(position, dispR);
         const G4ThreeVector theDisplacement(displacement[0], displacement[1], displacement[2]);
         // far away from geometry boundary
         if (postSafety > 0.0 && dispR <= postSafety) {
@@ -200,7 +204,7 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
         }
         isRelocate = isPositionChanged;
         if (isPositionChanged) {
-          theTLData->GetSafetyHelper()->ReLocateWithinVolume(position);
+          fSafetyHelper->ReLocateWithinVolume(position);
           fParticleChange->ProposePosition(position);
         }
     }

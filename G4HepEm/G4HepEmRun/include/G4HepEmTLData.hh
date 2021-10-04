@@ -6,7 +6,6 @@
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmGammaTrack.hh"
 #include "G4HepEmRandomEngine.hh"
-#include "G4SafetyHelper.hh"
 
 #include <vector>
 
@@ -45,9 +44,6 @@ public:
   void SetRandomEngine(G4HepEmRandomEngine* rnge) { fRNGEngine = rnge; }
   G4HepEmRandomEngine* GetRNGEngine() { return fRNGEngine; }
 
-  void SetSafetyHelper(G4SafetyHelper* sh) { fSafetyHelper = sh; }
-  G4SafetyHelper* GetSafetyHelper() { return fSafetyHelper; }
-
   G4HepEmElectronTrack* GetPrimaryElectronTrack()   { return &fElectronTrack; }
   G4HepEmElectronTrack* AddSecondaryElectronTrack() {
     if (fNumSecondaryElectronTracks==fElectronSecondaryTracks.size()) {
@@ -77,9 +73,6 @@ private:
 
   // needs to set to point to the RNG engine of the thread
   G4HepEmRandomEngine*               fRNGEngine;
-
-  // for the MSC dispalcement
-  G4SafetyHelper*                    fSafetyHelper;
 
   std::size_t                        fNumSecondaryElectronTracks;
   G4HepEmElectronTrack               fElectronTrack;
