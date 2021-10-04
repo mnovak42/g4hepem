@@ -9,6 +9,7 @@ class  G4HepEmRunManager;
 class  G4HepEmRandomEngine;
 
 class  G4ParticleChange;
+class  G4SafetyHelper;
 
 #include <vector>
 
@@ -104,6 +105,7 @@ private:
   G4HepEmRandomEngine*     fTheG4HepEmRandomEngine;
 
   G4ParticleChange* fParticleChange;
+  G4SafetyHelper* fSafetyHelper;
 
   const std::vector<G4double>* theCutsGamma = nullptr;
   const std::vector<G4double>* theCutsElectron = nullptr;

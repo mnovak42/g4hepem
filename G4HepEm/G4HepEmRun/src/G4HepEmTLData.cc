@@ -7,7 +7,6 @@
 
 G4HepEmTLData::G4HepEmTLData() {
   fRNGEngine    = nullptr;
-  fSafetyHelper = nullptr;
   fElectronSecondaryTracks.resize(2);
   fNumSecondaryElectronTracks = 0;
 
