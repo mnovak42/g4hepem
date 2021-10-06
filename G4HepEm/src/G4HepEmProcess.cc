@@ -92,6 +92,9 @@ void     G4HepEmProcess::StartTracking(G4Track* track) {
   } else if (partDef->GetPDGEncoding()==22) {   // gamma
     fTheG4HepEmRunManager->GetTheTLData()->GetPrimaryGammaTrack()->ReSet();
   }
+  // In principle, we could continue to use the other generated Gaussian number
+  // as long as we are in the same event, but play it safe.
+  fTheG4HepEmRandomEngine->DiscardGauss();
 }
 
 G4double G4HepEmProcess::PostStepGetPhysicalInteractionLength ( const G4Track& track,

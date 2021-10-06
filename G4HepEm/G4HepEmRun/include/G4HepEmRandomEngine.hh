@@ -54,6 +54,9 @@ public:
     return v2*fac*stDev+mean;
   }
 
+  G4HepEmHostDevice
+  void DiscardGauss() { fIsGauss = false; }
+
 
 private:
   void *fObject;
