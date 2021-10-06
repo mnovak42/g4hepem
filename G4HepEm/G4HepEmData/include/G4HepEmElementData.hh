@@ -65,6 +65,15 @@ struct G4HepEmElemData {
   /** LPM variable \f$ 1/ln[s1] \f$ */
   double  fILVarS1Cond = 0.0;
 
+  /** Number of intervals in the Sandia table */
+  int     fNumOfSandiaIntervals = 0;
+  /** Starting energy of the intervals */
+  double* fSandiaEnergies = nullptr; // [fNumOfSandiaIntervals]
+  /** Coefficients for the interval (four per energy range) */
+  double* fSandiaCoefficients = nullptr; // [4 x fNumOfSandiaIntervals]
+
+  /** Binding energy of the k-shell */
+  double  fKShellBindingEnergy = 0;
 };
 
 // Data for all elements that are used by G4HepEm.

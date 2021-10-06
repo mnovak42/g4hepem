@@ -34,6 +34,14 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
   //  theCoupleTable->DumpCouples();
   //  G4cout << *theMaterialTable;
   //
+  // Allocate temporary vectors to query the Sandia coefficients per atom.
+  std::vector<double> sandiaCofsPerAtom(4, 0.0);
+  std::vector<double> lastSandiaCofsPerAtom(4, 0.0);
+  // Allocate temporary vectors to store the energy intervals and coefficients
+  // for the current element.
+  std::vector<double> sandiaEnergies;
+  std::vector<double> sandiaCoefficients;
+  //
   // 0. count G4MaterialCutsCouple and unique G4Material objects that are used in
   //    the courrent geometry. Record the indices of the used, unique materials.
   G4int  numUsedG4MatCuts = 0;
@@ -108,26 +116,25 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fDensityCorFactor        = 4.0*CLHEP::pi*CLHEP::classic_electr_radius*CLHEP::electron_Compton_length*CLHEP::electron_Compton_length*mat->GetElectronDensity();
       matData.fElectronDensity         = mat->GetElectronDensity();
       matData.fRadiationLength         = mat->GetRadlen();
-      // Copy last two intervals of Sandia coefficients.
-      G4SandiaTable* sandia  = mat->GetSandiaTable();
-      int nbOfIntervals      = sandia->GetMatNbOfIntervals();
-      matData.fSandia1Energy = sandia->GetSandiaCofForMaterial(nbOfIntervals - 2, 0);
-      matData.fSandia2Energy = sandia->GetSandiaCofForMaterial(nbOfIntervals - 1, 0);
-      for (int i = 0; i < 4; i++) {
-        // i + 1 because the first entry is the energy (which we don't care about).
-        matData.fSandia1Cof[i] = sandia->GetSandiaCofForMaterial(nbOfIntervals - 2, i + 1);
-        matData.fSandia2Cof[i] = sandia->GetSandiaCofForMaterial(nbOfIntervals - 1, i + 1);
+
+      // Copy the intervals from the table.
+      G4SandiaTable* sandia         = mat->GetSandiaTable();
+      int matNbOfSandiaIntervals    = sandia->GetMatNbOfIntervals();
+      matData.fNumOfSandiaIntervals = matNbOfSandiaIntervals;
+      matData.fSandiaEnergies       = new double[matNbOfSandiaIntervals]{};
+      matData.fSandiaCoefficients   = new double[4 * matNbOfSandiaIntervals]{};
+      for (int i = 0; i < matNbOfSandiaIntervals; i++) {
+        matData.fSandiaEnergies[i] = sandia->GetSandiaCofForMaterial(i, 0);
+        for (int j = 0; j < 4; j++) {
+          // j + 1 because the first entry is the energy (see above)
+          matData.fSandiaCoefficients[i * 4 + j] = sandia->GetSandiaCofForMaterial(i, j + 1);
+        }
       }
       //
-      double maxBinding = 0;
       for (size_t ie=0; ie<numOfElement; ++ie) {
         G4int izet = ((*elmVec)[ie])->GetZasInt();
         matData.fElementVect[ie] = izet;
         matData.fNumOfAtomsPerVolumeVect[ie] = nAtomPerVolVec[ie];
-        double maxShell = ((*elmVec)[ie])->GetAtomicShell(0);
-        if (maxShell > maxBinding) {
-          maxBinding = maxShell;
-        }
         // fill element data as well if haven't done yet
         izet = std::min ( izet, (G4int)hepEmData->fTheElementData->fMaxZet );
         struct G4HepEmElemData& elData = hepEmData->fTheElementData->fElementData[izet];
@@ -148,9 +155,51 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
           double varS1         = elData.fZet23/(184.15*184.15);
           elData.fILVarS1Cond  = 1./(std::log(std::sqrt(2.0)*varS1));
           elData.fILVarS1      = 1./std::log(varS1);
+
+          // At the time of writing, G4SandiaTable::GetSandiaPerAtom is private and
+          // GetSandiaCofPerAtom only takes an energy. Try the energy intervals from
+          // the material, which we know must be a superset of those for the current
+          // element, and discard / skip over duplicate intervals. A complication is
+          // that GetSandiaCofPerAtom returns zeros if the energy is exactly Emin,
+          // so add a small epsilon.
+          constexpr double kEpsilon = 1e-9;
+          // Now clear the last coefficients to make sure the first interval with
+          // non-zero coefficients is taken.
+          for (int i = 0; i < 4; i++) {
+            lastSandiaCofsPerAtom[i] = 0.0;
+          }
+
+          int numberOfIntervals = 0;
+          sandiaEnergies.clear();
+          sandiaCoefficients.clear();
+          for (int i = 0; i < matNbOfSandiaIntervals; i++) {
+            const double energy = matData.fSandiaEnergies[i];
+            sandia->GetSandiaCofPerAtom(izet, energy + kEpsilon, sandiaCofsPerAtom);
+            if (sandiaCofsPerAtom == lastSandiaCofsPerAtom) {
+              continue;
+            }
+            lastSandiaCofsPerAtom = sandiaCofsPerAtom;
+
+            numberOfIntervals++;
+            sandiaEnergies.push_back(energy);
+            for (int j = 0; j < 4; j++) {
+              sandiaCoefficients.push_back(sandiaCofsPerAtom[j]);
+            }
+          }
+
+          elData.fNumOfSandiaIntervals = numberOfIntervals;
+          elData.fSandiaEnergies       = new double[numberOfIntervals]{};
+          elData.fSandiaCoefficients   = new double[4 * numberOfIntervals]{};
+          for (int i = 0; i < numberOfIntervals; i++) {
+            elData.fSandiaEnergies[i] = sandiaEnergies[i];
+            for (int j = 0; j < 4; j++) {
+              int idx = i * 4 + j;
+              elData.fSandiaCoefficients[idx] = sandiaCoefficients[idx];
+            }
+          }
+          elData.fKShellBindingEnergy = ((*elmVec)[ie])->GetAtomicShell(0);
         }
       }
-      matData.fMaxBinding = maxBinding;
       //
       theUsedG4MatIndices[matIndx] = numUsedG4Mat;
       mccData.fHepEmMatIndex = theUsedG4MatIndices[matIndx];

@@ -203,6 +203,11 @@ namespace nlohmann
       j["fDeltaMaxHigh"] = d.fDeltaMaxHigh;
       j["fILVarS1"]      = d.fILVarS1;
       j["fILVarS1Cond"]  = d.fILVarS1Cond;
+      j["fSandiaEnergies"] =
+        make_span(d.fNumOfSandiaIntervals, d.fSandiaEnergies);
+      j["fSandiaCoefficients"] =
+        make_span(4 * d.fNumOfSandiaIntervals, d.fSandiaCoefficients);
+      j["fKShellBindingEnergy"] = d.fKShellBindingEnergy;
     }
 
     static G4HepEmElemData from_json(const json& j)
@@ -219,6 +224,17 @@ namespace nlohmann
       j.at("fDeltaMaxHigh").get_to(d.fDeltaMaxHigh);
       j.at("fILVarS1").get_to(d.fILVarS1);
       j.at("fILVarS1Cond").get_to(d.fILVarS1Cond);
+
+      auto tmpSandiaEnergies =
+        j.at("fSandiaEnergies").get<dynamic_array<double>>();
+      d.fNumOfSandiaIntervals = tmpSandiaEnergies.N;
+      d.fSandiaEnergies       = tmpSandiaEnergies.data;
+
+      auto tmpSandiaCoefficients =
+        j.at("fSandiaCoefficients").get<dynamic_array<double>>();
+      d.fSandiaCoefficients = tmpSandiaCoefficients.data;
+
+      j.at("fKShellBindingEnergy").get_to(d.fKShellBindingEnergy);
 
       return d;
     }
@@ -297,11 +313,10 @@ namespace nlohmann
       j["fDensityCorfactor"] = d.fDensityCorFactor;
       j["fElectronDensity"]  = d.fElectronDensity;
       j["fRadiationLength"]  = d.fRadiationLength;
-      j["fSandia1Energy"]    = d.fSandia1Energy;
-      j["fSandia2Energy"]    = d.fSandia2Energy;
-      j["fSandia1Cof"]       = d.fSandia1Cof;
-      j["fSandia2Cof"]       = d.fSandia2Cof;
-      j["fMaxBinding"]       = d.fMaxBinding;
+      j["fSandiaEnergies"] =
+        make_span(d.fNumOfSandiaIntervals, d.fSandiaEnergies);
+      j["fSandiaCoefficients"] =
+        make_span(4 * d.fNumOfSandiaIntervals, d.fSandiaCoefficients);
     }
 
     static G4HepEmMatData from_json(const json& j)
@@ -321,11 +336,15 @@ namespace nlohmann
       j.at("fDensityCorfactor").get_to(d.fDensityCorFactor);
       j.at("fElectronDensity").get_to(d.fElectronDensity);
       j.at("fRadiationLength").get_to(d.fRadiationLength);
-      j.at("fSandia1Energy").get_to(d.fSandia1Energy);
-      j.at("fSandia2Energy").get_to(d.fSandia2Energy);
-      j.at("fSandia1Cof").get_to(d.fSandia1Cof);
-      j.at("fSandia2Cof").get_to(d.fSandia2Cof);
-      j.at("fMaxBinding").get_to(d.fMaxBinding);
+
+      auto tmpSandiaEnergies =
+        j.at("fSandiaEnergies").get<dynamic_array<double>>();
+      d.fNumOfSandiaIntervals = tmpSandiaEnergies.N;
+      d.fSandiaEnergies       = tmpSandiaEnergies.data;
+
+      auto tmpSandiaCoefficients =
+        j.at("fSandiaCoefficients").get<dynamic_array<double>>();
+      d.fSandiaCoefficients = tmpSandiaCoefficients.data;
 
       return d;
     }

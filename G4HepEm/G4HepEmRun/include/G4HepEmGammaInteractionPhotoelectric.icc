@@ -4,35 +4,76 @@
 
 #include  "G4HepEmTLData.hh"
 #include  "G4HepEmData.hh"
+#include  "G4HepEmElementData.hh"
 #include  "G4HepEmMaterialData.hh"
 #include  "G4HepEmMatCutData.hh"
 #include  "G4HepEmRunUtils.hh"
 
 void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
-  G4HepEmTrack* thePrimaryTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
-  const double*     theGammaDir = thePrimaryTrack->GetDirection();
-  const double        theGammaE = thePrimaryTrack->GetEKin();
+  G4HepEmGammaTrack* theGammaTrack = tlData->GetPrimaryGammaTrack();
+  G4HepEmTrack*    thePrimaryTrack = theGammaTrack->GetTrack();
+  const double*        theGammaDir = thePrimaryTrack->GetDirection();
+  const double           theGammaE = thePrimaryTrack->GetEKin();
 
-  const int  theMCIndx = thePrimaryTrack->GetMCIndex();
-  const int theMatIndx = hepEmData->fTheMatCutData->fMatCutData[theMCIndx].fHepEmMatIndex;
-  const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[theMatIndx];
+  const int theMCIndx = thePrimaryTrack->GetMCIndex();
+  const double  mxsec = theGammaTrack->GetPEmxSec();
+
+  const double bindingEnergy = SelectElementBindingEnergy(hepEmData, theMCIndx, mxsec, theGammaE, tlData->GetRNGEngine());
 
   const double theLowEnergyThreshold = 0.000001; // 1 eV
-  // Only check the maximum binding energy of the current material. If the
-  // gamma energy is below that, the energy of the secondary photo electron
-  // will be so low that it won't travel far and we can skip generating it.
-  const double photoElecE = theGammaE - matData->fMaxBinding;
+  const double photoElecE = theGammaE - bindingEnergy;
   if (photoElecE > theLowEnergyThreshold) {
     G4HepEmTrack* theSecTrack = tlData->AddSecondaryElectronTrack()->GetTrack();
     double*       theSecElDir = theSecTrack->GetDirection();
     SamplePhotoElectronDirection(photoElecE, theGammaDir, theSecElDir, tlData->GetRNGEngine());
     theSecTrack->SetEKin(photoElecE);
     theSecTrack->SetParentID(thePrimaryTrack->GetID());
-    thePrimaryTrack->SetEnergyDeposit(matData->fMaxBinding);
+    thePrimaryTrack->SetEnergyDeposit(bindingEnergy);
   } else {
     thePrimaryTrack->SetEnergyDeposit(theGammaE);
   }
   thePrimaryTrack->SetEKin(0.0);
+}
+
+double G4HepEmGammaInteractionPhotoelectric::SelectElementBindingEnergy(const struct G4HepEmData* hepEmData, const int imc, const double mxsec, const double ekin, G4HepEmRandomEngine *rnge) {
+  const int theMatIndx = hepEmData->fTheMatCutData->fMatCutData[imc].fHepEmMatIndex;
+  const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMatIndx];
+
+  // Possible optimization: if ekin minus the minimum binding energy of all elements in the material
+  // is already smaller than the electron cut, we could skip selecting an element.
+
+  int ielem = 0;
+  if (theMData.fNumOfElement > 1) {
+    const double x = rnge->flat() * mxsec;
+    double sum = 0;
+    double invE = 1 / ekin;
+    for (int i = 0; i < theMData.fNumOfElement; i++) {
+      const G4HepEmElemData& theEData = hepEmData->fTheElementData->fElementData[theMData.fElementVect[i]];
+      int interval = 0;
+      if (ekin >= theEData.fSandiaEnergies[0]) {
+        // Optimization: linear search starting with intervals for higher energies.
+        for (int i = theEData.fNumOfSandiaIntervals - 1; i >= 0; i--) {
+          if (ekin >= theEData.fSandiaEnergies[i]) {
+            interval = i;
+            break;
+          }
+        }
+      }
+      const double* sandiaCof = &theEData.fSandiaCoefficients[4 * interval];
+      sum += theMData.fNumOfAtomsPerVolumeVect[i] *
+        invE * (sandiaCof[0] + invE * (sandiaCof[1] + invE * (sandiaCof[2] + invE * sandiaCof[3])));
+      if (x <= sum) {
+        ielem = i;
+        break;
+      }
+    }
+  }
+
+  // Only check the k-shell binding energy of the sampled element. If the
+  // gamma energy is below that, the energy of the secondary photo electron
+  // will be so low that it won't travel far and we can skip generating it.
+
+  return hepEmData->fTheElementData->fElementData[theMData.fElementVect[ielem]].fKShellBindingEnergy;
 }
 
 void G4HepEmGammaInteractionPhotoelectric::SamplePhotoElectronDirection(const double kinE, const double* theGammaDir, double* theDir, G4HepEmRandomEngine* rnge) {

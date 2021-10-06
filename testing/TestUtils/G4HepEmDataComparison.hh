@@ -63,12 +63,29 @@ bool operator!=(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
 // --- G4HepEmElemData
 bool operator==(const G4HepEmElemData& lhs, const G4HepEmElemData& rhs)
 {
-  return std::tie(lhs.fZet, lhs.fZet13, lhs.fZet23, lhs.fCoulomb, lhs.fLogZ,
-                  lhs.fZFactor1, lhs.fDeltaMaxLow, lhs.fDeltaMaxHigh,
-                  lhs.fILVarS1, lhs.fILVarS1Cond) ==
-         std::tie(rhs.fZet, rhs.fZet13, rhs.fZet23, rhs.fCoulomb, rhs.fLogZ,
-                  rhs.fZFactor1, rhs.fDeltaMaxLow, rhs.fDeltaMaxHigh,
-                  rhs.fILVarS1, rhs.fILVarS1Cond);
+  if(std::tie(lhs.fZet, lhs.fZet13, lhs.fZet23, lhs.fCoulomb, lhs.fLogZ,
+              lhs.fZFactor1, lhs.fDeltaMaxLow, lhs.fDeltaMaxHigh,
+              lhs.fILVarS1, lhs.fILVarS1Cond, lhs.fKShellBindingEnergy) !=
+     std::tie(rhs.fZet, rhs.fZet13, rhs.fZet23, rhs.fCoulomb, rhs.fLogZ,
+              rhs.fZFactor1, rhs.fDeltaMaxLow, rhs.fDeltaMaxHigh,
+              rhs.fILVarS1, rhs.fILVarS1Cond, rhs.fKShellBindingEnergy))
+  {
+    return false;
+  }
+
+  if(!compare_arrays(lhs.fNumOfSandiaIntervals, lhs.fSandiaEnergies,
+                     rhs.fNumOfSandiaIntervals, rhs.fSandiaEnergies))
+  {
+    return false;
+  }
+
+  if(!compare_arrays(4 * lhs.fNumOfSandiaIntervals, lhs.fSandiaCoefficients,
+                     4 * rhs.fNumOfSandiaIntervals, rhs.fSandiaCoefficients))
+  {
+    return false;
+  }
+
+  return true;
 }
 
 bool operator!=(const G4HepEmElemData& lhs, const G4HepEmElemData& rhs)
@@ -133,12 +150,10 @@ bool operator==(const G4HepEmMatData& lhs, const G4HepEmMatData& rhs)
 {
   if(std::tie(lhs.fG4MatIndex, lhs.fNumOfElement, lhs.fDensity,
               lhs.fDensityCorFactor, lhs.fElectronDensity,
-              lhs.fRadiationLength, lhs.fSandia1Energy, lhs.fSandia2Energy,
-              lhs.fMaxBinding) !=
+              lhs.fRadiationLength) !=
      std::tie(rhs.fG4MatIndex, rhs.fNumOfElement, rhs.fDensity,
               rhs.fDensityCorFactor, rhs.fElectronDensity,
-              rhs.fRadiationLength, rhs.fSandia1Energy, rhs.fSandia2Energy,
-              rhs.fMaxBinding))
+              rhs.fRadiationLength))
   {
     return false;
   }
@@ -155,15 +170,14 @@ bool operator==(const G4HepEmMatData& lhs, const G4HepEmMatData& rhs)
     return false;
   }
 
-  const int numSandiaCof = 4;
-  if(!compare_arrays(numSandiaCof, lhs.fSandia1Cof, numSandiaCof,
-                     rhs.fSandia1Cof))
+  if(!compare_arrays(lhs.fNumOfSandiaIntervals, lhs.fSandiaEnergies,
+                     rhs.fNumOfSandiaIntervals, rhs.fSandiaEnergies))
   {
     return false;
   }
 
-  if(!compare_arrays(numSandiaCof, lhs.fSandia2Cof, numSandiaCof,
-                     rhs.fSandia2Cof))
+  if(!compare_arrays(4 * lhs.fNumOfSandiaIntervals, lhs.fSandiaCoefficients,
+                     4 * rhs.fNumOfSandiaIntervals, rhs.fSandiaCoefficients))
   {
     return false;
   }

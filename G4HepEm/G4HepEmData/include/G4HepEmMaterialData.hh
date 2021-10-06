@@ -57,13 +57,12 @@ struct G4HepEmMatData {
   double    fElectronDensity = 0.0;
   /** Radiation length. */
   double    fRadiationLength = 0.0;
-  /** The Sandia coefficients for this material */
-  double    fSandia1Energy = 0.0;
-  double    fSandia2Energy = 0.0;
-  double    fSandia1Cof[4]{};
-  double    fSandia2Cof[4]{};
-  /** The maximum binding energy of an element in this material */
-  double    fMaxBinding = 0.0;
+  /** Number of intervals in the Sandia table */
+  int       fNumOfSandiaIntervals = 0;
+  /** Starting energy of the intervals */
+  double*   fSandiaEnergies = nullptr; // [fNumOfSandiaIntervals]
+  /** Coefficients for the interval (four per energy range) */
+  double*   fSandiaCoefficients = nullptr; // [4 x fNumOfSandiaIntervals]
 };
 
 // Data for all materials used in the current geometry.
