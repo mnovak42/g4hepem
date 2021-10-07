@@ -63,10 +63,9 @@ void G4HepEmElectronInteractionMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPar
     // first step randomization
     // NOTE: we should probably randomize only if the step was limited by msc
     if (mscData->fIsFirstStep || onBoundary) {
-      mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, RandomizeTrueStepLength(tlimit, rnge));
-    } else {
-      mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, tlimit);
+      tlimit = RandomizeTrueStepLength(tlimit, rnge);
     }
+    mscData->fTrueStepLength = G4HepEmMin(mscData->fTrueStepLength, tlimit);
   }
   // msc step limit is done!
   //
