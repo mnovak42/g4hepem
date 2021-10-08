@@ -34,6 +34,8 @@ void FreeMaterialData (struct G4HepEmMaterialData** theMatData) {
       for (int imd=0; imd<(*theMatData)->fNumMaterialData; ++imd) {
         delete[] (*theMatData)->fMaterialData[imd].fNumOfAtomsPerVolumeVect;
         delete[] (*theMatData)->fMaterialData[imd].fElementVect;
+        delete[] (*theMatData)->fMaterialData[imd].fSandiaEnergies;
+        delete[] (*theMatData)->fMaterialData[imd].fSandiaCoefficients;
       }
       delete[] (*theMatData)->fMaterialData;
     }
@@ -76,6 +78,14 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
     //
     gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fNumOfAtomsPerVolumeVect), sizeof( double)*numElem ) );
     gpuErrchk ( cudaMemcpy ( dataHtoD_h->fNumOfAtomsPerVolumeVect, mData_h.fNumOfAtomsPerVolumeVect, sizeof( double )*numElem, cudaMemcpyHostToDevice ) );
+
+    int numSandiaIntervals = mData_h.fNumOfSandiaIntervals;
+    //
+    gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fSandiaEnergies), sizeof( double )*numSandiaIntervals ) );
+    gpuErrchk ( cudaMemcpy ( dataHtoD_h->fSandiaEnergies, mData_h.fSandiaEnergies, sizeof( double )*numSandiaIntervals, cudaMemcpyHostToDevice ) );
+    //
+    gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fSandiaCoefficients), sizeof( double )*4*numSandiaIntervals ) );
+    gpuErrchk ( cudaMemcpy ( dataHtoD_h->fSandiaCoefficients, mData_h.fSandiaCoefficients, sizeof( double )*4*numSandiaIntervals, cudaMemcpyHostToDevice ) );
     //
     // copy this G4HepEmMatData structure to _d
     gpuErrchk ( cudaMemcpy ( &(arrayHto_d[imd]), dataHtoD_h, sizeof( struct G4HepEmMatData ), cudaMemcpyHostToDevice ) );
@@ -122,6 +132,8 @@ void FreeMaterialDataOnGPU ( struct G4HepEmMaterialData** onGPU) {
         gpuErrchk ( cudaMemcpy ( mData_h, &(matData_h->fMaterialData[imd]), sizeof( struct G4HepEmMatData ), cudaMemcpyDeviceToHost ) );
         cudaFree ( mData_h->fElementVect );
         cudaFree ( mData_h->fNumOfAtomsPerVolumeVect );
+        cudaFree ( mData_h->fSandiaEnergies );
+        cudaFree ( mData_h->fSandiaCoefficients );
       }
       // Then at the and free the whole `struct G4HepEmMatData* fMaterialData`
       // array (after all dynamically allocated memory is freed) by using the

@@ -17,6 +17,9 @@ public:
   static void Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData);
 
   G4HepEmHostDevice
+  static double SelectElementBindingEnergy(const struct G4HepEmData* hepEmData, const int imc, const double mxsec, const double ekin, G4HepEmRandomEngine* rnge);
+
+  G4HepEmHostDevice
   static void SamplePhotoElectronDirection(const double theGammaE, const double* theGammaDir, double* theDir, G4HepEmRandomEngine* rnge);
 };
 

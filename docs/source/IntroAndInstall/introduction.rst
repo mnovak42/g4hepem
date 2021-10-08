@@ -119,7 +119,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
    .. [#]  i.e. annihilation at rest.
 
    .. [#]  A simplified version of the ``G4PEEffectFluoModel`` has been implemented in ``G4HepEm`` by taking into account
-       only the two highest intervals of ``G4SandiaTable``.
+       only the k-shell binding energy.
 
    .. [#]  Primary :math:`\gamma` energies below the highest binding energy are
       absorbed without generating a secondary photoelectron.
@@ -194,7 +194,7 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
       \footnotetext{i.e. annihilation at rest.}
       \addtocounter{footnote}{1}
       \footnotetext{A simplified version of the \texttt{G4PEEffectFluoModel} model has been implemented in \texttt{G4HepEm} by taking into account
-          only the two highest intervals of \texttt{G4SandiaTable}.}
+          only the k-shell binding energy.}
       \addtocounter{footnote}{1}
       \footnotetext{Primary $\gamma$ energies below the highest binding energy are
            absorbed without generating a secondary photoelectron.}

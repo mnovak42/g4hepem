@@ -17,21 +17,32 @@
 class G4HepEmGammaTrack {
 
 public:
+  G4HepEmHostDevice
   G4HepEmGammaTrack() { fTrack.ReSet(); }
   
+  G4HepEmHostDevice
   G4HepEmGammaTrack(const G4HepEmGammaTrack& o) { 
     fTrack = o.fTrack;
   }
 
+  G4HepEmHostDevice
   G4HepEmTrack*  GetTrack()  { return &fTrack; }
 
+  G4HepEmHostDevice
+  void   SetPEmxSec(double mxsec) { fPEmxSec = mxsec; }
+  G4HepEmHostDevice
+  double GetPEmxSec() const       { return fPEmxSec; }
+
+  G4HepEmHostDevice
   void ReSet() {
     fTrack.ReSet();
+    fPEmxSec = 0.0;
   }
 
     
 private:
   G4HepEmTrack  fTrack;
+  double        fPEmxSec;
 };
 
 
