@@ -34,8 +34,12 @@
 
 #include "globals.hh"
 
-#include "g4root.hh"
-////#include "g4xml.hh"
+#include "G4Version.hh"
+#if G4VERSION_NUMBER < 1100
+  #include "g4root.hh"
+#else
+  #include "G4AnalysisManager.hh"
+#endif
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

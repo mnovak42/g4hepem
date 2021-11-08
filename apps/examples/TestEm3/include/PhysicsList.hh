@@ -37,7 +37,7 @@
 #include "G4VModularPhysicsList.hh"
 #include "globals.hh"
 
-class StepMax;
+
 class PhysicsListMessenger;
 class G4VPhysicsConstructor;
 
@@ -52,23 +52,20 @@ public:
 
     virtual void ConstructParticle();
     virtual void ConstructProcess();
-    
+
     void AddPhysicsList(const G4String& name);
-    void AddDecay();
-    void AddRadioactiveDecay();
     void AddStepMax();
 
 private:
-    
-    G4VPhysicsConstructor*  fEmPhysicsList;
-    G4String fEmName;
-    
-    StepMax* fStepMaxProcess;
-    
+
     PhysicsListMessenger* fMessenger;
+
+    G4String fEmName;
+    G4VPhysicsConstructor*  fEmPhysicsList;
+    G4VPhysicsConstructor*  fDecayPhysics;
+
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
-
