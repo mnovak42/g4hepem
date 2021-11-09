@@ -22,7 +22,6 @@
 
 
 G4HepEmRunManager* G4HepEmRunManager::gTheG4HepEmRunManagerMaster = nullptr;
-std::vector<G4HepEmRunManager*> G4HepEmRunManager::gTheG4HepEmRunManagers;
 
 G4HepEmRunManager::G4HepEmRunManager(bool ismaster) {
   if (ismaster && !gTheG4HepEmRunManagerMaster) {
@@ -38,13 +37,11 @@ G4HepEmRunManager::G4HepEmRunManager(bool ismaster) {
   fTheG4HepEmParameters          = nullptr;
   fTheG4HepEmData                = nullptr;
   fTheG4HepEmTLData              = nullptr;
-  //
-  G4HepEmRunManager::gTheG4HepEmRunManagers.push_back(this);
 }
 
 
 G4HepEmRunManager::~G4HepEmRunManager() {
-  ClearAll();
+  Clear();
 }
 
 
@@ -94,7 +91,7 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     // call to `G4VProcess::BuildPhysicsTable()` was triggered by `physics-has-modified`.
     if (!fTheG4HepEmParameters || fIsInitialisedForParticle[hepEmParticleIndx]) {
       // clear all previously created data structures and create the new global data
-      ClearAll();
+      Clear();
       std::cout << " === G4HepEm global init ... " << std::endl;
       InitializeGlobal();
     }
@@ -156,7 +153,6 @@ void G4HepEmRunManager::Clear() {
     fIsInitialisedForParticle[0] = false;
     fIsInitialisedForParticle[1] = false;
     fIsInitialisedForParticle[2] = false;
-    // should call all worker-rm->Clear()
   } else {
     // set shared ptr already cleaned in master
     fTheG4HepEmParameters      = nullptr;
@@ -165,13 +161,5 @@ void G4HepEmRunManager::Clear() {
     if (fTheG4HepEmTLData)
       delete fTheG4HepEmTLData;
     fTheG4HepEmTLData     = nullptr;
-  }
-}
-
-void G4HepEmRunManager::ClearAll() {
-  if (fIsMaster) {
-    for (std::size_t i=0; i<G4HepEmRunManager::gTheG4HepEmRunManagers.size(); ++i) {
-      G4HepEmRunManager::gTheG4HepEmRunManagers[i]->Clear();
-    }
   }
 }
