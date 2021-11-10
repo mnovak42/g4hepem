@@ -81,7 +81,6 @@ public:
    * method and re-sets the correspondig pointer members to null.
    */
   void Clear ();
-  void ClearAll ();
 
   /** delete copy CTR and assigment operators */
   G4HepEmRunManager (const G4HepEmRunManager&) = delete;
@@ -116,7 +115,6 @@ private:
   bool                           fIsInitialisedForParticle[3];
   /** Pointer to the master run-manager.*/
   static G4HepEmRunManager*      gTheG4HepEmRunManagerMaster;
-  static std::vector<G4HepEmRunManager*> gTheG4HepEmRunManagers;
   /**
    * === These data are created by the Master-RM and shared among all Worker-RMs.
    *
