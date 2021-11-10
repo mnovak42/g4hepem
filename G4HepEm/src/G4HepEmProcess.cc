@@ -8,6 +8,7 @@
 #include "G4HepEmTLData.hh"
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmNoProcess.hh"
 
 #include "G4HepEmElectronTrack.hh"
 #include "G4HepEmGammaTrack.hh"
@@ -45,6 +46,9 @@ G4HepEmProcess::G4HepEmProcess()
 
   fSafetyHelper = G4TransportationManager::GetTransportationManager()->GetSafetyHelper();
   fSafetyHelper->InitialiseHelper();
+
+  fElectronNoProcessVector.resize(4, nullptr);
+  fGammaNoProcessVector.resize(4, nullptr);
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
@@ -63,10 +67,21 @@ void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
 
   if (partDef.GetPDGEncoding()==11) {          // e-
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 0);
+    // construct fake G4VProcess-es with the proper name and indices matching the hepEm process indices
+    fElectronNoProcessVector[0] = new G4HepEmNoProcess("eIoni");
+    fElectronNoProcessVector[1] = new G4HepEmNoProcess("eBrem");
+    fElectronNoProcessVector[3] = new G4HepEmNoProcess("msc");
   } else if (partDef.GetPDGEncoding()==-11) {  // e+
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 1);
+    fElectronNoProcessVector[0] = new G4HepEmNoProcess("eIoni");
+    fElectronNoProcessVector[1] = new G4HepEmNoProcess("eBrem");
+    fElectronNoProcessVector[2] = new G4HepEmNoProcess("annihl");
+    fElectronNoProcessVector[3] = new G4HepEmNoProcess("msc");
   } else if (partDef.GetPDGEncoding()==22) {   // gamma
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 2);
+    fGammaNoProcessVector[0]    = new G4HepEmNoProcess("phot");
+    fGammaNoProcessVector[1]    = new G4HepEmNoProcess("compt");
+    fGammaNoProcessVector[2]    = new G4HepEmNoProcess("conv");
   } else {
     std::cerr << " **** ERROR in G4HepEmProcess::BuildPhysicsTable: unknown particle " << std::endl;
     exit(-1);
@@ -118,6 +133,7 @@ G4double G4HepEmProcess::PostStepGetPhysicalInteractionLength ( const G4Track& t
   const bool onBoundary = theG4PreStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary;
   thePrimaryTrack->SetOnBoundary(onBoundary);
   //
+  G4StepPoint* theG4PostStepPoint = track.GetStep()->GetPostStepPoint();
   if (isGamma) {
     // note: safety is used only for e-/e+ in the MCS step limit)
     //thePrimaryTrack->SetSafety(theG4PreStepPoint->GetSafety());
@@ -139,7 +155,7 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
   G4HepEmTLData*              theTLData = fTheG4HepEmRunManager->GetTheTLData();
   const G4ParticleDefinition*   partDef = track.GetParticleDefinition();
   const bool                    isGamma = (partDef->GetPDGEncoding()==22);
-  const G4StepPoint* theG4PostStepPoint = step.GetPostStepPoint();
+  G4StepPoint* theG4PostStepPoint       = step.GetPostStepPoint();
   const bool               onBoundary   = theG4PostStepPoint->GetStepStatus()==G4StepStatus::fGeomBoundary;
   G4HepEmTrack*       thePrimaryTrack = isGamma
                                         ? theTLData->GetPrimaryGammaTrack()->GetTrack()
@@ -160,10 +176,36 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
   double pStepLength = track.GetStepLength();
   if (isGamma) {
     G4HepEmGammaManager::Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
+    //
+    // set dummy G4VProcess pointers to provide (name) information regarding processes limited the step
+    switch (thePrimaryTrack->GetWinnerProcessIndex()) {
+      case 0: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[0]);
+              break;
+      case 1: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[1]);
+              break;
+      case 2: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[2]);
+              break;
+    }
   } else {
     G4HepEmElectronManager::Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
     // account possible change in the physics/true step length due to MSC
     pStepLength = theTLData->GetPrimaryElectronTrack()->GetPStepLength();
+    //
+    // set dummy G4VProcess pointers to provide (name) information regarding processes limited the step
+    if (!onBoundary) {
+      switch (thePrimaryTrack->GetWinnerProcessIndex()) {
+        case  0: theG4PostStepPoint->SetProcessDefinedStep(fElectronNoProcessVector[0]);
+                 break;
+        case  1: theG4PostStepPoint->SetProcessDefinedStep(fElectronNoProcessVector[1]);
+                 break;
+        case  2: theG4PostStepPoint->SetProcessDefinedStep(fElectronNoProcessVector[2]);
+                 break;
+        case -1: theG4PostStepPoint->SetProcessDefinedStep(fElectronNoProcessVector[0]);
+                 break;
+        case -2: theG4PostStepPoint->SetProcessDefinedStep(fElectronNoProcessVector[3]);
+                 break;
+      }
+    }
   }
   fParticleChange->ProposeTrueStepLength(pStepLength);
 
@@ -275,6 +317,20 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
   return fParticleChange;
 }
 
+
+G4VProcess* G4HepEmProcess::GetProcess(const G4String& procname) {
+  for (std::size_t ip=0; ip<fElectronNoProcessVector.size(); ++ip) {
+    if (fElectronNoProcessVector[ip] && fElectronNoProcessVector[ip]->GetProcessName() == procname) {
+      return fElectronNoProcessVector[ip];
+    }
+  }
+  for (std::size_t ip=0; ip<fGammaNoProcessVector.size(); ++ip) {
+    if (fGammaNoProcessVector[ip] && fGammaNoProcessVector[ip]->GetProcessName() == procname) {
+      return fGammaNoProcessVector[ip];
+    }
+  }
+  return nullptr;
+}
 
 
 void G4HepEmProcess::StreamInfo(std::ostream& out, const G4ParticleDefinition& part) const  {
