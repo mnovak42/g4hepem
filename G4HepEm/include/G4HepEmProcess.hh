@@ -5,11 +5,14 @@
 
 #include "G4VProcess.hh"
 
+
 class  G4HepEmRunManager;
 class  G4HepEmRandomEngine;
+class  G4HepEmNoProcess;
 
 class  G4ParticleChange;
 class  G4SafetyHelper;
+
 
 #include <vector>
 
@@ -93,7 +96,12 @@ public:
      return nullptr;
    }
 
-
+   //
+   // Method to obtain a pointer to an empty process with the given name.
+   // NOTE: the same process pointers will be set as step-limiter process
+   //       whenever the given `process` limited the step. (Keep in mind,
+   //       there ar eno real processes in G4hepEm but user codes need this.)
+   G4VProcess* GetProcess(const G4String& procname);
 
    void StreamInfo(std::ostream& out, const G4ParticleDefinition& part) const;
 
@@ -101,16 +109,21 @@ public:
 
 private:
   // the top level interface to the G4HepEm functionalities
-  G4HepEmRunManager*       fTheG4HepEmRunManager;
-  G4HepEmRandomEngine*     fTheG4HepEmRandomEngine;
+  G4HepEmRunManager*           fTheG4HepEmRunManager;
+  G4HepEmRandomEngine*         fTheG4HepEmRandomEngine;
 
-  G4ParticleChange* fParticleChange;
-  G4SafetyHelper* fSafetyHelper;
+  G4ParticleChange*            fParticleChange;
+  G4SafetyHelper*              fSafetyHelper;
 
   const std::vector<G4double>* theCutsGamma = nullptr;
   const std::vector<G4double>* theCutsElectron = nullptr;
   const std::vector<G4double>* theCutsPositron = nullptr;
   G4bool applyCuts = false;
+
+  // a set of empty processes with the correct names just to be able to set them
+  // as process limited the step as some user codes relies on this information
+  std::vector<G4HepEmNoProcess*> fElectronNoProcessVector;
+  std::vector<G4HepEmNoProcess*> fGammaNoProcessVector;
 };
 
 #endif
