@@ -20,82 +20,41 @@ on:
 
 jobs:
   ci:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.version }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # set up the os and compiler combinations to test 
       matrix:
-        # populate the .name matrix 
-        name: [
-          ubuntu-20.04-gcc-9,
+        version: [
+          geant4.10.07.p03,
+          geant4.10.06.p03,
         ]
-        # populate the .os matrix  
-        include:
-            ## Ubuntu + gcc
-          - name: ubuntu-20.04-gcc-9  
-            os: ubuntu-20.04
-            compiler: gcc
-            version: 9
-
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: sudo apt-get install libxerces-c-dev
 
       - name: Install Geant4
         run: |
-          source ./testing/scripts/actions/install_geant4.sh
+          wget https://github.com/hahnjo/geant4-actions-binaries/releases/download/${{ matrix.version }}/${{ matrix.version }}-binaries.tar.gz
+          tar xf ${{ matrix.version }}-binaries.tar.gz -C $HOME
         shell: bash
         
-      - name: Install (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          # it's always gcc compiler in case of Linux so just protect for future
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-               sudo apt-get update -y
-               sudo ACCEPT_EULA=Y apt-get install msodbcsql17
-               sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-               echo "CC=/usr/bin/gcc-${{ matrix.version }}" >> $GITHUB_ENV
-               echo "CXX=/usr/bin/g++-${{ matrix.version }}" >> $GITHUB_ENV
-               sudo apt-get install -y libxerces-c-dev
-               sudo apt-get install -y qt5-default
-               sudo apt-get install -y build-essential 
-          fi
-
       - name: Build & Test Debug
-        run: |         
-          export LD_LIBRARY_PATH=/usr/local/geant4/10.6.3/lib:${LD_LIBRARY_PATH}
-          export G4NEUTRONHPDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4NDL4.6
-          export G4LEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4EMLOW7.9.1
-          export G4LEVELGAMMADATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/PhotonEvaporation5.5
-          export G4RADIOACTIVEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/RadioactiveDecay5.4
-          export G4PARTICLEXSDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4PARTICLEXS2.1
-          export G4PIIDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4PII1.3
-          export G4REALSURFACEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/RealSurface2.1.1
-          export G4SAIDXSDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4SAIDDATA2.0
-          export G4ABLADATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ABLA3.1
-          export G4INCLDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4INCL1.0
-          export G4ENSDFSTATEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ENSDFSTATE2.2                    
+        run: |
+          source ~/Geant4/bin/geant4.sh
           cmake -E remove_directory build
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
           cmake --build build
           cd build && ctest -j2 --verbose --output-on-failure
 
       - name: Build & Test Release
         run: |
-          export LD_LIBRARY_PATH=/usr/local/geant4/10.6.3/lib:${LD_LIBRARY_PATH}
-          export G4NEUTRONHPDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4NDL4.6
-          export G4LEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4EMLOW7.9.1
-          export G4LEVELGAMMADATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/PhotonEvaporation5.5
-          export G4RADIOACTIVEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/RadioactiveDecay5.4
-          export G4PARTICLEXSDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4PARTICLEXS2.1
-          export G4PIIDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4PII1.3
-          export G4REALSURFACEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/RealSurface2.1.1
-          export G4SAIDXSDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4SAIDDATA2.0
-          export G4ABLADATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ABLA3.1
-          export G4INCLDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4INCL1.0
-          export G4ENSDFSTATEDATA=/usr/local/geant4/10.6.3/share/Geant4-10.6.3/data/G4ENSDFSTATE2.2                    
+          source ~/Geant4/bin/geant4.sh
           cmake -E remove_directory build
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DGeant4_DIR=/usr/local/geant4/10.6.3/lib/Geant4-10.6.3
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
           cmake --build build
           cd build && ctest -j2 --verbose --output-on-failure
