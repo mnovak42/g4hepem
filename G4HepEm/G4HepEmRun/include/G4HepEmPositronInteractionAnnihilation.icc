@@ -67,7 +67,7 @@ void G4HepEmPositronInteractionAnnihilation::SampleEnergyAndDirectionsInFlight(
   double rndArray[2];
   do {
     rnge->flatArray(2, rndArray);
-    eps   = epsmin*std::exp(std::log(epsqot)*rndArray[0]);
+    eps   = epsmin*std::exp(G4HepEmLog(epsqot)*rndArray[0]);
     rfunc = 1. - eps + (2.*gam*eps-1.)/(eps*tau4);
   } while( rfunc < rndArray[1]);
   // compute direction of the gammas

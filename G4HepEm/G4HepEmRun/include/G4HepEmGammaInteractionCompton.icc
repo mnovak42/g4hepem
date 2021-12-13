@@ -70,7 +70,7 @@ double G4HepEmGammaInteractionCompton::SamplePhotonEnergyAndDirection(
   const double kappa = thePrimGmE / kElectronMassC2;
   const double eps0  = 1. / (1. + 2. * kappa);
   const double eps02 = eps0 * eps0;
-  const double al1   = -std::log(eps0);
+  const double al1   = -G4HepEmLog(eps0);
   const double al2   = al1 + 0.5 * (1. - eps02);
   double eps, eps2, gf;
   double oneMinusCost, sint2;

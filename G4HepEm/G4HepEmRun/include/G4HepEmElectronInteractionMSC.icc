@@ -103,7 +103,7 @@ void G4HepEmElectronInteractionMSC::SampleScattering(G4HepEmData* hepEmData, G4H
    double pwaCorToG2PerG1;
    G4HepEmGSTableData* gsTable = hepEmData->fTheGSTableData;
    const int imat = (hepEmData->fTheMatCutData->fMatCutData[imc]).fHepEmMatIndex;
-   ComputeParameters(imat, efEkin, std::log(efEkin), lambel, lambtr1, scra, g1,
+   ComputeParameters(imat, efEkin, G4HepEmLog(efEkin), lambel, lambtr1, scra, g1,
                      pwaCorToQ1, pwaCorToG2PerG1, gsTable, iselectron);
    // s/lambda_el i.e. mean number of elastic scattering along the step
    double lambdan = 0.;
@@ -173,7 +173,7 @@ void G4HepEmElectronInteractionMSC::SampleScattering(G4HepEmData* hepEmData, G4H
    // compute final position
    Qn1 *= pwaCorToQ1;
    // gamma = G_2/G_1 based on G2 computed from A by using the Wentzel DCS form of G2
-   const double loga  = std::log(1. + 1. / scra);
+   const double loga  = G4HepEmLog(1. + 1. / scra);
    const double gamma = pwaCorToG2PerG1*(6. * scra * (1. + scra) * (loga * (1. + 2. * scra) - 2.) / g1);
    // sample eta from p(eta)=2*eta i.e. P(eta) = eta_square ;-> P(eta) = rand --> eta = sqrt(rand)   //
    // compute alpha1 and alpha2 for energy loss correction
@@ -256,7 +256,7 @@ void G4HepEmElectronInteractionMSC::ComputeParameters(int imat, double ekin, dou
   // elastic mean free path in Geant4 internal Length units: the neglected (1+screening parameter) term is corrected
   lambel = beta2 * (1. + scra) * pwaCorToScrA / bc;
   // first transport coefficient
-  g1 = 2. * scra * ((1. + scra) * std::log(1. / scra + 1.) - 1.);
+  g1 = 2. * scra * ((1. + scra) * G4HepEmLog(1. / scra + 1.) - 1.);
   // first transport mean free path
   lambtr1 = lambel / g1;
 }
@@ -470,7 +470,7 @@ double* G4HepEmElectronInteractionMSC::GetGSAngularDtr(double scra, double lambd
     lambdaval = gsTable->fLAMBMAX - 1.e-8;
     lamIndx   = gsTable->fLAMBNUM - 1;
   }
-  const double lLambda = std::log(lambdaval);
+  const double lLambda = G4HepEmLog(lambdaval);
   //
   // determine lower lambda (=s/lambda_el) index: linear interp. on log(lambda) scale
   if (lamIndx < 0) {

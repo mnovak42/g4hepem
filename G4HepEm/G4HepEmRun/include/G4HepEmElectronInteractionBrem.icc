@@ -215,8 +215,8 @@ double G4HepEmElectronInteractionBrem::SampleETransferRB(struct G4HepEmData* hep
   const double      zFactor2 = (1.+1./dZet)/12.;
   const double    rejFuncMax = zFactor1 + zFactor2;
   // min and range of the transformed variable: x(k) = ln(k^2+k_p^2) that is in [ln(k_c^2+k_p^2), ln(E_k^2+k_p^2)]
-  const double xmin   = std::log( theGamCut*theGamCut     + densityCorr );
-  const double xrange = std::log( thePrimEkin*thePrimEkin + densityCorr ) - xmin;
+  const double xmin   = G4HepEmLog( theGamCut*theGamCut     + densityCorr );
+  const double xrange = G4HepEmLog( thePrimEkin*thePrimEkin + densityCorr ) - xmin;
   // sampling the emitted gamma energy
   double rndm[2];
   double eGamma, funcVal;
@@ -244,10 +244,10 @@ double G4HepEmElectronInteractionBrem::SampleETransferRB(struct G4HepEmData* hep
         // evaluate the screening functions (TF model of the atom, Tsai's aprx.):
 
         const double gam2 = gam*gam;
-        const double phi1 = 16.863-2.0*std::log(1.0+0.311877*gam2)+2.4*std::exp(-0.9*gam)+1.6*std::exp(-1.5*gam);
+        const double phi1 = 16.863-2.0*G4HepEmLog(1.0+0.311877*gam2)+2.4*std::exp(-0.9*gam)+1.6*std::exp(-1.5*gam);
         const double phi2 = 2.0/(3.0+19.5*gam+18.0*gam2);    // phi1-phi2
         const double eps2 = eps*eps;
-        const double psi1 = 24.34-2.0*std::log(1.0+13.111641*eps2)+2.8*std::exp(-8.0*eps)+1.2*std::exp(-29.2*eps);
+        const double psi1 = 24.34-2.0*G4HepEmLog(1.0+13.111641*eps2)+2.8*std::exp(-8.0*eps)+1.2*std::exp(-29.2*eps);
         const double psi2 = 2.0/(3.0+120.0*eps+1200.0*eps2); //psi1-psi2
         //
         const double logZ = theElemData.fLogZ;
