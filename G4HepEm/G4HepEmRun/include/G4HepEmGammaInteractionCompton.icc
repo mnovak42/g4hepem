@@ -78,7 +78,7 @@ double G4HepEmGammaInteractionCompton::SamplePhotonEnergyAndDirection(
   do {
     rnge->flatArray(3, rndm);
     if (al1 > al2*rndm[0]) {
-      eps  = std::exp(-al1 * rndm[1]);
+      eps  = G4HepEmExp(-al1 * rndm[1]);
       eps2 = eps * eps;
     } else {
       eps2 = eps02 + (1. - eps02) * rndm[1];

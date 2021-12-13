@@ -138,7 +138,7 @@ void G4HepEmElectronInteractionMSC::SampleScattering(G4HepEmData* hepEmData, G4H
      double transfPar = 0.;
      const double halfLambdan = 0.5 * lambdan;
      const double halfQn1     = 0.5 * Qn1;
-     const double expn = std::exp(-halfLambdan);
+     const double expn = G4HepEmExp(-halfLambdan);
      bool isMsc = SampleAngularDeflection(halfLambdan, expn, halfQn1, scra, cosTheta1, sinTheta1, transfPar, &gsDtr, rnge, gsTable, true);
                   SampleAngularDeflection(halfLambdan, expn, halfQn1, scra, cosTheta2, sinTheta2, transfPar, &gsDtr, rnge, gsTable, !isMsc);
      if (cosTheta1 + cosTheta2 >= 2.) { // no scattering happened
