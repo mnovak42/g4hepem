@@ -62,10 +62,10 @@ double GetSplineLog(int ndata, double* xdata, double* ydata, double* secderiv, d
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (xv - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*secderiv[idx];
-  const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*secderiv[idx];
+  const double c1 = (1.0 + b)*secderiv[idx+1];
+  return ydata[idx] + b*(ydata[idx+1]-ydata[idx]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
+
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
@@ -85,10 +85,9 @@ double GetSplineLog(int ndata, double* xdata, double* ydata, double x, double lo
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (xv - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*ydata[idx2+1];
-  const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*ydata[idx2+1];
+  const double c1 = (1.0 + b)*ydata[idx2+3];
+  return ydata[idx2] + b*(ydata[idx2+2]-ydata[idx2]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
 
@@ -109,10 +108,9 @@ double GetSplineLog(int ndata, double* data, double x, double logx, double logxm
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (xv - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*data[idx3+2];
-  const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*data[idx3+2];
+  const double c1 = (1.0 + b)*data[idx3+5];
+  return data[idx3+1] + b*(data[idx3+4]-data[idx3+1]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
 
@@ -131,10 +129,10 @@ double GetSpline(double* xdata, double* ydata, double* secderiv, double x, int i
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (x - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*secderiv[idx];
-  const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*secderiv[idx];
+  const double c1 = (1.0 + b)*secderiv[idx+1];
+  return ydata[idx] + b*(ydata[idx+1]-ydata[idx]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
+
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
@@ -150,10 +148,9 @@ double GetSpline(double* xdata, double* ydata, double x, int idx) {
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (x - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*ydata[idx2+1];
-  const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*ydata[idx2+1];
+  const double c1 = (1.0 + b)*ydata[idx2+3];
+  return ydata[idx2] + b*(ydata[idx2+2]-ydata[idx2]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
 // same as above but both xdata, ydata and secderiv are stored in data array
@@ -169,10 +166,9 @@ double GetSpline(double* data, double x, int idx) {
   const double  b = G4HepEmMax(0., G4HepEmMin(1., (x - x1)/dl));
   //
   const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*data[idx3+2];
-  const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
+  const double c0 = (2.0 - b)*data[idx3+2];
+  const double c1 = (1.0 + b)*data[idx3+5];
+  return data[idx3+1] + b*(data[idx3+4]-data[idx3+1]) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
 // this is used to get index for inverse range on host
