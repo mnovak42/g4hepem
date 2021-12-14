@@ -20,11 +20,32 @@ find_package(G4HepEm REQUIRED)
 # Locate sources and headers for this project
 #
 include_directories(${PROJECT_SOURCE_DIR}/include)
-file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
+set(sources
+  src/ActionInitialization.cc
+  src/DetectorConstruction.cc
+  src/DetectorMessenger.cc
+  src/EmAcceptance.cc
+  src/EventAction.cc
+  src/HistoManager.cc
+  src/PhysicsList.cc
+  src/PhysicsListMessenger.cc
+  src/PhysListEmStandard.cc
+  src/PhysListG4Em.cc
+  src/PhysListHepEm.cc
+  src/PrimaryGeneratorAction.cc
+  src/PrimaryGeneratorMessenger.cc
+  src/RunAction.cc
+  src/RunActionMessenger.cc
+  src/Run.cc
+  src/StepMax.cc
+  src/StepMaxMessenger.cc
+  src/SteppingAction.cc
+  src/SteppingVerbose.cc
+  src/TrackingAction.cc
+)
 
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
-add_executable(TestEm3 ${PROJECT_SOURCE_DIR}/TestEm3.cc ${sources} ${headers})
+add_executable(TestEm3 ${PROJECT_SOURCE_DIR}/TestEm3.cc ${sources})
 target_link_libraries(TestEm3 ${Geant4_LIBRARIES} ${G4HepEm_LIBRARIES})

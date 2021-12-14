@@ -5,8 +5,16 @@ add_subdirectory(G4HepEmInit)
 add_subdirectory(G4HepEmRun)
 
 # - Now top level G4HepEm library
-file(GLOB G4HEPEM_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
-file(GLOB G4HEPEM_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
+set(G4HEPEM_headers
+  include/G4HepEmCLHEPRandomEngine.hh
+  include/G4HepEmNoProcess.hh
+  include/G4HepEmProcess.hh
+  include/G4HepEmRunManager.hh
+)
+set(G4HEPEM_sources
+  src/G4HepEmProcess.cc
+  src/G4HepEmRunManager.cc
+)
 
 if(BUILD_STATIC_LIBS)
   add_library(g4HepEm STATIC ${G4HEPEM_sources})
