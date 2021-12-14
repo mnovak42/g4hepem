@@ -61,4 +61,21 @@ float G4HepEmExp(float x) {
  return VDTExpf(x);
 }
 
+// --- Pow(x,a) function with the VDT (G4) Exp and Log specialisations for double and float
+template <typename T>
+G4HepEmHostDevice inline
+T G4HepEmPow(T x, T a) {
+ return std::pow(x, a);
+}
+template < >
+G4HepEmHostDevice inline
+double G4HepEmPow(double x, double a) {
+ return VDTExp(a*VDTLog(x));
+}
+template < >
+G4HepEmHostDevice inline
+float G4HepEmPow(float x, float a) {
+ return VDTExpf(a*VDTLogf(x));
+}
+
 #endif // G4HepEmMath_HH
