@@ -1,5 +1,9 @@
-file(GLOB G4HEPEMDATAJSONIO_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
-file(GLOB G4HEPEMDATAJSONIO_CXX_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
+set(G4HEPEMDATAJSONIO_headers
+  include/G4HepEmDataJsonIO.hh
+)
+set(G4HEPEMDATAJSONIO_CXX_sources
+  src/G4HepEmDataJsonIO.cc
+)
 
 if(BUILD_STATIC_LIBS)
   add_library(g4HepEmDataJsonIO STATIC ${G4HEPEMDATAJSONIO_CXX_sources})

@@ -38,6 +38,12 @@
 #include "PhysListHepEm.hh"
 #include "PhysListG4Em.hh"
 
+#include "G4Version.hh"
+#if G4VERSION_NUMBER >= 1100
+#include "PhysListHepEmTracking.hh"
+#include "PhysListG4EmTracking.hh"
+#endif
+
 #include "G4EmStandardPhysics.hh"
 #include "G4EmStandardPhysics_option1.hh"
 #include "G4EmStandardPhysics_option2.hh"
@@ -131,7 +137,7 @@ void PhysicsList::ConstructProcess()
   // Electromagnetic Physics List
   fEmPhysicsList->ConstructProcess();
   // Other processes but only if not HepEm physics list is used
-  if (fEmName!="HepEm" && fEmName!="G4Em") {
+  if (fEmName!="HepEm" && fEmName!="HepEmTracking" && fEmName!="G4Em" && fEmName!="G4EmTracking") {
     fDecayPhysics = new G4DecayPhysics(1);
     fDecayPhysics->ConstructProcess();
     AddStepMax();
@@ -160,11 +166,27 @@ void PhysicsList::AddPhysicsList(const G4String& name)
     delete fEmPhysicsList;
     fEmPhysicsList = new PhysListHepEm();
 
+#if G4VERSION_NUMBER >= 1100
+  } else if (name == "HepEmTracking") {
+
+    fEmName = name;
+    delete fEmPhysicsList;
+    fEmPhysicsList = new PhysListHepEmTracking();
+#endif
+
   } else if (name == "G4Em") {
 
     fEmName = name;
     delete fEmPhysicsList;
     fEmPhysicsList = new PhysListG4Em();
+
+#if G4VERSION_NUMBER >= 1100
+  } else if (name == "G4EmTracking") {
+
+    fEmName = name;
+    delete fEmPhysicsList;
+    fEmPhysicsList = new PhysListG4EmTracking();
+#endif
 
   } else if (name == "emstandard_opt0") {
 

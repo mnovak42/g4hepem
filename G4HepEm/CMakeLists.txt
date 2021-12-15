@@ -5,8 +5,27 @@ add_subdirectory(G4HepEmInit)
 add_subdirectory(G4HepEmRun)
 
 # - Now top level G4HepEm library
-file(GLOB G4HEPEM_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh)
-file(GLOB G4HEPEM_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
+set(G4HEPEM_headers
+  include/G4HepEmCLHEPRandomEngine.hh
+  include/G4HepEmNoProcess.hh
+  include/G4HepEmProcess.hh
+  include/G4HepEmRunManager.hh
+)
+set(G4HEPEM_sources
+  src/G4HepEmProcess.cc
+  src/G4HepEmRunManager.cc
+)
+
+if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
+  set(G4HEPEM_headers ${G4HEPEM_headers}
+    include/G4EmTrackingManager.hh
+    include/HepEmTrackingManager.hh
+  )
+  set(G4HEPEM_sources ${G4HEPEM_sources}
+    src/G4EmTrackingManager.cc
+    src/HepEmTrackingManager.cc
+  )
+endif()
 
 if(BUILD_STATIC_LIBS)
   add_library(g4HepEm STATIC ${G4HEPEM_sources})
