@@ -3,6 +3,7 @@
 #define G4HepEmRandomEngine_HH
 
 #include "G4HepEmMacros.hh"
+#include "G4HepEmMath.hh"
 
 #include <cmath>
 
@@ -48,7 +49,7 @@ public:
       v2 = 2.*rnd[1] - 1.;
       r = v1*v1 + v2*v2;
     } while ( r > 1.);
-    const double fac = std::sqrt(-2.*std::log(r)/r);
+    const double fac = std::sqrt(-2.*G4HepEmLog(r)/r);
     fGauss   = v1*fac;
     fIsGauss = true;
     return v2*fac*stDev+mean;

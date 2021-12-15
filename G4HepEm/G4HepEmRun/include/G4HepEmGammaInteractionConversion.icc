@@ -239,7 +239,7 @@ double G4HepEmGammaInteractionConversion::SampleEnergyRateWithLPM(
 
 void G4HepEmGammaInteractionConversion::ComputePhi12(const double delta, double &phi1, double &phi2) {
    if (delta > 1.4) {
-     phi1 = 21.0190 - 4.145*std::log(delta + 0.958);
+     phi1 = 21.0190 - 4.145*G4HepEmLog(delta + 0.958);
      phi2 = phi1;
    } else {
      phi1 = 20.806 - delta*(3.190 - 0.5710*delta);
@@ -250,14 +250,14 @@ void G4HepEmGammaInteractionConversion::ComputePhi12(const double delta, double 
 
 // Compute the value of the screening function 3*PHI1(delta) - PHI2(delta):
 double G4HepEmGammaInteractionConversion::ScreenFunction1(const double delta) {
- return (delta > 1.4) ? 42.038 - 8.29*std::log(delta + 0.958)
+ return (delta > 1.4) ? 42.038 - 8.29*G4HepEmLog(delta + 0.958)
                       : 42.184 - delta*(7.444 - 1.623*delta);
 }
 
 
 // Compute the value of the screening function 1.5*PHI1(delta) +0.5*PHI2(delta):
 double G4HepEmGammaInteractionConversion::ScreenFunction2(const double delta) {
- return (delta > 1.4) ? 42.038 - 8.29*std::log(delta + 0.958)
+ return (delta > 1.4) ? 42.038 - 8.29*G4HepEmLog(delta + 0.958)
                       : 41.326 - delta*(5.848 - 0.902*delta);
 }
 
@@ -265,7 +265,7 @@ double G4HepEmGammaInteractionConversion::ScreenFunction2(const double delta) {
 // Same as ScreenFunction1 and ScreenFunction2 but computes them at once
 void G4HepEmGammaInteractionConversion::ScreenFunction12(const double delta, double &f1, double &f2) {
  if (delta > 1.4) {
-   f1 = 42.038 - 8.29*std::log(delta + 0.958);
+   f1 = 42.038 - 8.29*G4HepEmLog(delta + 0.958);
    f2 = f1;
  } else {
    f1 = 42.184 - delta*(7.444 - 1.623*delta);

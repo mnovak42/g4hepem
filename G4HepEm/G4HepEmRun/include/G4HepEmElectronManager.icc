@@ -36,7 +36,7 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
   // Sample the `number-of-interaction-left`
   for (int ip=0; ip<3; ++ip) {
     if (theTrack->GetNumIALeft(ip)<=0.) {
-      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+      theTrack->SetNumIALeft(-G4HepEmLog(tlData->GetRNGEngine()->flat()), ip);
     }
   }
   HowFar(hepEmData, hepEmPars, theElTrack, tlData->GetRNGEngine());
@@ -440,7 +440,7 @@ double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, con
   const double gam2  = gam*gam;
   const double bg2   = tau * (tau+2.0);
   const double bg    = std::sqrt(bg2);
-  return electronDensity*kPir02*((gam2+4.*gam+1.)*std::log(gam+bg) - (gam+3.)*bg) / (bg2*(gam+1.));
+  return electronDensity*kPir02*((gam2+4.*gam+1.)*G4HepEmLog(gam+bg) - (gam+3.)*bg) / (bg2*(gam+1.));
 }
 
 double G4HepEmElectronManager::ComputeMacXsecAnnihilationForStepping(const double ekin, const double electronDensity) {
@@ -476,17 +476,15 @@ void G4HepEmElectronManager::ConvertTrueToGeometricLength(const G4HepEmData* hep
     if (tau < kTauLim) {
       mscData->fZPathLength = mscData->fTrueStepLength * (1. - 0.5 * tau);
     } else {
-      mscData->fZPathLength = mscData->fLambtr1 * (1. - std::exp(-tau));
+      mscData->fZPathLength = mscData->fLambtr1 * (1. - G4HepEmExp(-tau));
     }
   } else if (ekin < kElectronMassC2 || mscData->fTrueStepLength == range) {
-    mscData->fPar1 = 1. / range;
-    mscData->fPar2 = 1. / (mscData->fPar1 * mscData->fLambtr1);
-    mscData->fPar3 = 1. + mscData->fPar2;
+    mscData->fPar1        = 1. / range;
+    mscData->fPar2        = 1. / (mscData->fPar1 * mscData->fLambtr1);
+    mscData->fPar3        = 1. + mscData->fPar2;
+    mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3);
     if (mscData->fTrueStepLength < range) {
-      mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3) *
-                             (1. - std::pow(1. - mscData->fPar1 * mscData->fTrueStepLength, mscData->fPar3));
-    } else {
-      mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3);
+      mscData->fZPathLength *= (1. - G4HepEmPow(1.-mscData->fPar1*mscData->fTrueStepLength, mscData->fPar3));
     }
   } else {
     const double rfin = G4HepEmMax(range - mscData->fTrueStepLength, 0.01 * range);
@@ -495,13 +493,13 @@ void G4HepEmElectronManager::ConvertTrueToGeometricLength(const G4HepEmData* hep
     const int    imat = (hepEmData->fTheMatCutData->fMatCutData[imc]).fHepEmMatIndex;
     double dum0, dum1, dum2, dum3, dum4;
     double lambda1;
-    G4HepEmElectronInteractionMSC::ComputeParameters(imat, t1, std::log(t1), dum0, lambda1,
+    G4HepEmElectronInteractionMSC::ComputeParameters(imat, t1, G4HepEmLog(t1), dum0, lambda1,
                                                      dum1, dum2, dum3, dum4, hepEmData->fTheGSTableData, iselectron);
-    mscData->fPar1 = (mscData->fLambtr1 - lambda1) / (mscData->fLambtr1 * mscData->fTrueStepLength); // alpha
-    mscData->fPar2 = 1. / (mscData->fPar1 * mscData->fLambtr1);
-    mscData->fPar3 = 1. + mscData->fPar2;
-    mscData->fZPathLength = 1. / (mscData->fPar1 * mscData->fPar3) *
-                           (1. - std::pow(1. - mscData->fPar1 * mscData->fTrueStepLength, mscData->fPar3));
+    mscData->fPar1        = (mscData->fLambtr1 - lambda1) / (mscData->fLambtr1 * mscData->fTrueStepLength); // alpha
+    mscData->fPar2        = 1. / (mscData->fPar1 * mscData->fLambtr1);
+    mscData->fPar3        = 1. + mscData->fPar2;
+    mscData->fZPathLength = (1. - G4HepEmPow(1.-mscData->fPar1*mscData->fTrueStepLength, mscData->fPar3))/(mscData->fPar1 * mscData->fPar3);
+
   }
   mscData->fZPathLength = G4HepEmMin(mscData->fZPathLength, mscData->fLambtr1);
 }
@@ -527,11 +525,11 @@ void G4HepEmElectronManager::ConvertGeometricToTrueLength(G4HepEmMSCTrackData* m
     double tlength = gStepToConvert;
     if (gStepToConvert > mscData->fLambtr1 * kTauSmall) {
       if (mscData->fPar1 < 0.) {
-        tlength = -mscData->fLambtr1 * std::log(1. - gStepToConvert / mscData->fLambtr1);
+        tlength = -mscData->fLambtr1 * G4HepEmLog(1. - gStepToConvert / mscData->fLambtr1);
       } else {
         const double dum = mscData->fPar1 * mscData->fPar3 * gStepToConvert;
         if (dum < 1.) {
-          tlength = (1. - std::pow(1. - dum, 1. / mscData->fPar3)) / mscData->fPar1;
+          tlength = (1. - G4HepEmPow(1.-dum, 1./mscData->fPar3)) / mscData->fPar1;
         } else {
           tlength = range;
         }

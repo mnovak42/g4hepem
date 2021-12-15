@@ -30,7 +30,7 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
   // Sample the `number-of-interaction-left`
   for (int ip=0; ip<3; ++ip) {
     if (theTrack->GetNumIALeft(ip)<=0.) {
-      theTrack->SetNumIALeft(-std::log(tlData->GetRNGEngine()->flat()), ip);
+      theTrack->SetNumIALeft(-G4HepEmLog(tlData->GetRNGEngine()->flat()), ip);
     }
   }
   HowFar(hepEmData, hepEmPars, theGammaTrack);

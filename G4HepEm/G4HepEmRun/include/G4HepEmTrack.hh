@@ -14,7 +14,7 @@
 // for gamma particle tracks the G4HepEmElectronTrack contains additional members
 // speacial for charged particle tracks and their simualtion.
 
-#include <cmath>
+#include "G4HepEmMath.hh"
 
 class G4HepEmTrack {
 
@@ -120,7 +120,7 @@ public:
   G4HepEmHostDevice
   double  GetLogEKin() {
     if (fLogEKin > 99.0) {
-      fLogEKin = (fEKin > 0.) ? std::log(fEKin) : -30;
+      fLogEKin = (fEKin > 0.) ? G4HepEmLog(fEKin) : -30;
     }
     return fLogEKin;
   }
