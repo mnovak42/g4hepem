@@ -1,7 +1,6 @@
 #include "G4EmTrackingManager.hh"
 #include "TrackingManagerHelper.hh"
 
-#include "G4GoudsmitSaundersonMscModel.hh"
 #include "G4eBremsstrahlung.hh"
 #include "G4eIonisation.hh"
 #include "G4eMultipleScattering.hh"
@@ -22,20 +21,14 @@ G4EmTrackingManager *G4EmTrackingManager::masterTrackingManager = nullptr;
 G4EmTrackingManager::G4EmTrackingManager() {
   // e-
   {
-    G4eMultipleScattering *msc = new G4eMultipleScattering;
-    msc->SetEmModel(new G4GoudsmitSaundersonMscModel);
-    electron.msc = msc;
-
+    electron.msc = new G4eMultipleScattering;
     electron.ioni = new G4eIonisation;
     electron.brems = new G4eBremsstrahlung;
   }
 
   // e+
   {
-    G4eMultipleScattering *msc = new G4eMultipleScattering;
-    msc->SetEmModel(new G4GoudsmitSaundersonMscModel);
-    positron.msc = msc;
-
+    positron.msc = new G4eMultipleScattering;
     positron.ioni = new G4eIonisation;
     positron.brems = new G4eBremsstrahlung;
     positron.annihilation = new G4eplusAnnihilation;
