@@ -19,12 +19,7 @@ public:
 
   G4HepEmHostDevice
   G4HepEmMSCTrackData(const G4HepEmMSCTrackData& o) {
-    fLambel               = o.fLambel;
     fLambtr1              = o.fLambtr1;
-    fScra                 = o.fScra;
-    fG1                   = o.fG1;
-    fPWACorToQ1           = o.fPWACorToQ1;
-    fPWACorToG2PerG1      = o.fPWACorToG2PerG1;
 
     fTrueStepLength       = o.fTrueStepLength;
     fZPathLength          = o.fZPathLength;
@@ -36,13 +31,15 @@ public:
     fDirection[2]         = o.fDirection[2];
 
     fInitialRange         = o.fInitialRange;
+    fDynamicRangeFactor   = o.fDynamicRangeFactor;
+    fTlimitMin            = o.fTlimitMin;
 
     fPar1                 = o.fPar1;
     fPar2                 = o.fPar2;
     fPar3                 = o.fPar3;
 
     fIsNoScatteringInMSC  = o.fIsNoScatteringInMSC;
-    fIsNoDisplace         = o.fIsNoDisplace;
+    fIsDisplace           = o.fIsDisplace;
     fIsFirstStep          = o.fIsFirstStep;
     fIsActive             = o.fIsActive;
   }
@@ -69,12 +66,7 @@ public:
   // reset all member values
   G4HepEmHostDevice
   void ReSet() {
-    fLambel               = 0.;
     fLambtr1              = 0.;
-    fScra                 = 0.;
-    fG1                   = 0.;
-    fPWACorToQ1           = 1.;
-    fPWACorToG2PerG1      = 1.;
 
     fTrueStepLength       = 0.;
     fZPathLength          = 0.;
@@ -86,24 +78,21 @@ public:
     fDirection[2]         = 1.;
 
     fInitialRange         = 1.0e+21;
+    fDynamicRangeFactor   = 0.04;   // fr will be set in the MSC step limit
+    fTlimitMin            = 1.0E-7; // tlimitmin 10*0.01 [nm] 1.0E-7[mm]
 
     fPar1                 = -1.;
     fPar2                 =  0.;
     fPar3                 =  0.;
 
     fIsNoScatteringInMSC  = false;
-    fIsNoDisplace         = false;
+    fIsDisplace           = false;
     fIsFirstStep          = true;
     fIsActive             = false;
   }
 
 public:
-  double fLambel;             // elastic mfp
   double fLambtr1;            // first transport mfp
-  double fScra;               // screening parameter
-  double fG1;                 // fisrt stransport coefficient
-  double fPWACorToQ1;         // DPWA correction to Q1
-  double fPWACorToG2PerG1;    // DPWA correction to the G2/G1 ratio
 
   double fTrueStepLength;     // the true, i.e. physical step Length
   double fZPathLength;        // projection of the transport distance along the org. dir.
@@ -111,13 +100,15 @@ public:
   double fDirection[3];       // direction proposed by MSC
 
   double fInitialRange;       // initial range value (entering in the volume)
+  double fDynamicRangeFactor; // dynamic range factor i.e. `fr`
+  double fTlimitMin;          // minimum true step length i.e. `tlimitmin`
 
   double fPar1;               // parameters used in the true - > geom conversion
   double fPar2;
   double fPar3;
 
   bool   fIsNoScatteringInMSC; // indicates that no scattering happend
-  bool   fIsNoDisplace;        // indicates that displacement won't be used
+  bool   fIsDisplace;          // indicates that displacement needs to be done
   bool   fIsFirstStep;         // first step with this particle
 
   bool   fIsActive;
