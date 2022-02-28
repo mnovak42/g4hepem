@@ -42,6 +42,4 @@ int InitElementSelectorEnergyGrid(int binsperdecade, double* egrid, double mine,
 
 void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4SeltzerBergerModel* sbModel);
 
-void BuildGSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars);
-
 #endif  // G4HepEmElectronTableBuilder_HH
