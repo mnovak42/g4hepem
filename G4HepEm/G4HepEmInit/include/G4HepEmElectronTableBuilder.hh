@@ -27,6 +27,9 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
                       G4eBremsstrahlungRelModel* rbModel, struct G4HepEmData* hepEmData,
                       struct G4HepEmParameters* hepEmParams, bool iselectron);
 
+void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepEmData,
+                      struct G4HepEmParameters* hepEmParams, bool iselectron);
+
 void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbModel,
                       G4eBremsstrahlungRelModel* rbModel, struct G4HepEmData* hepEmData,
                       struct G4HepEmParameters* hepEmParams, bool iselectron);

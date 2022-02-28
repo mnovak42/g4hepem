@@ -20,6 +20,7 @@
 #include "G4MollerBhabhaModel.hh"
 #include "G4SeltzerBergerModel.hh"
 #include "G4eBremsstrahlungRelModel.hh"
+#include "G4UrbanMscModel.hh"
 
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmMaterialData.hh"
@@ -76,6 +77,14 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   modelRB->SetLPMFlag(true);
   modelRB->Initialise(g4PartDef, *theGamCuts);
   //
+  // 4. Urban msc model:
+  // --- used on [E_min : E_max]
+  G4UrbanMscModel* modelUMSC = new G4UrbanMscModel();
+  modelUMSC->SetLowEnergyLimit(emModelEMin);
+  modelUMSC->SetHighEnergyLimit(emModelEMax);
+  modelUMSC->Initialise(g4PartDef, *theGamCuts); // second argument is not used
+
+  //
   // === Use the G4HepEmElectronTableBuilder to build all data tables used at
   //     run time: e-loss, macroscopic cross section tables and target element
   //     selectors for each models.
@@ -94,6 +103,9 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   // build macroscopic cross section data
   std::cout << "     ---  BuildLambdaTables ... " << std::endl;
   BuildLambdaTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
+  // build macroscopic first transport cross section data (used by Urban msc)
+  std::cout << "     ---  BuildTransportXSectionTables ... " << std::endl;
+  BuildTransportXSectionTables(modelUMSC, hepEmData, hepEmPars, iselectron);
   // build element selectors
   std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
   BuildElementSelectorTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
@@ -118,4 +130,5 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   delete modelMB;
   delete modelSB;
   delete modelRB;
+  delete modelUMSC;
 }

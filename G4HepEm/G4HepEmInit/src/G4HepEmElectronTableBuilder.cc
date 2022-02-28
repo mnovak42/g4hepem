@@ -91,8 +91,9 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   double* theRangeSDArray    = new double[numELoss]{};  // second derivatives for range
   double* theInvRangeSDArray = new double[numELoss]{};  // second derivatives for inverse range
   //
-  int numHepEmMCCData = hepEmMCData->fNumMatCutData;
-  elData->fNumMatCuts = numHepEmMCCData;
+  int numHepEmMCCData   = hepEmMCData->fNumMatCutData;
+  elData->fNumMatCuts   = numHepEmMCCData;
+  elData->fNumMaterials = hepEmData->fTheMaterialData->fNumMaterialData;
   //
   // allocate array to store the [range, sec-deriv, dedx, sec-deriv, in-range-sec-deriv]
   // (numELoss values each) for all matrial-cuts couple
@@ -371,6 +372,67 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   delete[] macXSec;
   delete[] secDerivs;
   delete[] xsecData;
+}
+
+void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepEmData,
+                                  struct G4HepEmParameters* /*hepEmParams*/, bool iselectron) {
+  // get the pointer to the already allocated G4HepEmElectronData from the HepEmData
+  struct G4HepEmElectronData* elData = iselectron
+                                       ? hepEmData->fTheElectronData
+                                       : hepEmData->fThePositronData;
+  //
+  // get the g4 particle-definition
+  G4ParticleDefinition* g4PartDef = G4Positron::Positron();
+  if  (iselectron) {
+    g4PartDef = G4Electron::Electron();
+  }
+  //
+  // NOTE: the energy grid is the same taht is used for the e-loss data and it
+  //       has already been generated at this point (BuildELossTables should have
+  //       been called before)
+  const int numEner       = elData->fELossEnergyGridSize;
+  const int numMaterials  = elData->fNumMaterials;
+  //
+  // allocate some array for intermediate storage of the TR1 MXsec and its second
+  // derivatives for a given material
+  double* theTr1MXsec     = new double[numEner]{};
+  double* theTr1MXsecSD   = new double[numEner]{};
+  // allocate the array to store (continuously) all macroscopic first tr. xsec
+  elData->fTr1MacXSecData = new double[2*numEner*numMaterials]{};
+  //
+  // loop over the HepEm materials and for each:
+  // - get the corresponding G4Material
+  // - compute the first transprt cross section per volume (i.e. first transport
+  //   macroscopic cross section, since the G4VMscModel-s implements transport
+  //   cross section per atom in the ComputeCrossSectionPerAtom interface) at
+  //   each of the discrte kinetic energies
+  //
+  // get the HepEm material data
+  const struct G4HepEmMaterialData*  hepEmMatData = hepEmData->fTheMaterialData;
+  // get the correspondibg G4Material table (i.e. global vector of G4Material*)
+  const G4MaterialTable* theG4MaterialTable = G4Material::GetMaterialTable();
+  for (int im=0; im<numMaterials; ++im) {
+    const struct G4HepEmMatData& matData = hepEmMatData->fMaterialData[im];
+    const G4Material* g4Mat = (*theG4MaterialTable)[matData.fG4MatIndex];
+    // loop over the kinetic energies and comput the tr1 mxsec
+    for (int ie=0; ie<numEner; ++ie) {
+      double     ekin   = std::abs(elData->fELossEnergyGrid[ie]-10.0)<1.0E-6 ? 10.0 : elData->fELossEnergyGrid[ie];
+      double tr1mxsec   = std::max(0.0, mscModel->CrossSectionPerVolume(g4Mat, g4PartDef, ekin));
+      theTr1MXsec[ie]   = tr1mxsec;
+      theTr1MXsecSD[ie] = 0.0;
+    }
+    // set up a spline on the TR1 MXsec array for interpolation
+    G4HepEmInitUtils::Instance().PrepareSpline(numEner, elData->fELossEnergyGrid, theTr1MXsec, theTr1MXsecSD);
+    // write the data into its final location
+    int iStart = 2*numEner*im;
+    for (int ie=0; ie<numEner; ++ie) {
+      elData->fTr1MacXSecData[iStart++] = theTr1MXsec[ie];
+      elData->fTr1MacXSecData[iStart++] = theTr1MXsecSD[ie];
+    }
+  }
+  // free auxilary arrays
+  delete[] theTr1MXsec;
+  delete[] theTr1MXsecSD;
 }
 
 
