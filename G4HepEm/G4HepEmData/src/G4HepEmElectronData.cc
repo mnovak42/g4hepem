@@ -21,6 +21,7 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData)  {
     delete[] (*theElectronData)->fELossEnergyGrid;
     delete[] (*theElectronData)->fELossData;
     delete[] (*theElectronData)->fResMacXSecData;
+    delete[] (*theElectronData)->fTr1MacXSecData;
     delete[] (*theElectronData)->fResMacXSecStartIndexPerMatCut;
     delete[] (*theElectronData)->fElemSelectorIoniStartIndexPerMatCut;
     delete[] (*theElectronData)->fElemSelectorIoniData;
@@ -54,7 +55,8 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   //
   // === ELoss data:
   //
-  const int numHepEmMatCuts = onHOST->fNumMatCuts;
+  const int numHepEmMatCuts  = onHOST->fNumMatCuts;
+  const int numHepEmMats     = onHOST->fNumMaterials;
   const int numELossGridData = onHOST->fELossEnergyGridSize;
   // allocate memory on _d for the ELoss energy grid and all ELoss data and copy
   // them from form _h
@@ -72,6 +74,12 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fResMacXSecData),                sizeof( double ) * numResMacXSecs  ) );
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fResMacXSecStartIndexPerMatCut,  onHOST->fResMacXSecStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fResMacXSecData,                 onHOST->fResMacXSecData,                sizeof( double ) * numResMacXSecs,  cudaMemcpyHostToDevice ) );
+  //
+  // === First macroscopic transport scross section data:
+  //
+  // allocate memory for all the tr1-mxsec data on _d and compy from _h
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fTr1MacXSecData), sizeof( double ) * 2 * numHepEmMats ) );
+  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fTr1MacXSecData,  onHOST->fTr1MacXSecData, sizeof( double ) * 2 * numHepEmMats,  cudaMemcpyHostToDevice ) );
   //
   //  === Target element selector data (for ioni and brem EM models)
   //
@@ -121,6 +129,8 @@ void FreeElectronDataOnDevice(struct G4HepEmElectronData** onDEVICE) {
     // Macr. cross sections for ioni/brem
     cudaFree( onHostTo_d->fResMacXSecStartIndexPerMatCut );
     cudaFree( onHostTo_d->fResMacXSecData                );
+    // Tr1-mxsec data
+    cudaFree( onHostTo_d->fTr1MacXSecData                );
     // Target element selectors for ioni and brem models
     cudaFree( onHostTo_d->fElemSelectorIoniStartIndexPerMatCut   );
     cudaFree( onHostTo_d->fElemSelectorIoniData                  );
