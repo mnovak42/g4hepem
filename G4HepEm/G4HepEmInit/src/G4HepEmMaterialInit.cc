@@ -126,11 +126,14 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fZeffSqrt                = std::sqrt(zeff);
       //
       matData.fUMSCPar                 = 9.62800E-1 - 8.4848E-2*matData.fZeffSqrt + 4.3769E-3*zeff;
+      matData.fUMSCStepMinPars         = new double[2]{};
       matData.fUMSCStepMinPars[0]      = 2.7725E+1/(1.0 + 2.03E-1*zeff);
       matData.fUMSCStepMinPars[1]      = 6.152    /(1.0 + 1.11E-1*zeff);
       const double dum0                = 9.90395E-1 + zeff16*(-1.68386E-1 + zeff16*9.3286E-2);
+      matData.fUMSCThetaCoeff          = new double[2]{};
       matData.fUMSCThetaCoeff[0]       = dum0*(1.0 - 8.7780E-2/zeff);
       matData.fUMSCThetaCoeff[1]       = dum0*(4.0780E-2 + 1.7315E-4*zeff);
+      matData.fUMSCTailCoeff           = new double[4]{};
       matData.fUMSCTailCoeff[0]        = 2.3785    - zeff13*(4.1981E-1 - zeff13*6.3100E-2);
       matData.fUMSCTailCoeff[1]        = 4.7526E-1 + zeff13*(1.7694    - zeff13*3.3885E-1);
       matData.fUMSCTailCoeff[2]        = 2.3683E-1 - zeff13*(1.8111    - zeff13*3.2774E-1);
