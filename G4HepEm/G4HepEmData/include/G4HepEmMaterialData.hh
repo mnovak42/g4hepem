@@ -70,9 +70,9 @@ struct G4HepEmMatData {
   double    fZeffSqrt;
   //
   double    fUMSCPar;
-  double*   fUMSCStepMinPars = nullptr;  // [2]
-  double*   fUMSCTailCoeff   = nullptr;    // [4]
-  double*   fUMSCThetaCoeff  = nullptr;   // [2]
+  double    fUMSCStepMinPars[2];
+  double    fUMSCTailCoeff[4];
+  double    fUMSCThetaCoeff[2];
 };
 
 // Data for all materials used in the current geometry.

@@ -36,9 +36,6 @@ void FreeMaterialData (struct G4HepEmMaterialData** theMatData) {
         delete[] (*theMatData)->fMaterialData[imd].fElementVect;
         delete[] (*theMatData)->fMaterialData[imd].fSandiaEnergies;
         delete[] (*theMatData)->fMaterialData[imd].fSandiaCoefficients;
-        delete[] (*theMatData)->fMaterialData[imd].fUMSCStepMinPars;
-        delete[] (*theMatData)->fMaterialData[imd].fUMSCTailCoeff;
-        delete[] (*theMatData)->fMaterialData[imd].fUMSCThetaCoeff;
       }
       delete[] (*theMatData)->fMaterialData;
     }
@@ -89,15 +86,6 @@ void CopyMaterialDataToGPU(struct G4HepEmMaterialData* onCPU, struct G4HepEmMate
     //
     gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fSandiaCoefficients), sizeof( double )*4*numSandiaIntervals ) );
     gpuErrchk ( cudaMemcpy ( dataHtoD_h->fSandiaCoefficients, mData_h.fSandiaCoefficients, sizeof( double )*4*numSandiaIntervals, cudaMemcpyHostToDevice ) );
-    // U-msc related, material related
-    gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fUMSCStepMinPars), sizeof( double )*2 ) );
-    gpuErrchk ( cudaMemcpy ( dataHtoD_h->fUMSCStepMinPars, mData_h.fUMSCStepMinPars, sizeof( double )*2, cudaMemcpyHostToDevice ) );
-    //
-    gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fUMSCTailCoeff), sizeof( double )*4 ) );
-    gpuErrchk ( cudaMemcpy ( dataHtoD_h->fUMSCTailCoeff, mData_h.fUMSCTailCoeff, sizeof( double )*4, cudaMemcpyHostToDevice ) );
-    //
-    gpuErrchk ( cudaMalloc ( &(dataHtoD_h->fUMSCThetaCoeff), sizeof( double )*2 ) );
-    gpuErrchk ( cudaMemcpy ( dataHtoD_h->fUMSCThetaCoeff, mData_h.fUMSCThetaCoeff, sizeof( double )*2, cudaMemcpyHostToDevice ) );
     //
     // copy this G4HepEmMatData structure to _d
     gpuErrchk ( cudaMemcpy ( &(arrayHto_d[imd]), dataHtoD_h, sizeof( struct G4HepEmMatData ), cudaMemcpyHostToDevice ) );
@@ -146,9 +134,6 @@ void FreeMaterialDataOnGPU ( struct G4HepEmMaterialData** onGPU) {
         cudaFree ( mData_h->fNumOfAtomsPerVolumeVect );
         cudaFree ( mData_h->fSandiaEnergies );
         cudaFree ( mData_h->fSandiaCoefficients );
-        cudaFree ( mData_h->fUMSCStepMinPars );
-        cudaFree ( mData_h->fUMSCTailCoeff );
-        cudaFree ( mData_h->fUMSCThetaCoeff );
       }
       // Then at the and free the whole `struct G4HepEmMatData* fMaterialData`
       // array (after all dynamically allocated memory is freed) by using the
