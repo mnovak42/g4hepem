@@ -1,6 +1,8 @@
 #include "PhysListHepEmTracking.hh"
 #include "HepEmTrackingManager.hh"
 
+#include "G4EmParameters.hh"
+
 #include "G4Electron.hh"
 #include "G4Gamma.hh"
 #include "G4ParticleDefinition.hh"
@@ -11,6 +13,10 @@
 PhysListHepEmTracking::PhysListHepEmTracking(const G4String& name)
    :  G4VPhysicsConstructor(name)
 {
+  G4EmParameters* param = G4EmParameters::Instance();
+  param->SetDefaults();
+
+  param->SetMscRangeFactor(0.04);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

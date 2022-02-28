@@ -15,7 +15,8 @@ PhysListG4EmTracking::PhysListG4EmTracking(const G4String& name)
 {
   G4EmParameters* param = G4EmParameters::Instance();
   param->SetDefaults();
-  param->SetMscRangeFactor(0.06);
+
+  param->SetMscRangeFactor(0.04);
   param->SetLossFluctuations(false);
 }
 
