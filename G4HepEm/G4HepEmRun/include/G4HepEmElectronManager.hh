@@ -162,6 +162,9 @@ public:
                                           double lekin, bool isioni);
 
   G4HepEmHostDevice
+  static double GetTransportMFP(const struct G4HepEmElectronData* elData, const int im, const double ekin, const double lekin);
+
+  G4HepEmHostDevice
   static double ComputeMacXsecAnnihilation(const double ekin, const double electronDensity);
 
   G4HepEmHostDevice
