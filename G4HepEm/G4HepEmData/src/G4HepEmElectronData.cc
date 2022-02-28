@@ -78,8 +78,9 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   // === First macroscopic transport scross section data:
   //
   // allocate memory for all the tr1-mxsec data on _d and compy from _h
-  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fTr1MacXSecData), sizeof( double ) * 2 * numHepEmMats ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fTr1MacXSecData,  onHOST->fTr1MacXSecData, sizeof( double ) * 2 * numHepEmMats,  cudaMemcpyHostToDevice ) );
+  const int numTr1MacXSecs = 2 * numELossGridData * numHepEmMats;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fTr1MacXSecData), sizeof( double ) * numTr1MacXSecs ) );
+  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fTr1MacXSecData,  onHOST->fTr1MacXSecData, sizeof( double ) * numTr1MacXSecs,  cudaMemcpyHostToDevice ) ); 
   //
   //  === Target element selector data (for ioni and brem EM models)
   //
