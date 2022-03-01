@@ -57,12 +57,22 @@ struct G4HepEmMatData {
   double    fElectronDensity = 0.0;
   /** Radiation length. */
   double    fRadiationLength = 0.0;
+  //
   /** Number of intervals in the Sandia table */
   int       fNumOfSandiaIntervals = 0;
   /** Starting energy of the intervals */
   double*   fSandiaEnergies = nullptr; // [fNumOfSandiaIntervals]
   /** Coefficients for the interval (four per energy range) */
   double*   fSandiaCoefficients = nullptr; // [4 x fNumOfSandiaIntervals]
+  //
+  double    fZeff;
+  double    fZeff23;
+  double    fZeffSqrt;
+  //
+  double    fUMSCPar;
+  double    fUMSCStepMinPars[2];
+  double    fUMSCTailCoeff[4];
+  double    fUMSCThetaCoeff[2];
 };
 
 // Data for all materials used in the current geometry.

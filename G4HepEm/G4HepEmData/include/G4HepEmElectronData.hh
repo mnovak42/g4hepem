@@ -80,7 +80,10 @@
 
 struct G4HepEmElectronData {
   /** Number of G4HepEm material - cuts: number of G4HepEmMCCData structures stored in the G4HepEmMatCutData::fMatCutData array. */
-  int        fNumMatCuts = 0;
+  int        fNumMatCuts   = 0;
+  /** Number of G4HepEm material : number of G4HepEmMatData structures stored in the G4HepEmMaterialData::fMaterialData array. */
+  int        fNumMaterials = 0;
+
 
 //// === ENERGY LOSS DATA
   /**
@@ -229,7 +232,39 @@ struct G4HepEmElectronData {
    *
    */
   double*    fResMacXSecData = nullptr; // [fResMacXSecNumData]
-/// @} */ // end: macroscopic cross section
+/// @} */ // end: restricted macroscopic cross section
+
+  /**
+   * @name Macroscopic first transport corss section related data members:
+   * These members are used to store all macroscopic first transport cross section related data
+   * for all materials. The discrete energy grid, above which that disceret cross section
+   * values are computed and stored, is the same as used for the energy loss data.
+   */
+///@{
+  /** The macroscopic first transport cross section.
+   *
+   * The data are stored in the following format for each of the G4HepEmMatData material
+   * (stored in the G4HepEmMaterialData::fMaterialData array):
+   *   - there are \f$N := \f$ G4HepEmElectronData::fELossEnergyGridSize **(macroscopic) first transport cross section
+   *     values** associated to the primary \f$e^-/e^+\f$ kinetic energy values stored
+   *     in G4HepEmElectronData::fELossEnergyGrid. These \f$TR1_i, i=0,\ldots,N-1\f$ **values** are stored
+   *     with the corresponding \f$TR1_i^{''}, i=0,\ldots,N-1\f$
+   *     **second derivatives** in the form of \f$TR1_0,TR1_0^{''},TR1_{1},TR1_{1}^{''},\ldots,TR1_{N-1},TR1_{N-1}^{''}\f$
+   *     in order **to resonate the best with the run-time access pattern**.
+   *   - for a G4HepEmMatData material data with the index of \f$\texttt{im}\f$ (i.e.
+   *     stored at G4HepEmMaterialData::fMaterialData[\f$\texttt{im}\f$]), the macroscopic first
+   *     transport cross section realted data starts at \f$\texttt{iStart} = 2\times\f$G4HepEmElectronData::fELossEnergyGridSize\f$\times\texttt{im}\f$
+   *     in the G4HepEmElectronData::fTr1MacXSecData array
+   *   - the total number of data in the array is \f$2\times\f$G4HepEmElectronData::fELossEnergyGridSize\f$\times\f$G4HepEmElectronData::fNumMaterials
+   *
+   * @note
+   * There is a spline interpolation function in G4HepEmRunUtils, specialised
+   * for the above pattern used to store the dE/dx and range data. Using this
+   * function **ensures optimal** data **cache utilisation at run-time**.
+   */
+  double*    fTr1MacXSecData = nullptr; // [2xfELossEnergyGridSize x fNumMaterials]
+/// @} */ // end: macroscopic first transport cross section
+
 
 //// === TARGET ELEMENT SELECTOR
   /**

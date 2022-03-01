@@ -117,6 +117,25 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fElectronDensity         = mat->GetElectronDensity();
       matData.fRadiationLength         = mat->GetRadlen();
 
+      // go for some U-msc related data per materials
+      const double zeff                = mat->GetIonisation()->GetZeffective();
+      const double zeff16              = std::pow(zeff, 1.0/6.0);
+      const double zeff13              = zeff16*zeff16;
+      matData.fZeff                    = zeff;
+      matData.fZeff23                  = zeff13*zeff13;
+      matData.fZeffSqrt                = std::sqrt(zeff);
+      //
+      matData.fUMSCPar                 = 9.62800E-1 - 8.4848E-2*matData.fZeffSqrt + 4.3769E-3*zeff;
+      matData.fUMSCStepMinPars[0]      = 2.7725E+1/(1.0 + 2.03E-1*zeff);
+      matData.fUMSCStepMinPars[1]      = 6.152    /(1.0 + 1.11E-1*zeff);
+      const double dum0                = 9.90395E-1 + zeff16*(-1.68386E-1 + zeff16*9.3286E-2);
+      matData.fUMSCThetaCoeff[0]       = dum0*(1.0 - 8.7780E-2/zeff);
+      matData.fUMSCThetaCoeff[1]       = dum0*(4.0780E-2 + 1.7315E-4*zeff);
+      matData.fUMSCTailCoeff[0]        = 2.3785    - zeff13*(4.1981E-1 - zeff13*6.3100E-2);
+      matData.fUMSCTailCoeff[1]        = 4.7526E-1 + zeff13*(1.7694    - zeff13*3.3885E-1);
+      matData.fUMSCTailCoeff[2]        = 2.3683E-1 - zeff13*(1.8111    - zeff13*3.2774E-1);
+      matData.fUMSCTailCoeff[3]        = 1.7888E-2 + zeff13*(1.9659E-2 - zeff13*2.6664E-3);
+
       // Copy the intervals from the table.
       G4SandiaTable* sandia         = mat->GetSandiaTable();
       int matNbOfSandiaIntervals    = sandia->GetMatNbOfIntervals();

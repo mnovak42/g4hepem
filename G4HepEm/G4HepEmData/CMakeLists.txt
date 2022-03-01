@@ -4,7 +4,6 @@ set(G4HEPEMDATA_headers
   include/G4HepEmElectronData.hh
   include/G4HepEmElementData.hh
   include/G4HepEmGammaData.hh
-  include/G4HepEmGSTableData.hh
   include/G4HepEmMatCutData.hh
   include/G4HepEmMaterialData.hh
   include/G4HepEmParameters.hh
@@ -16,7 +15,6 @@ set(G4HEPEMDATA_CXX_sources
   src/G4HepEmElectronData.cc
   src/G4HepEmElementData.cc
   src/G4HepEmGammaData.cc
-  src/G4HepEmGSTableData.cc
   src/G4HepEmMatCutData.cc
   src/G4HepEmMaterialData.cc
   src/G4HepEmSBTableData.cc

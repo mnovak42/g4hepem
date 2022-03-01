@@ -36,8 +36,6 @@
 #include "G4PhotoElectricEffect.hh"
 
 #include "G4eMultipleScattering.hh"
-#include "G4GoudsmitSaundersonMscModel.hh"
-
 #include "G4eIonisation.hh"
 #include "G4eBremsstrahlung.hh"
 #include "G4eplusAnnihilation.hh"
@@ -54,15 +52,11 @@
 PhysListG4Em::PhysListG4Em(const G4String& name)
   : G4VPhysicsConstructor(name)
 {
-  SetVerboseLevel(1);
   G4EmParameters* param = G4EmParameters::Instance();
   param->SetDefaults();
-  param->SetVerbose(1);
-  param->SetMscRangeFactor(0.06);
-  // inactivate energy loss fluctuations
+
+  param->SetMscRangeFactor(0.04);
   param->SetLossFluctuations(false);
-  // inactivate to use cuts as final range
-  param->SetUseCutAsFinalRange(false);
 
   SetPhysicsType(bElectromagnetic);
 }
@@ -98,10 +92,7 @@ void PhysListG4Em::ConstructProcess()
   // Add e- EM processes
   particle = G4Electron::Electron();
 
-  G4eMultipleScattering*         msc = new G4eMultipleScattering;
-  G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel;
-  msc->SetEmModel(msc1);
-  ph->RegisterProcess(msc, particle);
+  ph->RegisterProcess(new G4eMultipleScattering, particle);
   ph->RegisterProcess(new G4eIonisation, particle);
   ph->RegisterProcess(new G4eBremsstrahlung, particle);
 
@@ -110,10 +101,7 @@ void PhysListG4Em::ConstructProcess()
 
   particle = G4Positron::Positron();
 
-  msc = new G4eMultipleScattering;
-  msc1 = new G4GoudsmitSaundersonMscModel;
-  msc->SetEmModel(msc1);
-  ph->RegisterProcess(msc, particle);
+  ph->RegisterProcess(new G4eMultipleScattering, particle);
   ph->RegisterProcess(new G4eIonisation, particle);
   ph->RegisterProcess(new G4eBremsstrahlung, particle);
   ph->RegisterProcess(new G4eplusAnnihilation, particle);

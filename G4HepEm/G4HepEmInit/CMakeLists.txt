@@ -3,8 +3,6 @@ set(G4HEPEMInit_headers
   include/G4HepEmElectronTableBuilder.hh
   include/G4HepEmGammaInit.hh
   include/G4HepEmGammaTableBuilder.hh
-  include/G4HepEmGSPWACorTableBuilder.hh
-  include/G4HepEmGSTableBuilder.hh
   include/G4HepEmInitUtils.hh
   include/G4HepEmMaterialInit.hh
   include/G4HepEmParametersInit.hh
@@ -16,8 +14,6 @@ set(G4HEPEMInit_sources
   src/G4HepEmElectronTableBuilder.cc
   src/G4HepEmGammaInit.cc
   src/G4HepEmGammaTableBuilder.cc
-  src/G4HepEmGSPWACorTableBuilder.cc
-  src/G4HepEmGSTableBuilder.cc
   src/G4HepEmInitUtils.cc
   src/G4HepEmMaterialInit.cc
   src/G4HepEmParametersInit.cc

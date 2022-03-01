@@ -2,7 +2,7 @@ set(G4HEPEmRun_headers
   include/G4HepEmConstants.hh
   include/G4HepEmElectronInteractionBrem.hh
   include/G4HepEmElectronInteractionIoni.hh
-  include/G4HepEmElectronInteractionMSC.hh
+  include/G4HepEmElectronInteractionUMSC.hh
   include/G4HepEmElectronManager.hh
   include/G4HepEmElectronTrack.hh
   include/G4HepEmGammaInteractionCompton.hh
@@ -23,7 +23,7 @@ set(G4HEPEmRun_headers
 set(G4HEPEmRun_impl_headers
   include/G4HepEmElectronInteractionBrem.icc
   include/G4HepEmElectronInteractionIoni.icc
-  include/G4HepEmElectronInteractionMSC.icc
+  include/G4HepEmElectronInteractionUMSC.icc
   include/G4HepEmElectronManager.icc
   include/G4HepEmGammaInteractionCompton.icc
   include/G4HepEmGammaInteractionConversion.icc
@@ -63,4 +63,3 @@ install(TARGETS g4HepEmRun
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-

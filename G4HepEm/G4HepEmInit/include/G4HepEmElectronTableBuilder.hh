@@ -27,6 +27,9 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
                       G4eBremsstrahlungRelModel* rbModel, struct G4HepEmData* hepEmData,
                       struct G4HepEmParameters* hepEmParams, bool iselectron);
 
+void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepEmData,
+                      struct G4HepEmParameters* hepEmParams, bool iselectron);
+
 void BuildElementSelectorTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbModel,
                       G4eBremsstrahlungRelModel* rbModel, struct G4HepEmData* hepEmData,
                       struct G4HepEmParameters* hepEmParams, bool iselectron);
@@ -38,7 +41,5 @@ int InitElementSelectorEnergyGrid(int binsperdecade, double* egrid, double mine,
                                   double& logMinEnergy, double& invLEDelta);
 
 void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4SeltzerBergerModel* sbModel);
-
-void BuildGSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars);
 
 #endif  // G4HepEmElectronTableBuilder_HH

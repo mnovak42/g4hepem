@@ -7,40 +7,17 @@
 #include "G4ParticleDefinition.hh"
 #include "G4ProcessManager.hh"
 #include "G4PhysicsListHelper.hh"
-
-#include "G4ComptonScattering.hh"
-//#include "G4KleinNishinaModel.hh"  // by defult in G4ComptonScattering
-
-#include "G4GammaConversion.hh"
-#include "G4PhotoElectricEffect.hh"
-#include "G4LivermorePhotoElectricModel.hh"
-//#include "G4RayleighScattering.hh"
-
-#include "G4eMultipleScattering.hh"
-#include "G4GoudsmitSaundersonMscModel.hh"
-#include "G4eIonisation.hh"
-#include "G4eBremsstrahlung.hh"
-#include "G4eplusAnnihilation.hh"
-
 #include "G4EmParameters.hh"
-#include "G4MscStepLimitType.hh"
-
 #include "G4BuilderType.hh"
-#include "G4LossTableManager.hh"
-//#include "G4UAtomicDeexcitation.hh"
-
 #include "G4SystemOfUnits.hh"
 
 
-PhysListHepEm::PhysListHepEm(const G4String& name) : G4VPhysicsConstructor(name) {
+PhysListHepEm::PhysListHepEm(const G4String& name)
+: G4VPhysicsConstructor(name) {
   G4EmParameters* param = G4EmParameters::Instance();
   param->SetDefaults();
-  param->SetVerbose(1);
 
-  // Range factor: (can be set from the G4 macro)
-  param->SetMscRangeFactor(0.06);
-  //
-
+  param->SetMscRangeFactor(0.04);
 
   SetPhysicsType(bElectromagnetic);
 }
@@ -68,15 +45,14 @@ void PhysListHepEm::ConstructProcess() {
       // Add G4HepEm process to gamma: includes Conversion, Compton and photoelectric effect.
       particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
-
     } else if (particleName == "e-") {
 
-      // Add G4HepEm process to e-: includes Ionisation and Bremsstrahlung for e-
+      // Add G4HepEm process to e-: includes Ionisation, Bremsstrahlung, MSC for e-
      particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 
     } else if (particleName == "e+") {
 
-      // Add G4HepEm process to e+: includes Ionisation, Bremsstrahlung and e+e-
+      // Add G4HepEm process to e+: includes Ionisation, Bremsstrahlung, MSC and e+e-
       // annihilation into 2 gamma interactions for e+
       particle->GetProcessManager()->AddProcess(hepEmProcess, -1, -1, 1);
 

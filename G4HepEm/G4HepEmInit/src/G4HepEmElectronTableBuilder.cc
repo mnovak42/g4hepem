@@ -14,10 +14,6 @@
 #include "G4HepEmSBBremTableBuilder.hh"
 #include "G4HepEmSBTableData.hh"
 
-#include "G4HepEmGSTableBuilder.hh"
-#include "G4HepEmGSPWACorTableBuilder.hh"
-#include "G4HepEmGSTableData.hh"
-
 
 // g4 includes
 #include "G4MollerBhabhaModel.hh"
@@ -91,8 +87,9 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   double* theRangeSDArray    = new double[numELoss]{};  // second derivatives for range
   double* theInvRangeSDArray = new double[numELoss]{};  // second derivatives for inverse range
   //
-  int numHepEmMCCData = hepEmMCData->fNumMatCutData;
-  elData->fNumMatCuts = numHepEmMCCData;
+  int numHepEmMCCData   = hepEmMCData->fNumMatCutData;
+  elData->fNumMatCuts   = numHepEmMCCData;
+  elData->fNumMaterials = hepEmData->fTheMaterialData->fNumMaterialData;
   //
   // allocate array to store the [range, sec-deriv, dedx, sec-deriv, in-range-sec-deriv]
   // (numELoss values each) for all matrial-cuts couple
@@ -371,6 +368,67 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   delete[] macXSec;
   delete[] secDerivs;
   delete[] xsecData;
+}
+
+void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepEmData,
+                                  struct G4HepEmParameters* /*hepEmParams*/, bool iselectron) {
+  // get the pointer to the already allocated G4HepEmElectronData from the HepEmData
+  struct G4HepEmElectronData* elData = iselectron
+                                       ? hepEmData->fTheElectronData
+                                       : hepEmData->fThePositronData;
+  //
+  // get the g4 particle-definition
+  G4ParticleDefinition* g4PartDef = G4Positron::Positron();
+  if  (iselectron) {
+    g4PartDef = G4Electron::Electron();
+  }
+  //
+  // NOTE: the energy grid is the same taht is used for the e-loss data and it
+  //       has already been generated at this point (BuildELossTables should have
+  //       been called before)
+  const int numEner       = elData->fELossEnergyGridSize;
+  const int numMaterials  = elData->fNumMaterials;
+  //
+  // allocate some array for intermediate storage of the TR1 MXsec and its second
+  // derivatives for a given material
+  double* theTr1MXsec     = new double[numEner]{};
+  double* theTr1MXsecSD   = new double[numEner]{};
+  // allocate the array to store (continuously) all macroscopic first tr. xsec
+  elData->fTr1MacXSecData = new double[2*numEner*numMaterials]{};
+  //
+  // loop over the HepEm materials and for each:
+  // - get the corresponding G4Material
+  // - compute the first transprt cross section per volume (i.e. first transport
+  //   macroscopic cross section, since the G4VMscModel-s implements transport
+  //   cross section per atom in the ComputeCrossSectionPerAtom interface) at
+  //   each of the discrte kinetic energies
+  //
+  // get the HepEm material data
+  const struct G4HepEmMaterialData*  hepEmMatData = hepEmData->fTheMaterialData;
+  // get the correspondibg G4Material table (i.e. global vector of G4Material*)
+  const G4MaterialTable* theG4MaterialTable = G4Material::GetMaterialTable();
+  for (int im=0; im<numMaterials; ++im) {
+    const struct G4HepEmMatData& matData = hepEmMatData->fMaterialData[im];
+    const G4Material* g4Mat = (*theG4MaterialTable)[matData.fG4MatIndex];
+    // loop over the kinetic energies and comput the tr1 mxsec
+    for (int ie=0; ie<numEner; ++ie) {
+      double     ekin   = std::abs(elData->fELossEnergyGrid[ie]-10.0)<1.0E-6 ? 10.0 : elData->fELossEnergyGrid[ie];
+      double tr1mxsec   = std::max(0.0, mscModel->CrossSectionPerVolume(g4Mat, g4PartDef, ekin));
+      theTr1MXsec[ie]   = tr1mxsec;
+      theTr1MXsecSD[ie] = 0.0;
+    }
+    // set up a spline on the TR1 MXsec array for interpolation
+    G4HepEmInitUtils::Instance().PrepareSpline(numEner, elData->fELossEnergyGrid, theTr1MXsec, theTr1MXsecSD);
+    // write the data into its final location
+    int iStart = 2*numEner*im;
+    for (int ie=0; ie<numEner; ++ie) {
+      elData->fTr1MacXSecData[iStart++] = theTr1MXsec[ie];
+      elData->fTr1MacXSecData[iStart++] = theTr1MXsecSD[ie];
+    }
+  }
+  // free auxilary arrays
+  delete[] theTr1MXsec;
+  delete[] theTr1MXsecSD;
 }
 
 
@@ -712,128 +770,4 @@ void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters*
       }
     }
   }
-}
-
-
-void BuildGSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars) {
-  // construct and init a G4HepEmGSTableBuilder for getting the angular dtr sampling tables
-  G4HepEmGSTableBuilder* gsTable = new G4HepEmGSTableBuilder();
-  gsTable->Initialise();
-  // construct the single G4HepEmGSTableData structure
-  // count total number of dtr data in both cases of dtr sets (allocation needs this)
-  G4int numDtrData1 = 0;
-  G4int numDtrData2 = 0;
-  for (G4int iLambda=0; iLambda<64; ++iLambda) {
-    for (G4int iQ=0; iQ<15; ++iQ) {
-      const G4HepEmGSTableBuilder::GSMSCAngularDtr* theDtr = gsTable->GetGSAngularDtr(iLambda, iQ, true);
-      // it should never be nullptr for the firts set of Dtr but keep it
-      if (theDtr!=nullptr) {
-        numDtrData1 += 3*theDtr->fNumData + 1;
-      } else {
-        numDtrData1 += 1;
-      }
-    }
-  }
-  for (G4int iLambda=0; iLambda<64; ++iLambda) {
-    for (G4int iQ=0; iQ<32; ++iQ) {
-      const G4HepEmGSTableBuilder::GSMSCAngularDtr* theDtr = gsTable->GetGSAngularDtr(iLambda, iQ, false);
-      if (theDtr!=nullptr) {
-        numDtrData2 += 3*theDtr->fNumData + 1;
-      } else {
-        numDtrData2 += 1;
-      }
-    }
-  }
-  // allocate G4HepEmGSTables data structure
-  const int numHepEmMat   = hepEmData->fTheMaterialData->fNumMaterialData;
-  const int numPWACorData = numHepEmMat*3*31;
-  AllocateGSTableData(&(hepEmData->fTheGSTableData), numDtrData1, numDtrData2, numHepEmMat, numPWACorData);
-  G4HepEmGSTableData *gsData = hepEmData->fTheGSTableData;
-  // fill in the data:
-  // 1. angular dtr related sampling tables
-  G4int cumi = 0;
-  G4int numQ = 15;
-  for (G4int iLambda=0; iLambda<64; ++iLambda) {
-    for (G4int iQ=0; iQ<numQ; ++iQ) {
-      gsData->fDtrDataStarts1[iLambda*numQ + iQ] = cumi;
-      const G4HepEmGSTableBuilder::GSMSCAngularDtr* theDtr = gsTable->GetGSAngularDtr(iLambda, iQ, true);
-      // it should never be nullptr for the firts set of Dtr but keep it
-      if (theDtr==nullptr) {
-        gsData->fGSDtrData1[cumi++] = 0;
-        continue;
-      }
-      G4int numData = theDtr->fNumData;
-      gsData->fGSDtrData1[cumi++] = numData;
-      for (G4int i=0; i<numData; ++i) {
-        gsData->fGSDtrData1[cumi++] = theDtr->fUValues[i];
-        gsData->fGSDtrData1[cumi++] = theDtr->fParamA[i];
-        gsData->fGSDtrData1[cumi++] = theDtr->fParamB[i];
-      }
-    }
-  }
-  cumi = 0;
-  numQ = 32;
-  for (G4int iLambda=0; iLambda<64; ++iLambda) {
-    for (G4int iQ=0; iQ<numQ; ++iQ) {
-      gsData->fDtrDataStarts2[iLambda*numQ + iQ] = cumi;
-      const G4HepEmGSTableBuilder::GSMSCAngularDtr* theDtr = gsTable->GetGSAngularDtr(iLambda, iQ, false);
-      if (theDtr==nullptr) {
-        gsData->fGSDtrData2[cumi++] = 0;
-        continue;
-      }
-      G4int numData = theDtr->fNumData;
-      gsData->fGSDtrData2[cumi++] = numData;
-      for (G4int i=0; i<numData; ++i) {
-        gsData->fGSDtrData2[cumi++] = theDtr->fUValues[i];
-        gsData->fGSDtrData2[cumi++] = theDtr->fParamA[i];
-        gsData->fGSDtrData2[cumi++] = theDtr->fParamB[i];
-      }
-    }
-  }
-  //
-  // 2. get Moliere's material dependent parameters
-  // we need to translate the G4Material indices to G4HepEmMat inices
-  const int* g4ToHepEm = hepEmData->fTheMaterialData->fG4MatIndexToHepEmMatIndex;
-  const int  numG4Mat  = hepEmData->fTheMaterialData->fNumG4Material;
-  for (G4int im=0; im<numG4Mat; ++im) {
-    int iHepEmMat = g4ToHepEm[im];
-    // continue if this g4 material is not used in the geometry
-    if (iHepEmMat<0) {
-      continue;
-    }
-    gsData->fMoliereParams[2*iHepEmMat+0] = gsTable->GetMoliereBc(im);
-    gsData->fMoliereParams[2*iHepEmMat+1] = gsTable->GetMoliereXc2(im);
-  }
-  // clean away the auxiliary G4HepEmGSTableBuilder object: no need anymore
-  delete gsTable;
-  //
-  // Go for the DPWA correction parameters
-  //
-  G4HepEmGSPWACorTableBuilder* pwaCorrEl  = new G4HepEmGSPWACorTableBuilder(true);
-  G4HepEmGSPWACorTableBuilder* pwaCorrPos = new G4HepEmGSPWACorTableBuilder(false);
-  pwaCorrEl->Initialise();
-  pwaCorrPos->Initialise();
-  cumi = 0;
-  for (G4int im=0; im<numG4Mat; ++im) {
-    int iHepEmMat = g4ToHepEm[im];
-    // continue if this g4 material is not used in the geometry
-    if (iHepEmMat<0) {
-      continue;
-    }
-    const G4HepEmGSPWACorTableBuilder::DataPerMaterial* datEl  = pwaCorrEl->GetPWACorrectionDataPerMaterial(im);
-    const G4HepEmGSPWACorTableBuilder::DataPerMaterial* datPos = pwaCorrPos->GetPWACorrectionDataPerMaterial(im);
-    for (G4int ie=0; ie<31; ++ie) {
-      gsData->fPWACorDataElectron[iHepEmMat*31*3+ie*3+0] = datEl->fCorScreening[ie];
-      gsData->fPWACorDataElectron[iHepEmMat*31*3+ie*3+1] = datEl->fCorFirstMoment[ie];
-      gsData->fPWACorDataElectron[iHepEmMat*31*3+ie*3+2] = datEl->fCorSecondMoment[ie];
-      //
-      gsData->fPWACorDataPositron[iHepEmMat*31*3+ie*3+0] = datPos->fCorScreening[ie];
-      gsData->fPWACorDataPositron[iHepEmMat*31*3+ie*3+1] = datPos->fCorFirstMoment[ie];
-      gsData->fPWACorDataPositron[iHepEmMat*31*3+ie*3+2] = datPos->fCorSecondMoment[ie];
-//      cumi += 3;
-    }
-  }
-  // clean the auxiliary G4HepEmGSPWACorTableBuilder objects
-  delete pwaCorrEl;
-  delete pwaCorrPos;
 }
