@@ -53,7 +53,7 @@ double G4HepEmElectronInteractionIoni::SampleETransferMoller(const double elCut,
   const double tmax    = 0.5*primEkin;
   const double xmin    = tmin / primEkin;
   const double xmax    = tmax / primEkin;
-  const double gamma   = primEkin / kElectronMassC2 + 1.0;
+  const double gamma   = primEkin * kInvElectronMassC2 + 1.0;
   const double gamma2  = gamma * gamma;
   const double xminmax = xmin * xmax;
   // Moller (e-e-) scattering
@@ -79,7 +79,7 @@ double G4HepEmElectronInteractionIoni::SampleETransferBhabha(const double elCut,
   const double tmax    = primEkin;
   const double xmin    = tmin / primEkin;
   const double xmax    = tmax / primEkin;
-  const double gamma   = primEkin / kElectronMassC2 + 1.0;
+  const double gamma   = primEkin * kInvElectronMassC2 + 1.0;
   const double gamma2  = gamma * gamma;
   const double beta2   = 1. - 1. / gamma2;
   const double xminmax = xmin * xmax;

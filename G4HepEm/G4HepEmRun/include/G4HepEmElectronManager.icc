@@ -469,7 +469,7 @@ double  G4HepEmElectronManager::GetTransportMFP(const struct G4HepEmElectronData
 
 double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, const double electronDensity) {
   // Heitler model for e+e- -> 2g annihilation
-  const double tau   = ekin/kElectronMassC2;
+  const double tau   = ekin*kInvElectronMassC2;
   const double gam   = tau + 1.0;
   const double gam2  = gam*gam;
   const double bg2   = tau * (tau+2.0);

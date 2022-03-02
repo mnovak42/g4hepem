@@ -10,7 +10,7 @@
 G4HepEmHostDevice
 double SampleCostModifiedTsai(const double thePrimEkin, G4HepEmRandomEngine* rnge) {
   // sample photon direction (modified Tsai sampling):
-  const double uMax = 2.0*(1.0 + thePrimEkin/kElectronMassC2);
+  const double uMax = 2.0*(1.0 + thePrimEkin*kInvElectronMassC2);
   double rndm3[3];
   double u;
   do {
