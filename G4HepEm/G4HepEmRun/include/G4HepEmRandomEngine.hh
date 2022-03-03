@@ -4,6 +4,7 @@
 
 #include "G4HepEmMacros.hh"
 #include "G4HepEmMath.hh"
+#include "G4HepEmConstants.hh"
 
 #include <cmath>
 
@@ -57,6 +58,33 @@ public:
 
   G4HepEmHostDevice
   void DiscardGauss() { fIsGauss = false; }
+
+
+  G4HepEmHostDevice
+  int Poisson(double mean) {
+    const int   border = 16;
+    const double limit = 2.E+9;
+
+    int number = 0;
+    if(mean <= border) {
+      const double position = flat();
+      double poissonValue   = G4HepEmExp(-mean);
+      double poissonSum     = poissonValue;
+      while(poissonSum <= position) {
+        ++number;
+        poissonValue *= mean/number;
+        poissonSum   += poissonValue;
+      }
+      return number;
+    }  // the case of mean <= 16
+    //
+    double rnd[2];
+    flatArray(2, rnd);
+    const double t = std::sqrt(-2.*G4HepEmLog(rnd[0])) * std::cos(k2Pi*rnd[1]);
+    double value = mean + t*std::sqrt(mean) + 0.5;
+    return value < 0.     ?  0 :
+           value >= limit ? static_cast<int>(limit) : static_cast<int>(value);
+  }
 
 
 private:
