@@ -57,6 +57,9 @@ struct G4HepEmMatData {
   double    fElectronDensity = 0.0;
   /** Radiation length. */
   double    fRadiationLength = 0.0;
+  /** Mean excition energy and its logarithm */
+  double    fMeanExEnergy    = 0.0;
+  double    fLogMeanExEnergy = 0.0;
   //
   /** Number of intervals in the Sandia table */
   int       fNumOfSandiaIntervals = 0;
