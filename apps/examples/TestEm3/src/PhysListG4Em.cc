@@ -56,7 +56,6 @@ PhysListG4Em::PhysListG4Em(const G4String& name)
   param->SetDefaults();
 
   param->SetMscRangeFactor(0.04);
-  param->SetLossFluctuations(false);
 
   SetPhysicsType(bElectromagnetic);
 }
