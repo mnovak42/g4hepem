@@ -1,5 +1,6 @@
 set(G4HEPEmRun_headers
   include/G4HepEmConstants.hh
+  include/G4HepEmElectronEnergyLossFluctuation.hh
   include/G4HepEmElectronInteractionBrem.hh
   include/G4HepEmElectronInteractionIoni.hh
   include/G4HepEmElectronInteractionUMSC.hh
@@ -21,6 +22,7 @@ set(G4HEPEmRun_headers
   include/G4HepEmTrack.hh
 )
 set(G4HEPEmRun_impl_headers
+  include/G4HepEmElectronEnergyLossFluctuation.icc
   include/G4HepEmElectronInteractionBrem.icc
   include/G4HepEmElectronInteractionIoni.icc
   include/G4HepEmElectronInteractionUMSC.icc
