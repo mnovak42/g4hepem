@@ -270,14 +270,12 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
       const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
       const double elCut   = theMatCutData.fSecElProdCutE;
       const int    theImat = theMatCutData.fHepEmMatIndex;
-      const G4HepEmMatData& theMatData =  hepEmData->fTheMaterialData->fMaterialData[theImat];
-      const double meanExcEnergy       = theMatData.fMeanExEnergy;
-      const double meanExcEnergyLog    = theMatData.fLogMeanExEnergy;
+      const double meanExE = hepEmData->fTheMaterialData->fMaterialData[theImat].fMeanExEnergy;
       //
       const double tmax = isElectron ? 0.5*theEkin : theEkin;
       const double tcut = G4HepEmMin(elCut, tmax);
       eloss = G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(theEkin, tcut, tmax,
-                                                    meanExcEnergy, meanExcEnergyLog, pStepLength, meanELoss, rnge);
+                                                    meanExE, pStepLength, meanELoss, rnge);
     }
   }
   eloss = G4HepEmMax(eloss, 0.0);

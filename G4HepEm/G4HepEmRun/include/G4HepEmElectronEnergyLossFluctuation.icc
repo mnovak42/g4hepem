@@ -9,14 +9,13 @@
 
 
 double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double ekin, double tcut, double tmax,
-       double excEner, double  logExcEner, double stepLength, double meanELoss, G4HepEmRandomEngine* rnge) {
+       double excEner, double stepLength, double meanELoss, G4HepEmRandomEngine* rnge) {
   const double scaling  = G4HepEmMin(1. + 5.E-4/tcut, 1.5);
   const double meanLoss = meanELoss/scaling;
 
   const double kFluctParRate     = 0.56;
   const double kFluctParE0       = 1.E-5; // 10 eV
   const double kFluctParNMaxCont = 8.;
-
 
   const double w1 = tcut/kFluctParE0;
   double a3 = meanLoss*(tcut - kFluctParE0)/(kFluctParE0*tcut*G4HepEmLog(w1));
@@ -25,18 +24,19 @@ double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double 
   double eloss = 0.0;
   // 1. excittaion part
   if (tcut > excEner) {
-    const double gamma = ekin*kInvElectronMassC2 + 1.;
-    const double gam2  = gamma*gamma;
-    const double beta  = ekin < 511. ? std::sqrt(1. - 1./gam2) : 1.;
-    const double beta2 = beta*beta;
-
-    const double w2    = G4HepEmLog(2.*kElectronMassC2*beta2*gam2) - beta2;
     const double a1Tmp = meanLoss*(1. - kFluctParRate)/excEner;
+    // NOTE: this corresponds to G4UniversalFluctuation as in G4-v11.p01
     const double kFluctParA0 = 42.;
-    const double kFluctParFw = 4.;
+    const double kFluctParFw =  4.;
     const double dum0  = a1Tmp < kFluctParA0
                          ? .1 + (kFluctParFw - .1)*std::sqrt(a1Tmp/kFluctParA0)
                          : kFluctParFw;
+    // NOTE: this corresponds to G4UniversalFluctuation as in G4-v11.00
+    // const double kFluctParA0 = 15.;
+    // const double kFluctParFw =  5.;
+    // const double dum0  = a1Tmp < kFluctParA0
+    //                      ? kFluctParFw*a1Tmp/kFluctParA0
+    //                      : kFluctParFw;
     a1  = a1Tmp/dum0;
     e1 *= dum0;
     a3 *= kFluctParRate;

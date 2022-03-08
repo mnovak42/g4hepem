@@ -22,8 +22,7 @@ private:
 public:
   G4HepEmHostDevice
   static double SampleEnergyLossFLuctuation(double ekin, double tcut, double tmax, double excEner,
-                                            double  logExcEner, double stepLength, double meanELoss,
-                                            G4HepEmRandomEngine* rnge);
+                                            double stepLength, double meanELoss, G4HepEmRandomEngine* rnge);
 
 
   //
