@@ -81,7 +81,7 @@ void G4HepEmGammaInteractionPhotoelectric::SamplePhotoElectronDirection(const do
   // Initial algorithm according Penelope 2008 manual and
   // F.Sauter Ann. Physik 9, 217(1931); 11, 454(1931).
   // Modified according Penelope 2014 manual
-  const double tau = kinE/kElectronMassC2;
+  const double tau = kinE * kInvElectronMassC2;
   const double gamma = 1.0 + tau;
   const double beta = std::sqrt(tau*(tau + 2.0))/gamma;
 

@@ -52,7 +52,7 @@ void G4HepEmPositronInteractionAnnihilation::SampleEnergyAndDirectionsInFlight(
     const double thePrimEkin, const double *thePrimDir, double *theGamma1Ekin, double *theGamma1Dir,
     double *theGamma2Ekin, double *theGamma2Dir, G4HepEmRandomEngine* rnge) {
   // compute kinetic limits
-  const double tau     = thePrimEkin/kElectronMassC2;
+  const double tau     = thePrimEkin*kInvElectronMassC2;
   const double gam     = tau + 1.0;
   const double tau2    = tau + 2.0;
   const double sqgrate = std::sqrt(tau/tau2)*0.5;

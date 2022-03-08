@@ -67,7 +67,7 @@ void G4HepEmGammaInteractionCompton::Perform(G4HepEmTLData* tlData, struct G4Hep
 double G4HepEmGammaInteractionCompton::SamplePhotonEnergyAndDirection(
     const double thePrimGmE, double* thePrimGmDir, const double* theOrgPrimGmDir, G4HepEmRandomEngine* rnge) {
   // sample the post interaction reduced photon energy according to the KN DCS
-  const double kappa = thePrimGmE / kElectronMassC2;
+  const double kappa = thePrimGmE * kInvElectronMassC2;
   const double eps0  = 1. / (1. + 2. * kappa);
   const double eps02 = eps0 * eps0;
   const double al1   = -G4HepEmLog(eps0);

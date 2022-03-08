@@ -116,6 +116,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fDensityCorFactor        = 4.0*CLHEP::pi*CLHEP::classic_electr_radius*CLHEP::electron_Compton_length*CLHEP::electron_Compton_length*mat->GetElectronDensity();
       matData.fElectronDensity         = mat->GetElectronDensity();
       matData.fRadiationLength         = mat->GetRadlen();
+      matData.fMeanExEnergy            = mat->GetIonisation()->GetMeanExcitationEnergy();
 
       // go for some U-msc related data per materials
       const double zeff                = mat->GetIonisation()->GetZeffective();

@@ -20,6 +20,7 @@
 #include "G4HepEmGammaTrack.hh"
 #include "G4HepEmElectronInteractionIoni.hh"
 #include "G4HepEmElectronInteractionBrem.hh"
+#include "G4HepEmElectronEnergyLossFluctuation.hh"
 #include "G4HepEmElectronInteractionUMSC.hh"
 #include "G4HepEmPositronInteractionAnnihilation.hh"
 
@@ -255,17 +256,40 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     const double postStepRange = theRange - pStepLength;
     eloss = theEkin - GetInvRange(elData, theIMC, postStepRange);
   }
+  eloss = G4HepEmMax(eloss, 0.0);
+  // keep the mean energy loss
+  const double meanELoss = eloss;
+  bool isActiveEnergyLossFluctuation = false;
+  if (eloss >= theEkin) {
+    eloss = theEkin;
+  } else {
+    // sample energy loss fluctuations
+    const double kFluctParMinEnergy  = 1.E-5; // 10 eV
+    if (meanELoss > kFluctParMinEnergy) {
+      isActiveEnergyLossFluctuation = true;
+      const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
+      const double elCut   = theMatCutData.fSecElProdCutE;
+      const int    theImat = theMatCutData.fHepEmMatIndex;
+      const double meanExE = hepEmData->fTheMaterialData->fMaterialData[theImat].fMeanExEnergy;
+      //
+      const double tmax = isElectron ? 0.5*theEkin : theEkin;
+      const double tcut = G4HepEmMin(elCut, tmax);
+      eloss = G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(theEkin, tcut, tmax,
+                                                    meanExE, pStepLength, meanELoss, rnge);
+    }
+  }
+  eloss = G4HepEmMax(eloss, 0.0);
+  //
   // 3/3. check if final kinetic energy drops below the tracking cut and stop
   double finalEkin = theEkin - eloss;
   if (finalEkin <= hepEmPars->fElectronTrackingCut) {
     eloss     = theEkin;
     finalEkin = 0.0;
-    eloss = G4HepEmMax(eloss, 0.0);
     theTrack->SetEKin(finalEkin);
     theTrack->SetEnergyDeposit(eloss);
     return true;
   }
-  eloss = G4HepEmMax(eloss, 0.0);
+  //
   theTrack->SetEKin(finalEkin);
   theTrack->SetEnergyDeposit(eloss);
 
@@ -284,8 +308,10 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     double postStepEkin  = theEkin;
     double postStepLEkin = theLEkin;
     if (pStepLength > theRange*0.01) {
-      postStepEkin  = theTrack->GetEKin();
-      postStepLEkin = theTrack->GetLogEKin();
+      // meanELoss = eloss when the energy loss fluct. is NOT active so postStepEkin = finalEkin in that
+      // case which can save a log call for us since we can get the log-finalEkin now from the track
+      postStepEkin  = theEkin - meanELoss;
+      postStepLEkin = isActiveEnergyLossFluctuation ? G4HepEmLog(postStepEkin) : theTrack->GetLogEKin();
     }
     // sample msc scattering:
     // - compute the fist transport mean free path at the post-step energy point
@@ -469,7 +495,7 @@ double  G4HepEmElectronManager::GetTransportMFP(const struct G4HepEmElectronData
 
 double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, const double electronDensity) {
   // Heitler model for e+e- -> 2g annihilation
-  const double tau   = ekin/kElectronMassC2;
+  const double tau   = ekin*kInvElectronMassC2;
   const double gam   = tau + 1.0;
   const double gam2  = gam*gam;
   const double bg2   = tau * (tau+2.0);

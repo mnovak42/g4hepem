@@ -1,0 +1,111 @@
+
+#include "G4HepEmElectronEnergyLossFluctuation.hh"
+
+
+#include "G4HepEmRandomEngine.hh"
+
+#include "G4HepEmConstants.hh"
+#include "G4HepEmMath.hh"
+
+
+double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double ekin, double tcut, double tmax,
+       double excEner, double stepLength, double meanELoss, G4HepEmRandomEngine* rnge) {
+  const double scaling  = G4HepEmMin(1. + 5.E-4/tcut, 1.5);
+  const double meanLoss = meanELoss/scaling;
+
+  const double kFluctParRate     = 0.56;
+  const double kFluctParE0       = 1.E-5; // 10 eV
+  const double kFluctParNMaxCont = 8.;
+
+  const double w1 = tcut/kFluctParE0;
+  double a3 = meanLoss*(tcut - kFluctParE0)/(kFluctParE0*tcut*G4HepEmLog(w1));
+  double a1 = 0.;
+  double e1 = excEner;
+  double eloss = 0.0;
+  // 1. excittaion part
+  if (tcut > excEner) {
+    const double a1Tmp = meanLoss*(1. - kFluctParRate)/excEner;
+    // NOTE: this corresponds to G4UniversalFluctuation as in G4-v11.p01
+    const double kFluctParA0 = 42.;
+    const double kFluctParFw =  4.;
+    const double dum0  = a1Tmp < kFluctParA0
+                         ? .1 + (kFluctParFw - .1)*std::sqrt(a1Tmp/kFluctParA0)
+                         : kFluctParFw;
+    // NOTE: this corresponds to G4UniversalFluctuation as in G4-v11.00
+    // const double kFluctParA0 = 15.;
+    // const double kFluctParFw =  5.;
+    // const double dum0  = a1Tmp < kFluctParA0
+    //                      ? kFluctParFw*a1Tmp/kFluctParA0
+    //                      : kFluctParFw;
+    a1  = a1Tmp/dum0;
+    e1 *= dum0;
+    a3 *= kFluctParRate;
+    //
+    // add excition (a1 > 0)
+    if (a1 > kFluctParNMaxCont) {
+      // Gaussian
+      const double emean = a1*e1;
+      const double sig2e = emean*e1;
+      eloss = SampleGaussianLoss(emean, sig2e, rnge);
+    } else {
+      // small number --> sampling from Poisson
+      const int p = rnge->Poisson(a1);
+      eloss = p > 0 ? ((p + 1) - 2.*rnge->flat())*e1 : 0.;
+    }
+  }
+  //
+  // 2. ionisation part
+  if (a3 > 0.) {
+    double   p3 = a3;
+    double alfa = 1.;
+    if (a3 > kFluctParNMaxCont) {
+      alfa = w1*(kFluctParNMaxCont + a3)/(w1*kFluctParNMaxCont + a3);
+      const double alfa1  = alfa*G4HepEmLog(alfa)/(alfa - 1.);
+      const double namean = a3*w1*(alfa - 1.)/((w1 - 1.)*alfa);
+      const double emean  = namean*kFluctParE0*alfa1;
+      const double sig2e  = kFluctParE0*kFluctParE0*namean*(alfa - alfa1*alfa1);
+      eloss += SampleGaussianLoss(emean, sig2e, rnge);
+      p3 = a3 - namean;
+    }
+    //
+    const double w3 = alfa*kFluctParE0;
+    if (tcut > w3) {
+      const double w = (tcut - w3)/tcut;
+      const int  nnb = rnge->Poisson(p3);
+      if (nnb > 0) {
+        const int kBlockSize = 8;
+        const int nBlocks    = nnb/kBlockSize;
+        //
+        double rndm[kBlockSize];
+        for (int ib=0; ib<nBlocks; ++ib) {
+          rnge->flatArray(kBlockSize, rndm);
+          for (int i=0; i<kBlockSize; ++i) {
+            eloss += w3/(1.-w*rndm[i]);
+          }
+        }
+        const int nTail = nnb - nBlocks*kBlockSize;
+        rnge->flatArray(nTail, rndm);
+        for (int i=0; i<nTail; ++i) {
+          eloss += w3/(1.-w*rndm[i]);
+        }
+      }
+    }
+  }
+  //
+  // deliver result
+  return eloss*scaling;
+}
+
+
+double G4HepEmElectronEnergyLossFluctuation::SampleGaussianLoss(double meane, double sig2e, G4HepEmRandomEngine* rnge) {
+  const double twom = 2.*meane;
+  if (meane*meane < 0.0625*sig2e) {
+    return twom*rnge->flat();
+  }
+  const double sig = std::sqrt(sig2e);
+  double eloss;
+  do {
+    eloss = rnge->Gauss(meane, sig);
+  } while (eloss < 0. || eloss > twom);
+  return eloss;
+}

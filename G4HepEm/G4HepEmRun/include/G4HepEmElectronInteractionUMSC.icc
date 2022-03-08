@@ -263,7 +263,7 @@ double G4HepEmElectronInteractionUMSC::Theta0PositronCorrection(double eekin, do
   const double ff = 1. + zeff*(1.84035E-4*zeff - 1.86427E-2) + 0.41125;
   const double  a = 0.994 - 4.08E-3*zeff;
   const double  b = 7.16 + (52.6 + 365./zeff)/zeff;
-  const double tu = std::sqrt(eekin)/kElectronMassC2;
+  const double tu = std::sqrt(eekin)*kInvElectronMassC2;
   const double  x = std::sqrt(tu*(tu + 2.)/((tu + 1.)*(tu + 1.)));
   //
   const double xl = 0.6;
