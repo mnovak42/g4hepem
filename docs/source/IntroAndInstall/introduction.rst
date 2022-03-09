@@ -59,49 +59,55 @@ simulation steps in a general HEP detector simulation) with their EM interaction
 
 Since the targets are HEP detector simulation applications, these EM interactions
 are described by physics models used in this application area. This means, that
-``G4HepEm`` aims to provide EM modelling capability that is equivalent to the
-``Geant4`` EM-Standard Physics Option0 physics constructor`
-i.e. :math:`\texttt{G4EmStandardPhysics}`.
+``G4HepEm`` provides an EM modelling capability that is equivalent to the
+``Geant4`` EM-Standard physics constructor (i.e. EM-option0 as in :math:`\texttt{G4EmStandardPhysics}`)
+for HEP detector simulation applications.
 
 .. only:: html
 
    See more details in :numref:`table-physics`.
 
-   .. table:: Summary of the physics interactions and models used in ``Geant4`` and ``G4HepEm`` (current state).
+   .. table:: Summary of the physics interactions and models used in ``Geant4`` and ``G4HepEm`` (current state). Energy loss fluctuation, corresponding to the ``Geant4-11.p01`` version of the ``G4UniversalFluctuation`` model,
+              has also been implemented for :math:`e^-/e^+` and used in ``G4HepEm`` beyond the listed models.
       :name:  table-physics
       :class: longtable
 
-      +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      | Particle       | Interactions    | Models                    |  Geant4 (EM-Opt0)                  |      G4HepEm                                  | Energy Range             |
-      +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |:math:`e^-`     | Ionisation      | Moller                    | ``G4MollerBhabhaModel``            | ``G4HepEmElectronInteractionIoni``            | 1 keV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Bremsstrahlung  | Seltzer-Berger            | ``G4SeltzerBergerModel``           | ``G4HepEmElectronInteractionBrem``            | 1 keV -   1 GeV          |
-      |                |                 +---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                |                 | Rel. model [#]_           | ``G4eBremsstrahlungRelModel``      | ``G4HepEmElectronInteractionBrem``            | 1 GeV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Coulomb scat.   | Urban/GS [#]_             | ``G4UrbanMscModel``                | ``G4HepEmElectronInteractionMsc``             | 1 keV - 100 TeV          |
-      +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |:math:`e^+`     | Ionisation      | Bhabha                    | ``G4MollerBhabhaModel``            | ``G4HepEmElectronInteractionIoni``            | 1 keV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Bremsstrahlung  | Seltzer-Berger            | ``G4SeltzerBergerModel``           | ``G4HepEmElectronInteractionBrem``            | 1 keV -   1 GeV          |
-      |                |                 +---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                |                 | Rel. model                | ``G4eBremsstrahlungRelModel``      | ``G4HepEmElectronInteractionBrem``            | 1 GeV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Coulomb scat.   | Urban/GS                  | ``G4UrbanMscModel``                | ``G4HepEmElectronInteractionMsc``             | 1 keV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Annihilation    |:math:`e^+-e^- \to 2\gamma`| ``G4eplusAnnihilation``            | ``G4HepEmPositronInteractionAnnihilation``    |0 [#]_ - 100 TeV          |
-      +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |:math:`\gamma`  | Photoelectric   | Livermore                 | ``G4LivermorePhotoElectricModel``  |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |0 [#]_ - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Compton scat.   | Klein - Nishina [#]_      | ``G4KleinNishinaCompton``          | ``G4HepEmGammaInteractionCompton``            |100 eV - 100 TeV          |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Pair production | Bethe - Heitler [#]_      | ``G4PairProductionRelModel``       |  ``G4HepEmGammaInteractionConversion``        |:math:`2m_0c^2` - 100 TeV |
-      |                +-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
-      |                | Rayleigh scat.  | Livermore                 | ``G4LivermoreRayleighModel``       |   not considered to be covered at the moment  | 100 keV - 100 TeV        |
-      +----------------+-----------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      +----------------+--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      | Particle       | Interactions       | Models                    |  Geant4 (EM-Opt0)                  |      G4HepEm                                  | Energy Range             |
+      +----------------+--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |:math:`e^-`     | Ionisation         | Moller                    | ``G4MollerBhabhaModel``            | ``G4HepEmElectronInteractionIoni``            |   1 keV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Bremsstrahlung     | Seltzer-Berger            | ``G4SeltzerBergerModel``           | ``G4HepEmElectronInteractionBrem`` [#]_       |   1 keV -   1 GeV        |
+      |                |                    +---------------------------+------------------------------------+                                               +--------------------------+
+      |                |                    | Rel. model [#]_           | ``G4eBremsstrahlungRelModel``      |                                               |   1 GeV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Coulomb scat. [#]_ | Urban                     | ``G4UrbanMscModel``                | ``G4HepEmElectronInteractionUMSC``            |   1 keV - 100 MeV        |
+      |                |                    +---------------------------+------------------------------------+                                               +--------------------------+
+      |                |                    | Wentzel-VI                | ``G4WentzelVIModel``               |                                               | 100 MeV - 100 TeV        |
+      +----------------+--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |:math:`e^+`     | Ionisation         | Bhabha                    | ``G4MollerBhabhaModel``            | ``G4HepEmElectronInteractionIoni``            |   1 keV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Bremsstrahlung     | Seltzer-Berger            | ``G4SeltzerBergerModel``           | ``G4HepEmElectronInteractionBrem``            |   1 keV -   1 GeV        |
+      |                |                    +---------------------------+------------------------------------+                                               +--------------------------+
+      |                |                    | Rel. model                | ``G4eBremsstrahlungRelModel``      |                                               |   1 GeV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Coulomb scat.      | Urban                     | ``G4UrbanMscModel``                | ``G4HepEmElectronInteractionUMSC``            |   1 keV - 100 MeV        |
+      |                |                    +---------------------------+------------------------------------+                                               +--------------------------+
+      |                |                    | Wentzel-VI                | ``G4WentzelVIModel``               |                                               | 100 MeV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Annihilation       |:math:`e^+-e^- \to 2\gamma`| ``G4eplusAnnihilation``            | ``G4HepEmPositronInteractionAnnihilation``    |  0 [#]_ - 100 TeV        |
+      +----------------+--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |:math:`\gamma`  | Photoelectric      | Livermore                 | ``G4LivermorePhotoElectricModel``  |``G4HepEmGammaInteractionPhotoelectric`` [#]_  |  0 [#]_ - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Compton scat.      | Klein - Nishina [#]_      | ``G4KleinNishinaCompton``          | ``G4HepEmGammaInteractionCompton``            | 100  eV - 100 TeV        |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Pair production    | Bethe - Heitler [#]_      | ``G4PairProductionRelModel``       |  ``G4HepEmGammaInteractionConversion``        |:math:`2m_0c^2` - 100 TeV |
+      |                +--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
+      |                | Rayleigh scat.     | Livermore                 | ``G4LivermoreRayleighModel``       |   not considered to be covered at the moment  | 100 keV - 100 TeV        |
+      +----------------+--------------------+---------------------------+------------------------------------+-----------------------------------------------+--------------------------+
 
 
+   .. [#] including both the Seltzer-Berger and the relativistic models for bremsstrahlung
 
    .. [#]  Bethe-Heitler DCS with screening(TF model) and Coulomb(Bethe-Maximon)
       corrections to the first Born approximation; Wheeler-Lamb model for the
@@ -111,10 +117,9 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
    .. [#]  the semi-empirical Urban model is used for describing e-/e+ multiple
       Coulomb scattering at E < 100 [MeV] in the EM standard physics constructor
       while the Wentzel-VI, mixed simulation model (based on the screened Rutherford
-      elastic DCS) is utilised at higher (E > 100 [MeV]) energies. The screened
-      Rutherford DCS based Goudsmit-Saunderson model, that corresponds to the
-      G4GoudsmitSaundersonMscModel Geant4 model and covers the entire energy range,
-      has been implemented in G4hepEm with its default settings as used in HEP applications.
+      elastic DCS) is utilised at higher (E > 100 [MeV]) energies. The Urban
+      model has been implemented in G4HepEm and used over the entire energy range
+      with its EM standard physics configuration.
 
    .. [#]  i.e. annihilation at rest.
 
@@ -141,7 +146,8 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
 
       \begin{table}  %\begin{sidewaystable}%
         \footnotesize
-        \caption{Summary of the physics interactions and models used in ``Geant4`` and ``G4HepEm`` (current state).}\label{tb::table-physics}%
+        \caption{Summary of the physics interactions and models used in \texttt{Geant4} and \texttt{G4HepEm} (current state). Energy loss fluctuation, corresponding to the \texttt{Geant4-11.p01} version of the \texttt{G4UniversalFluctuation} model,
+                   has also been implemented for $e^-/e^+$ and used in \texttt{G4HepEm} beyond the listed models.}\label{tb::table-physics}%
         \vspace*{0.2cm}
         \begin{tabular} { |l | l | l | l | l | r |}
           \hline
@@ -149,19 +155,23 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
           \hline
           \multirow{4}{*}{$e^-$}   &  Ionisation                      & Moller                    & \texttt{\scriptsize G4MollerBhabhaModel}       &   \texttt{\scriptsize ElectronInteractionIoni}   & 1 keV - 100 TeV  \\
                                    \cline{2-6}
-                                   &  \multirow{2}{*}{Bremsstrahlung} & Seltzer-Berger            & \texttt{\scriptsize G4SeltzerBergerModel}      &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 keV -   1 GeV          \\
-                                                                      \cline{3-6}
-                                   &                                  & Rel. model\footnotemark   & \texttt{\scriptsize G4eBremsstrahlungRelModel} &   \texttt{\scriptsize ElectronInteractionBrem}  & 1 GeV - 100 TeV          \\
+                                   &  \multirow{2}{*}{Bremsstrahlung} & Seltzer-Berger            & \texttt{\scriptsize G4SeltzerBergerModel}      &   \multirow{2}{*}{\texttt{\scriptsize ElectronInteractionBrem}}   & 1 keV -   1 GeV          \\
+                                                                      \cline{3-4}                                                                                                                                      \cline{6-6}
+                                   &                                  & Rel. model\footnotemark   & \texttt{\scriptsize G4eBremsstrahlungRelModel} &    \texttt{\scriptsize (including both models)}                                        & 1 GeV - 100 TeV          \\
                                    \cline{2-6}
-                                   &  Coulomb scat.                   & Urban/GS\footnotemark     & \texttt{\scriptsize G4UrbanMscModel}           &    \texttt{\scriptsize ElectronInteractionMsc}   & 1 keV - 100 TeV          \\
+                                   &  \multirow{2}{*}{Coulomb scat.}\footnotemark  & Urban        & \texttt{\scriptsize G4UrbanMscModel}           &  \multirow{2}{*}{\texttt{\scriptsize ElectronInteractionUMSC}} & 1 keV - 100 MeV          \\
+                                                                      \cline{3-4}                                                                                                                                   \cline{6-6}
+                                   &                                               & Wentzel-VI   & \texttt{\scriptsize G4WentzelVIModel}          &                                                                & 100 MeV - 100 TeV        \\
           \hline
           \multirow{5}{*}{$e^+$}   &  Ionisation                      & Bhabha                    & \texttt{\scriptsize G4MollerBhabhaModel}       &   \texttt{\scriptsize ElectronInteractionIoni}   & 1 keV - 100 TeV  \\
                                    \cline{2-6}
-                                   &  \multirow{2}{*}{Bremsstrahlung} & Seltzer-Berger            & \texttt{\scriptsize G4SeltzerBergerModel}      &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 keV -   1 GeV          \\
-                                                                      \cline{3-6}
-                                   &                                  & Rel. model                & \texttt{\scriptsize G4eBremsstrahlungRelModel} &   \texttt{\scriptsize ElectronInteractionBrem}   & 1 GeV - 100 TeV          \\
+                                   &  \multirow{2}{*}{Bremsstrahlung} & Seltzer-Berger            & \texttt{\scriptsize G4SeltzerBergerModel}      &   \multirow{2}{*}{\texttt{\scriptsize ElectronInteractionBrem}}   & 1 keV -   1 GeV          \\
+                                                                     \cline{3-4}                                                                                                                                      \cline{6-6}
+                                   &                                  & Rel. model                & \texttt{\scriptsize G4eBremsstrahlungRelModel} &   \texttt{\scriptsize (including both models)}                                          & 1 GeV - 100 TeV          \\
                                    \cline{2-6}
-                                   &  Coulomb scat.                   & Urban/GS                  & \texttt{\scriptsize G4UrbanMscModel}           &    \texttt{\scriptsize ElectronInteractionMsc}   & 1 keV - 100 TeV          \\
+                                   &  \multirow{2}{*}{Coulomb scat.}  & Urban        & \texttt{\scriptsize G4UrbanMscModel}           &  \multirow{2}{*}{\texttt{\scriptsize ElectronInteractionUMSC}} & 1 keV - 100 MeV          \\
+                                                                      \cline{3-4}                                                                                                                                   \cline{6-6}
+                                   &                                  & Wentzel-VI   & \texttt{\scriptsize G4WentzelVIModel}          &                                                                & 100 MeV - 100 TeV        \\
                                    \cline{2-6}
                                    &  Annihilation                    & $e^+-e^-\to 2\gamma$       & \texttt{\scriptsize G4eplusAnnihilation}        &  \texttt{\scriptsize PositronInteractionAnnihilation} & 0\footnotemark - 100 TeV \\
        \hline
@@ -183,28 +193,27 @@ i.e. :math:`\texttt{G4EmStandardPhysics}`.
            emission in the field of atomic electrons; Landau–Pomeranchuk–Migdal(LPM)
            effect is included.}
       \addtocounter{footnote}{1}
-      \footnotetext{the semi-empirical Urban model is used for describing e-/e+ multiple
+      \footnotetext[2]{the semi-empirical Urban model is used for describing e-/e+ multiple
            Coulomb scattering at E < 100 [MeV] in the EM standard physics constructor
            while the Wentzel-VI, mixed simulation model (based on the screened Rutherford
-           elastic DCS) is utilised at higher (E > 100 [MeV]) energies. The screened
-           Rutherford DCS based Goudsmit-Saunderson model, that corresponds to the
-           G4GoudsmitSaundersonMscModel Geant4 model and covers the entire energy range,
-           has been implemented in G4hepEm with its default settings as used in HEP applications.}
+           elastic DCS) is utilised at higher (E > 100 [MeV]) energies. The Urban
+           model has been implemented in G4HepEm and used over the entire energy range
+           with its EM standard physics configuration.}
       \addtocounter{footnote}{1}
-      \footnotetext{i.e. annihilation at rest.}
+      \footnotetext[3]{i.e. annihilation at rest.}
       \addtocounter{footnote}{1}
-      \footnotetext{A simplified version of the \texttt{G4PEEffectFluoModel} model has been implemented in \texttt{G4HepEm} by taking into account
+      \footnotetext[4]{A simplified version of the \texttt{G4PEEffectFluoModel} model has been implemented in \texttt{G4HepEm} by taking into account
           only the k-shell binding energy.}
       \addtocounter{footnote}{1}
-      \footnotetext{Primary $\gamma$ energies below the highest binding energy are
+      \footnotetext[5]{Primary $\gamma$ energies below the highest binding energy are
            absorbed without generating a secondary photoelectron.}
       \addtocounter{footnote}{1}
-      \footnotetext{Electron bounding is accounted on the top of the free electron approximation
+      \footnotetext[6]{Electron bounding is accounted on the top of the free electron approximation
          of the Klein-Nishina model but only with a scattering function correction and
          only in the integrated cross sections (i.e. bounding is accounted only in the
          rate but not in the final state of the interaction description).}
       \addtocounter{footnote}{1}
-      \footnotetext{Bethe-Heitler DCS with screening and Coulomb corrections;
+      \footnotetext[7]{Bethe-Heitler DCS with screening and Coulomb corrections;
          conversion in the field of atomic electrons; LMP correction ($E_\gamma > 100$ GeV).}
 
 
