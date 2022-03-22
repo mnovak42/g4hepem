@@ -79,9 +79,9 @@ void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
     fElectronNoProcessVector[3] = new G4HepEmNoProcess("msc");
   } else if (partDef.GetPDGEncoding()==22) {   // gamma
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 2);
-    fGammaNoProcessVector[0]    = new G4HepEmNoProcess("phot");
+    fGammaNoProcessVector[0]    = new G4HepEmNoProcess("conv");
     fGammaNoProcessVector[1]    = new G4HepEmNoProcess("compt");
-    fGammaNoProcessVector[2]    = new G4HepEmNoProcess("conv");
+    fGammaNoProcessVector[2]    = new G4HepEmNoProcess("phot");
   } else {
     std::cerr << " **** ERROR in G4HepEmProcess::BuildPhysicsTable: unknown particle " << std::endl;
     exit(-1);
