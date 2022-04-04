@@ -14,15 +14,16 @@
  *
  * This process should not be assigned to any particles since it's empty. It's
  * used only to provide infomation to the `Geant4` framework regarding the name
- * of the processes that determined the step. 
+ * of the processes that determined the step.
  */
 
 class G4HepEmNoProcess : public G4VProcess {
   public:
 
-    G4HepEmNoProcess(const G4String& name) : G4VProcess( name, fGeneral ) {};
+    G4HepEmNoProcess(const G4String& name, G4ProcessType type, G4int subType=-1)
+    : G4VProcess( name, type ) { SetProcessSubType(subType); }
 
-   ~G4HepEmNoProcess() override {};
+   ~G4HepEmNoProcess() override {}
 
     // This process should not be set to any particle
     G4bool IsApplicable(const G4ParticleDefinition&) override { return false; }
@@ -32,22 +33,22 @@ class G4HepEmNoProcess : public G4VProcess {
                              const G4Track&,
                              G4double,
                              G4ForceCondition*
-                            ) override { return -1.0; };
+                            ) override { return -1.0; }
 
     G4VParticleChange* PostStepDoIt(
                              const G4Track& ,
                              const G4Step&
-                            ) override {return nullptr;};
+                            ) override {return nullptr;}
 
     G4double AtRestGetPhysicalInteractionLength(
                              const G4Track& ,
                              G4ForceCondition*
-                            ) override { return -1.0; };
+                            ) override { return -1.0; }
 
     G4VParticleChange* AtRestDoIt(
                              const G4Track& ,
                              const G4Step&
-                            ) override {return nullptr;};
+                            ) override {return nullptr;}
 
     G4double AlongStepGetPhysicalInteractionLength(
                              const G4Track&,
@@ -55,12 +56,12 @@ class G4HepEmNoProcess : public G4VProcess {
                              G4double  ,
                              G4double& ,
                              G4GPILSelection*
-                            ) override { return -1.0; };
+                            ) override { return -1.0; }
 
     G4VParticleChange* AlongStepDoIt(
                              const G4Track& ,
                              const G4Step&
-                            ) override {return nullptr;};
+                            ) override {return nullptr;}
 
     G4HepEmNoProcess(G4HepEmNoProcess&) = delete;
     G4HepEmNoProcess& operator=(const G4HepEmNoProcess& right) = delete;
