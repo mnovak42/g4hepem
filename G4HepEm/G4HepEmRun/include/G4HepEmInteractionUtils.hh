@@ -1,14 +1,25 @@
 #ifndef G4HepEmInteractionUtil_HH
 #define G4HepEmInteractionUtil_HH
 
+#include "G4HepEmConstants.hh"
 #include "G4HepEmMacros.hh"
+#include "G4HepEmMath.hh"
 
-class  G4HepEmRandomEngine;
-
-
+template <typename RandomEngine>
 G4HepEmHostDevice
-double SampleCostModifiedTsai(const double thePrimEkin, G4HepEmRandomEngine* rnge);
-
+double SampleCostModifiedTsai(const double thePrimEkin, RandomEngine* rnge) {
+  // sample photon direction (modified Tsai sampling):
+  const double uMax = 2.0*(1.0 + thePrimEkin*kInvElectronMassC2);
+  double rndm3[3];
+  double u;
+  do {
+    rnge->flatArray(3, rndm3);
+    const double uu = -G4HepEmLog(rndm3[0]*rndm3[1]);
+    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
+  } while (u > uMax);
+  // cost = 1.0 - 2.0*u*u/(uMax*uMax);
+  return 1.0 - 2.0*u*u/(uMax*uMax);
+}
 
 G4HepEmHostDevice
 void EvaluateLPMFunctions(double& funcXiS, double& funcGS, double& funcPhiS,

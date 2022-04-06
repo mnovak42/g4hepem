@@ -1,26 +1,6 @@
-
 #include "G4HepEmInteractionUtils.hh"
 
-#include "G4HepEmRandomEngine.hh"
-#include "G4HepEmConstants.hh"
-#include "G4HepEmMath.hh"
-
 #include <cmath>
-
-G4HepEmHostDevice
-double SampleCostModifiedTsai(const double thePrimEkin, G4HepEmRandomEngine* rnge) {
-  // sample photon direction (modified Tsai sampling):
-  const double uMax = 2.0*(1.0 + thePrimEkin*kInvElectronMassC2);
-  double rndm3[3];
-  double u;
-  do {
-    rnge->flatArray(3, rndm3);
-    const double uu = -G4HepEmLog(rndm3[0]*rndm3[1]);
-    u = (0.25 > rndm3[2]) ? uu*1.6 : uu*0.533333333;
-  } while (u > uMax);
-  // cost = 1.0 - 2.0*u*u/(uMax*uMax);
-  return 1.0 - 2.0*u*u/(uMax*uMax);
-}
 
 // times = 1.0 for Brem and -1.0 for Pair production
 // densityCor = 0.0  for Pair production
