@@ -162,12 +162,12 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   const bool        isElectron = (theTrack->GetCharge() < 0.0);
   const double        theEkin  = theTrack->GetEKin();
   const double        theRange = theElTrack->GetRange();
-  G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
 
 #ifndef NOMSC
   const double gStepLength = theTrack->GetGStepLength();
   double pStepLength = gStepLength;
   bool isScattering = false;
+  G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
   if (mscData->fIsActive) {
     pStepLength = mscData->fTrueStepLength;
     isScattering = true;
@@ -258,9 +258,13 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     eloss = theEkin - GetInvRange(elData, theIMC, postStepRange);
   }
   eloss = G4HepEmMax(eloss, 0.0);
+#if !defined(NOMSC) || !defined(NOFLUCTUATION)
   // keep the mean energy loss
   const double meanELoss = eloss;
+#endif
+#ifndef NOMSC
   bool isActiveEnergyLossFluctuation = false;
+#endif
   if (eloss >= theEkin) {
     eloss = theEkin;
   } else {
@@ -268,7 +272,9 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     // sample energy loss fluctuations
     const double kFluctParMinEnergy  = 1.E-5; // 10 eV
     if (meanELoss > kFluctParMinEnergy) {
+#ifndef NOMSC
       isActiveEnergyLossFluctuation = true;
+#endif
       const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
       const double elCut   = theMatCutData.fSecElProdCutE;
       const int    theImat = theMatCutData.fHepEmMatIndex;
