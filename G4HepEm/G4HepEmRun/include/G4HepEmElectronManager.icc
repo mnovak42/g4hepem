@@ -27,6 +27,7 @@
 // tlData GetPrimaryElectronTrack needs to be set needs to be set based on the G4Track;
 
 //#define NOMSC
+//#define NOFLUCTUATION
 
 
 // Note: pStepLength will be set here i.e. this is the first access to it that
@@ -263,6 +264,7 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
   if (eloss >= theEkin) {
     eloss = theEkin;
   } else {
+#ifndef NOFLUCTUATION
     // sample energy loss fluctuations
     const double kFluctParMinEnergy  = 1.E-5; // 10 eV
     if (meanELoss > kFluctParMinEnergy) {
@@ -277,6 +279,7 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
       eloss = G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(theEkin, tcut, tmax,
                                                     meanExE, pStepLength, meanELoss, rnge);
     }
+#endif
   }
   eloss = G4HepEmMax(eloss, 0.0);
   //
@@ -310,8 +313,14 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     if (pStepLength > theRange*0.01) {
       // meanELoss = eloss when the energy loss fluct. is NOT active so postStepEkin = finalEkin in that
       // case which can save a log call for us since we can get the log-finalEkin now from the track
-      postStepEkin  = theEkin - meanELoss;
-      postStepLEkin = isActiveEnergyLossFluctuation ? G4HepEmLog(postStepEkin) : theTrack->GetLogEKin();
+      if (!isActiveEnergyLossFluctuation) {
+        postStepEkin  = theTrack->GetEKin();
+        postStepLEkin = theTrack->GetLogEKin();
+      } else {
+        // Otherwise subtract the mean energy loss and compute the logarithm.
+        postStepEkin  = theEkin - meanELoss;
+        postStepLEkin = G4HepEmLog(postStepEkin);
+      }
     }
     // sample msc scattering:
     // - compute the fist transport mean free path at the post-step energy point
