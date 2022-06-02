@@ -187,31 +187,6 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
       isScattering = false;
     }
   }
-
-/*
-  if (isScattering) {
-    const G4HepEmElectronData* elData0 = isElectron
-                                        ? hepEmData->fTheElectronData
-                                        : hepEmData->fThePositronData;
-
-    const double postStepRange = theRange - pStepLength;
-    double eloss0 = theEkin - GetInvRange(elData0, theTrack->GetMCIndex(), postStepRange);
-
-    G4HepEmElectronInteractionMSC::SampleScattering(hepEmData, mscData, pStepLength, theEkin, eloss0, theTrack->GetMCIndex(), isElectron, rnge);
-    // NOTE: displacement will be applied in the caller where we have access to the required Geant4 functionality
-    //       (and if its length is longer than a small minimal length and we are not ended up on boundary)
-    //
-    // rotate direction and displacement vectors (if any) and update new direction of the primary
-    if (!(mscData->fIsNoScatteringInMSC)) {
-      RotateToReferenceFrame(mscData->fDirection, theTrack->GetDirection());
-      if (!(mscData->fIsNoDisplace)) {
-        RotateToReferenceFrame(mscData->fDisplacement, theTrack->GetDirection());
-      }
-      // upadte new direction
-      theTrack->SetDirection(mscData->fDirection);
-    }
-  }
-*/
 #else
     double pStepLength = theTrack->GetGStepLength();
 #endif
