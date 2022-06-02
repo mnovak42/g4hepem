@@ -45,7 +45,7 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
 }
 
 
-void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge) {
+void G4HepEmElectronManager::HowFarToDiscreteInteraction(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
   int indxWinnerProcess = -1;  // init to continous
   // === 1. Continuous energy loss limit
   double pStepLength     = kALargeValue;
@@ -92,6 +92,13 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
       indxWinnerProcess = ip;
     }
   }
+
+  theElTrack->SetPStepLength(pStepLength);
+  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
+  theTrack->SetGStepLength(pStepLength);
+}
+
+void G4HepEmElectronManager::HowFarToMSC(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge) {
   //
   // Now MSC is called to see:
   // - if it limits the (true, i.e. physical) step length further
@@ -104,6 +111,20 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
   // the physical -->  geometric (i.e. true to geom.) conversion.
   //
 #ifndef NOMSC
+  double pStepLength     = theElTrack->GetPStepLength();
+  const double range     = theElTrack->GetRange();
+  G4HepEmTrack* theTrack = theElTrack->GetTrack();
+  const double   theEkin = theTrack->GetEKin();
+  const double  theLEkin = theTrack->GetLogEKin();
+  const int       theIMC = theTrack->GetMCIndex();
+  const bool  isElectron = (theTrack->GetCharge() < 0.0);
+
+  const G4HepEmElectronData* theElectronData = isElectron
+                                               ? hepEmData->fTheElectronData
+                                               : hepEmData->fThePositronData;
+
+  const int theImat = (hepEmData->fTheMatCutData->fMatCutData[theIMC]).fHepEmMatIndex;
+
   G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
   // init some mscData for the case if we skipp calling msc due to very small step
   mscData->fTrueStepLength      = pStepLength;
@@ -128,22 +149,20 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
     // check now if msc limited the step:
     const double mscTruStepLength = mscData->fTrueStepLength;
     if (mscTruStepLength < pStepLength) {
-       // indicate continuous step limit as msc limited the step and set the new pStepLengt
-      indxWinnerProcess = -2;
+      // indicate continuous step limit as msc limited the step and set the new pStepLength
+      theTrack->SetWinnerProcessIndex(-2);
       pStepLength = mscTruStepLength;
+      theElTrack->SetPStepLength(pStepLength);
     }
+    // set geometrical step length (protect agains wrong conversion, i.e. if gL > pL)
+    theTrack->SetGStepLength(G4HepEmMin(mscData->fZPathLength, pStepLength));
   }
-  // set geometrical step length (protect agains wrong conversion, i.e. if gL > pL)
-  theTrack->SetGStepLength(G4HepEmMin(mscData->fZPathLength, pStepLength));
-
-  // finally set the true (physical) step length and the winner process index of this primary track
-  theElTrack->SetPStepLength(pStepLength);
-  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
-#else
-  theElTrack->SetPStepLength(pStepLength);
-  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
-  theTrack->SetGStepLength(pStepLength);
 #endif
+}
+
+void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge) {
+  HowFarToDiscreteInteraction(hepEmData, hepEmPars, theElTrack);
+  HowFarToMSC(hepEmData, hepEmPars, theElTrack, rnge);
 }
 
 // Here I can have my own transportation to be called BUT at the moment I cannot
