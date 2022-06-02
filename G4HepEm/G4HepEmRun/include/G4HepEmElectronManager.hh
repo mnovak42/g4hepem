@@ -125,6 +125,48 @@ public:
   G4HepEmHostDevice
   static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
 
+  /** Function that updates the physical step length after the geometry step.
+    *
+    * If MSC is active and we hit a boundary, convert the geometry step length
+    * to a true step length.
+    */
+  G4HepEmHostDevice
+  static void UpdatePStepLength(G4HepEmElectronTrack* theElTrack);
+
+  /** Update the number-of-interaction-left according to the physical step length.
+    *
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static void UpdateNumIALeft(G4HepEmElectronTrack* theElTrack);
+
+  /** Apply the mean energy loss along the physical step length.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static bool ApplyMeanEnergyLoss(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+
+  /** Sample MSC direction change and displacement.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static void SampleMSC(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
+
+  /** Sample loss fluctuations for the mean energy loss.
+    * 
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static bool SampleLossFluctuations(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
+
   /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
     *
     * This functions can be invoked when the particle is propagated to its post-step point to perform all
