@@ -252,50 +252,17 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     eloss = theEkin - GetInvRange(elData, theIMC, postStepRange);
   }
   eloss = G4HepEmMax(eloss, 0.0);
-#if !defined(NOMSC) || !defined(NOFLUCTUATION)
-  // keep the mean energy loss
-  const double meanELoss = eloss;
-#endif
-#ifndef NOMSC
-  bool isActiveEnergyLossFluctuation = false;
-#endif
   if (eloss >= theEkin) {
     eloss = theEkin;
-  } else {
-#ifndef NOFLUCTUATION
-    // sample energy loss fluctuations
-    const double kFluctParMinEnergy  = 1.E-5; // 10 eV
-    if (meanELoss > kFluctParMinEnergy) {
-#ifndef NOMSC
-      isActiveEnergyLossFluctuation = true;
-#endif
-      const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
-      const double elCut   = theMatCutData.fSecElProdCutE;
-      const int    theImat = theMatCutData.fHepEmMatIndex;
-      const double meanExE = hepEmData->fTheMaterialData->fMaterialData[theImat].fMeanExEnergy;
-      //
-      const double tmax = isElectron ? 0.5*theEkin : theEkin;
-      const double tcut = G4HepEmMin(elCut, tmax);
-      eloss = G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(theEkin, tcut, tmax,
-                                                    meanExE, pStepLength, meanELoss, rnge);
-    }
-#endif
-  }
-  eloss = G4HepEmMax(eloss, 0.0);
-  //
-  // 3/3. check if final kinetic energy drops below the tracking cut and stop
-  double finalEkin = theEkin - eloss;
-  if (finalEkin <= hepEmPars->fElectronTrackingCut) {
-    eloss     = theEkin;
-    finalEkin = 0.0;
-    theTrack->SetEKin(finalEkin);
+    theTrack->SetEKin(0);
     theTrack->SetEnergyDeposit(eloss);
     return true;
   }
-  //
-  theTrack->SetEKin(finalEkin);
-  theTrack->SetEnergyDeposit(eloss);
-
+  // Compute the energy after the mean energy loss. This is used for MSC and,
+  // in case energy loss fluctuations are not active, it is also the final
+  // energy after this method.
+  double theEkinAfterMeanEloss = theEkin - eloss;
+  theTrack->SetEKin(theEkinAfterMeanEloss);
 
 #ifndef NOMSC
   //
@@ -311,16 +278,11 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     double postStepEkin  = theEkin;
     double postStepLEkin = theLEkin;
     if (pStepLength > theRange*0.01) {
-      // meanELoss = eloss when the energy loss fluct. is NOT active so postStepEkin = finalEkin in that
-      // case which can save a log call for us since we can get the log-finalEkin now from the track
-      if (!isActiveEnergyLossFluctuation) {
-        postStepEkin  = theTrack->GetEKin();
-        postStepLEkin = theTrack->GetLogEKin();
-      } else {
-        // Otherwise subtract the mean energy loss and compute the logarithm.
-        postStepEkin  = theEkin - meanELoss;
-        postStepLEkin = G4HepEmLog(postStepEkin);
-      }
+      // At this point, we have only computed the mean energy loss. Query the
+      // track and if energy loss fluctuations are *not* active, we safe a log
+      // call in the next step.
+      postStepEkin  = theTrack->GetEKin();
+      postStepLEkin = theTrack->GetLogEKin();
     }
     // sample msc scattering:
     // - compute the fist transport mean free path at the post-step energy point
@@ -344,6 +306,37 @@ bool G4HepEmElectronManager::PerformContinuous(struct G4HepEmData* hepEmData, st
     }
   }
 #endif
+
+  double finalEkin = theEkinAfterMeanEloss;
+  // sample energy loss fluctuations
+#ifndef NOFLUCTUATION
+  const double kFluctParMinEnergy  = 1.E-5; // 10 eV
+  if (eloss > kFluctParMinEnergy) {
+    const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
+    const double elCut   = theMatCutData.fSecElProdCutE;
+    const int    theImat = theMatCutData.fHepEmMatIndex;
+    const double meanExE = hepEmData->fTheMaterialData->fMaterialData[theImat].fMeanExEnergy;
+    //
+    const double tmax = isElectron ? 0.5*theEkin : theEkin;
+    const double tcut = G4HepEmMin(elCut, tmax);
+    eloss = G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(theEkin, tcut, tmax,
+                                                  meanExE, pStepLength, eloss, rnge);
+    eloss = G4HepEmMax(eloss, 0.0);
+    // Update the final kinetic energy after loss fluctuations.
+    finalEkin = theEkin - eloss;
+  }
+#endif
+  //
+  // Check if the final kinetic energy drops below the tracking cut and stop.
+  if (finalEkin <= hepEmPars->fElectronTrackingCut) {
+    eloss     = theEkin;
+    finalEkin = 0.0;
+    theTrack->SetEKin(finalEkin);
+    theTrack->SetEnergyDeposit(eloss);
+    return true;
+  }
+  theTrack->SetEKin(finalEkin);
+  theTrack->SetEnergyDeposit(eloss);
   return false;
 
 }
