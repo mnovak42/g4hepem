@@ -194,6 +194,17 @@ public:
   G4HepEmHostDevice
   static bool CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand);
 
+  /** Functions that performs the discrete interaction for a given e-/e+ particle.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param tlData    pointer to a worker-local, G4HepEmTLData object. The corresonding object
+    *   is assumed to contain all the required input information in its primary G4HepEmTLData::fElectronTrack
+    *   member. All the results of this function call, i.e. the primary particle updated to its post-interaction(s)
+    *   state as well as the possible secondary particles, are also delivered through this G4HepEmTLData.
+    */
+  static void PerformDiscrete(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
+
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *
     * This functions can be invoked when the particle is propagated to its post-step point to perform all

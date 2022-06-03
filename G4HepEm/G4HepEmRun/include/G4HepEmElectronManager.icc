@@ -408,6 +408,39 @@ bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTr
   return mxsec <= 0.0 || rand > mxsec*theTrack->GetMFP(iDProc);
 }
 
+void G4HepEmElectronManager::PerformDiscrete(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
+  G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
+  G4HepEmTrack*   theTrack = theElTrack->GetTrack();
+  const bool isElectron = (theTrack->GetCharge() < 0.0);
+
+  // 1. check if discrete process limited the step return otherwise (i.e. if
+  //      continous or boundary process limited the step)
+  const int iDProc = theTrack->GetWinnerProcessIndex();
+  if (iDProc < 0 || theTrack->GetOnBoundary()) {
+    return;
+  }
+  // reset number of interaction left for the winner discrete process
+  theTrack->SetNumIALeft(-1.0, iDProc);
+
+  // 2. check if delta interaction happens instead of the real discrete process
+  if (CheckDelta(hepEmData, theTrack, tlData->GetRNGEngine()->flat())) {
+    return;
+  }
+
+  // 3. perform the discrete part of the winner interaction
+  const double theEkin = theTrack->GetEKin();
+  switch (iDProc) {
+    case 0: // invoke ioni (for e-/e+):
+            G4HepEmElectronInteractionIoni::Perform(tlData, hepEmData, isElectron);
+            break;
+    case 1: // invoke brem (for e-/e+): either SB- or Rel-Brem
+            G4HepEmElectronInteractionBrem::Perform(tlData, hepEmData, isElectron, theEkin < hepEmPars->fElectronBremModelLim);
+            break;
+    case 2: // invoke annihilation (in-flight) for e+
+            G4HepEmPositronInteractionAnnihilation::Perform(tlData, false);
+            break;
+  }
+}
 
 void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
   G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
@@ -430,33 +463,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
   }
 
   // === 4. Discrete part of the interaction (if any)
-  // 4/1. check if discrete process limited the step return otherwise (i.e. if
-  //      continous or boundary process limited the step)
-  const int iDProc = theTrack->GetWinnerProcessIndex();
-  if (iDProc < 0 || theTrack->GetOnBoundary()) {
-    return;
-  }
-  // reset number of interaction left for the winner discrete process
-  theTrack->SetNumIALeft(-1.0, iDProc);
-
-  // 4/2. check if delta interaction happens instead of the real discrete process
-  if (CheckDelta(hepEmData, theTrack, tlData->GetRNGEngine()->flat())) {
-    return;
-  }
-
-  // 4/3. perform the discrete part of the winner interaction
-  const double theEkin = theTrack->GetEKin();
-  switch (iDProc) {
-    case 0: // invoke ioni (for e-/e+):
-            G4HepEmElectronInteractionIoni::Perform(tlData, hepEmData, isElectron);
-            break;
-    case 1: // invoke brem (for e-/e+): either SB- or Rel-Brem
-            G4HepEmElectronInteractionBrem::Perform(tlData, hepEmData, isElectron, theEkin < hepEmPars->fElectronBremModelLim);
-            break;
-    case 2: // invoke annihilation (in-flight) for e+
-            G4HepEmPositronInteractionAnnihilation::Perform(tlData, false);
-            break;
-  }
+  PerformDiscrete(hepEmData, hepEmPars, tlData);
 }
 
 
