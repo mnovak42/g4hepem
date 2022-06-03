@@ -37,11 +37,16 @@
 #ifndef TrackingManagerHelper_hh
 #define TrackingManagerHelper_hh 1
 
+#include "G4ThreeVector.hh"
 #include "G4TrackVector.hh"
 #include "globals.hh"
 
 class G4Step;
 class G4Track;
+
+class G4Navigator;
+class G4PropagatorInField;
+class G4SafetyHelper;
 
 class TrackingManagerHelper
 {
@@ -92,6 +97,43 @@ class TrackingManagerHelper
                               G4double physicalStep) = 0;
 
     virtual void FinishStep(G4Track& track, G4Step& step) = 0;
+  };
+
+  class ChargedNavigation final : public Navigation
+  {
+   public:
+    inline ChargedNavigation();
+    inline G4double MakeStep(G4Track& track, G4Step& step,
+                             G4double physicalStep) override;
+    inline void FinishStep(G4Track& track, G4Step& step) override;
+
+   private:
+    G4Navigator* fLinearNavigator;
+    G4PropagatorInField* fFieldPropagator;
+    G4SafetyHelper* fSafetyHelper;
+    G4ThreeVector fSafetyOrigin;
+    G4double fSafety         = 0;
+    G4double fPostStepSafety = 0;
+    G4double kCarTolerance;
+    G4bool fGeometryLimitedStep;
+  };
+
+  class NeutralNavigation final : public Navigation
+  {
+   public:
+    inline NeutralNavigation();
+    inline G4double MakeStep(G4Track& track, G4Step& step,
+                             G4double physicalStep) override;
+    inline void FinishStep(G4Track& track, G4Step& step) override;
+
+   private:
+    G4Navigator* fLinearNavigator;
+    G4SafetyHelper* fSafetyHelper;
+    G4ThreeVector fSafetyOrigin;
+    G4double fSafety         = 0;
+    G4double fPostStepSafety = 0;
+    G4double kCarTolerance;
+    G4bool fGeometryLimitedStep;
   };
 
   template <typename PhysicsImpl, typename NavigationImpl>
