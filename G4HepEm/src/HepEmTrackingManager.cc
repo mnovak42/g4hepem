@@ -9,6 +9,7 @@
 
 #include "G4HepEmElectronManager.hh"
 #include "G4HepEmElectronTrack.hh"
+#include "G4HepEmPositronInteractionAnnihilation.hh"
 #include "G4HepEmGammaManager.hh"
 #include "G4HepEmGammaTrack.hh"
 
@@ -155,7 +156,9 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   const G4int trackID = aTrack->GetTrackID();
 
   // Init state that never changes for a track.
-  thePrimaryTrack->SetCharge(aTrack->GetParticleDefinition()->GetPDGCharge());
+  const double charge = aTrack->GetParticleDefinition()->GetPDGCharge();
+  const bool isElectron = (charge < 0.0);
+  thePrimaryTrack->SetCharge(charge);
   // === StartTracking ===
 
   while(aTrack->GetTrackStatus() == fAlive)
@@ -189,7 +192,19 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         preStepOnBoundary ? 0.
                    : fSafetyHelper->ComputeSafety(aTrack->GetPosition());
     thePrimaryTrack->SetSafety(preSafety);
-    G4HepEmElectronManager::HowFar(theHepEmData, theHepEmPars, theTLData);
+    // === HowFar ===
+    // Sample the `number-of-interaction-left`
+    for (int ip=0; ip<3; ++ip) {
+      if (thePrimaryTrack->GetNumIALeft(ip)<=0.) {
+        thePrimaryTrack->SetNumIALeft(-G4HepEmLog(rnge->flat()), ip);
+      }
+    }
+    // True distance to discrete interaction.
+    G4HepEmElectronManager::HowFarToDiscreteInteraction(theHepEmData, theHepEmPars, theElTrack);
+    // Possibly true step limit of MSC, and conversion to geometrical step length.
+    G4HepEmElectronManager::HowFarToMSC(theHepEmData, theHepEmPars, theElTrack, rnge);
+    // === HowFar ===
+
     // returns with the geometrcal step length: straight line distance to make
     // along the org direction
     G4double physicalStep = thePrimaryTrack->GetGStepLength();
@@ -238,7 +253,58 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       thePrimaryTrack->SetOnBoundary(postStepOnBoundary);
       // invoke the physics interactions (all i.e. all along- and post-step as
       // well as possible at rest)
-      G4HepEmElectronManager::Perform(theHepEmData, theHepEmPars, theTLData);
+      // === Perform ===
+      // Set default values to cover all early returns due to protection against
+      // zero step lengths, conversion errors, etc.
+      thePrimaryTrack->SetEnergyDeposit(0);
+      theElTrack->SetPStepLength(finalStep);
+      if (finalStep > 0) {
+        theElTrack->SavePreStepEKin();
+        // === PerformContinuous ===
+        bool stopped = false;
+        do {
+          //
+          // === 1. MSC should be invoked to obtain the physics step Length
+          G4HepEmElectronManager::UpdatePStepLength(theElTrack);
+          const double pStepLength = theElTrack->GetPStepLength();
+
+          if (pStepLength<=0.0) {
+            break;
+          }
+          // compute the energy loss first based on the new step length: it will be needed in the
+          // MSC scatteirng and displacement computation here as well (that is done only if not
+          // the last step with the particle).
+          // But update the number of interaction length left before.
+          //
+          // === 2. The `number-of-interaction-left` needs to be updated based on the actual
+          //        physical step Length
+          G4HepEmElectronManager::UpdateNumIALeft(theElTrack);
+          //
+          // === 3. Continuous energy loss needs to be computed
+          stopped = G4HepEmElectronManager::ApplyMeanEnergyLoss(theHepEmData, theHepEmPars, theElTrack);
+          if (stopped) {
+            break;
+          }
+
+          // === 4. Sample MSC direction change and displacement.
+          G4HepEmElectronManager::SampleMSC(theHepEmData, theHepEmPars, theElTrack, rnge);
+
+          // === 5. Sample loss fluctuations.
+          stopped = G4HepEmElectronManager::SampleLossFluctuations(theHepEmData, theHepEmPars, theElTrack, rnge);
+        } while (0);
+        // === PerformContinuous ===
+
+        if (stopped) {
+          // call annihilation for e+ !!!
+          if (!isElectron) {
+            G4HepEmPositronInteractionAnnihilation::Perform(theTLData, true);
+          }
+        } else {
+          // === 4. Discrete part of the interaction (if any)
+          G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
+        }
+      }
+      // === Perform ===
       step.SetStepLength(theElTrack->GetPStepLength());
 
       // energy, e-depo, momentum direction and status
