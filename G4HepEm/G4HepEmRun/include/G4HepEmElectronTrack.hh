@@ -59,8 +59,13 @@ public:
 
   G4HepEmHostDevice
   void SavePreStepEKin()  {
-    fPreStepEKin    = fTrack.GetEKin();;
+    fPreStepEKin    = fTrack.GetEKin();
     fPreStepLogEKin = fTrack.GetLogEKin();
+  }
+  G4HepEmHostDevice
+  void SetPreStepEKin(double ekin, double lekin) {
+    fPreStepEKin    = ekin;
+    fPreStepLogEKin = lekin;
   }
 
   G4HepEmHostDevice

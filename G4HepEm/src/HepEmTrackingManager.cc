@@ -177,9 +177,9 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     preStepPoint.SetMaterialCutsCouple(lvol->GetMaterialCutsCouple());
 
     // Query step lengths from pyhsics and geometry, decide on limit.
-    // === GetPhysicalInteractionLength ===
-    thePrimaryTrack->SetEKin(theG4DPart->GetKineticEnergy(),
-                             theG4DPart->GetLogKineticEnergy());
+    const G4double preStepEkin = theG4DPart->GetKineticEnergy();
+    const G4double preStepLogEkin = theG4DPart->GetLogKineticEnergy();
+    thePrimaryTrack->SetEKin(preStepEkin, preStepLogEkin);
 
     const int g4IMC = MCC->GetIndex();
     const int hepEmIMC =
@@ -192,7 +192,7 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         preStepOnBoundary ? 0.
                    : fSafetyHelper->ComputeSafety(aTrack->GetPosition());
     thePrimaryTrack->SetSafety(preSafety);
-    // === HowFar ===
+
     // Sample the `number-of-interaction-left`
     for (int ip=0; ip<3; ++ip) {
       if (thePrimaryTrack->GetNumIALeft(ip)<=0.) {
@@ -201,45 +201,45 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
     // True distance to discrete interaction.
     G4HepEmElectronManager::HowFarToDiscreteInteraction(theHepEmData, theHepEmPars, theElTrack);
-    // Possibly true step limit of MSC, and conversion to geometrical step length.
-    G4HepEmElectronManager::HowFarToMSC(theHepEmData, theHepEmPars, theElTrack, rnge);
-    // === HowFar ===
+    // Remember which process was selected - MSC might limit the sub-steps.
+    const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
 
-    // returns with the geometrcal step length: straight line distance to make
-    // along the org direction
-    G4double physicalStep = thePrimaryTrack->GetGStepLength();
-    // === GetPhysicalInteractionLength ===
-    G4double geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
+    double stepLimitLeft = theElTrack->GetPStepLength();
+    double totalTruePathLength = 0, totalEloss = 0;
+    bool continueStepping = fMultipleSteps, stopped = false;
 
-    bool geometryLimitedStep = geometryStep < physicalStep;
-    G4double finalStep = geometryLimitedStep ? geometryStep : physicalStep;
+    theElTrack->SavePreStepEKin();
 
-    step.SetStepLength(finalStep);
-    aTrack->SetStepLength(finalStep);
+    do {
+      // Possibly true step limit of MSC, and conversion to geometrical step length.
+      G4HepEmElectronManager::HowFarToMSC(theHepEmData, theHepEmPars, theElTrack, rnge);
+      if (thePrimaryTrack->GetWinnerProcessIndex() != -2) {
+        // If MSC did not limit the step, exit the loop after this iteration.
+        continueStepping = false;
+      }
 
-    // Call AlongStepDoIt in every step.
-    // === AlongStepDoIt ===
-    step.UpdateTrack();
+      // Get the geometrcal step length: straight line distance to make along the
+      // original direction.
+      G4double physicalStep = thePrimaryTrack->GetGStepLength();
+      G4double geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
 
-    if(aTrack->GetTrackStatus() == fAlive &&
-       aTrack->GetKineticEnergy() < DBL_MIN)
-    {
-      aTrack->SetTrackStatus(fStopAndKill);
-    }
+      bool geometryLimitedStep = geometryStep < physicalStep;
+      G4double finalStep = geometryLimitedStep ? geometryStep : physicalStep;
 
-    navigation.FinishStep(*aTrack, step);
+      step.UpdateTrack();
 
-    // Check if the track left the world.
-    if(aTrack->GetNextVolume() == nullptr)
-    {
-      aTrack->SetTrackStatus(fStopAndKill);
-    }
+      navigation.FinishStep(*aTrack, step);
 
-    // The check should rather check for == fAlive and avoid calling
-    // PostStepDoIt for fStopButAlive, but the generic stepping loop
-    // does it like this...
-    if(aTrack->GetTrackStatus() != fStopAndKill)
-    {
+      if (geometryLimitedStep) {
+        continueStepping = false;
+        // Check if the track left the world.
+        if(aTrack->GetNextVolume() == nullptr)
+        {
+          aTrack->SetTrackStatus(fStopAndKill);
+          break;
+        }
+      }
+
       const bool postStepOnBoundary =
           postStepPoint.GetStepStatus() == G4StepStatus::fGeomBoundary;
 
@@ -253,20 +253,14 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       thePrimaryTrack->SetOnBoundary(postStepOnBoundary);
       // invoke the physics interactions (all i.e. all along- and post-step as
       // well as possible at rest)
-      // === Perform ===
-      // Set default values to cover all early returns due to protection against
-      // zero step lengths, conversion errors, etc.
-      thePrimaryTrack->SetEnergyDeposit(0);
-      theElTrack->SetPStepLength(finalStep);
+
       if (finalStep > 0) {
-        theElTrack->SavePreStepEKin();
-        // === PerformContinuous ===
-        bool stopped = false;
         do {
           //
           // === 1. MSC should be invoked to obtain the physics step Length
           G4HepEmElectronManager::UpdatePStepLength(theElTrack);
           const double pStepLength = theElTrack->GetPStepLength();
+          totalTruePathLength += pStepLength;
 
           if (pStepLength<=0.0) {
             break;
@@ -282,151 +276,188 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
           //
           // === 3. Continuous energy loss needs to be computed
           stopped = G4HepEmElectronManager::ApplyMeanEnergyLoss(theHepEmData, theHepEmPars, theElTrack);
+          totalEloss += thePrimaryTrack->GetEnergyDeposit();
           if (stopped) {
+            continueStepping = false;
             break;
           }
 
           // === 4. Sample MSC direction change and displacement.
           G4HepEmElectronManager::SampleMSC(theHepEmData, theHepEmPars, theElTrack, rnge);
 
-          // === 5. Sample loss fluctuations.
-          stopped = G4HepEmElectronManager::SampleLossFluctuations(theHepEmData, theHepEmPars, theElTrack, rnge);
-        } while (0);
-        // === PerformContinuous ===
+          const double *pdir = thePrimaryTrack->GetDirection();
+          postStepPoint.SetMomentumDirection(
+              G4ThreeVector(pdir[0], pdir[1], pdir[2]));
 
-        if (stopped) {
-          // call annihilation for e+ !!!
-          if (!isElectron) {
-            G4HepEmPositronInteractionAnnihilation::Perform(theTLData, true);
+          // apply MSC displacement if its length is longer than a minimum and we
+          // are not on boundary
+          G4ThreeVector position = postStepPoint.GetPosition();
+          if (!postStepOnBoundary) {
+            const double *displacement =
+                theElTrack->GetMSCTrackData()->GetDisplacement();
+            const double dLength2 = displacement[0] * displacement[0] +
+                                    displacement[1] * displacement[1] +
+                                    displacement[2] * displacement[2];
+            const double kGeomMinLength = 5.0e-8; // 0.05 [nm]
+            const double kGeomMinLength2 =
+                kGeomMinLength * kGeomMinLength; // (0.05 [nm])^2
+            if (dLength2 > kGeomMinLength2) {
+              // apply displacement
+              bool isPositionChanged = true;
+              const double dispR = std::sqrt(dLength2);
+              const double postSafety =
+                  0.99 * fSafetyHelper->ComputeSafety(position, dispR);
+              const G4ThreeVector theDisplacement(displacement[0], displacement[1],
+                                                  displacement[2]);
+              // far away from geometry boundary
+              if (postSafety > 0.0 && dispR <= postSafety) {
+                position += theDisplacement;
+                // near the boundary
+              } else {
+                // displaced point is definitely within the volume
+                if (dispR < postSafety) {
+                  position += theDisplacement;
+                  // reduced displacement
+                } else if (postSafety > kGeomMinLength) {
+                  position += theDisplacement * (postSafety / dispR);
+                  // very small postSafety
+                } else {
+                  isPositionChanged = false;
+                }
+              }
+              if (isPositionChanged) {
+                fSafetyHelper->ReLocateWithinVolume(position);
+                postStepPoint.SetPosition(position);
+              }
+            }
           }
-        } else {
-          // === 4. Discrete part of the interaction (if any)
-          G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
-        }
-      }
-      // === Perform ===
-      step.SetStepLength(theElTrack->GetPStepLength());
 
-      // energy, e-depo, momentum direction and status
-      const double ekin = thePrimaryTrack->GetEKin();
-      double edep = thePrimaryTrack->GetEnergyDeposit();
-      postStepPoint.SetKineticEnergy(ekin);
-      if (ekin <= 0.0) {
-        aTrack->SetTrackStatus(fStopAndKill);
+        } while (0);
+
+        if (continueStepping) {
+          // Reset the energy deposit, we're accumulating it in totalEloss.
+          thePrimaryTrack->SetEnergyDeposit(0);
+          // Also reset the selected winner process that MSC replaced.
+          thePrimaryTrack->SetWinnerProcessIndex(iDProc);
+
+          // Save the current energy for the next MSC invocation.
+          postStepPoint.SetKineticEnergy(thePrimaryTrack->GetEKin());
+          theElTrack->SavePreStepEKin();
+          // Apply everything to the track, so that navigation sees it.
+          step.UpdateTrack();
+
+          // Subtract the path length we just traveled, and set this as the next
+          // attempted sub-step.
+          const double pStepLength = theElTrack->GetPStepLength();
+          stepLimitLeft -= pStepLength;
+          theElTrack->SetPStepLength(stepLimitLeft);
+          thePrimaryTrack->SetGStepLength(stepLimitLeft);
+
+          // Also reduce the range accordingly.
+          const double range = theElTrack->GetRange() - pStepLength;
+          theElTrack->SetRange(range);
+        }
+
       }
+    } while (continueStepping);
+
+    // Restore the total (mean) energy loss accumulated along the sub-steps.
+    thePrimaryTrack->SetEnergyDeposit(totalEloss);
+
+    if (!stopped) {
+      // If not already stopped, restore the pre-step energy and sample loss
+      // fluctuations.
+      theElTrack->SetPreStepEKin(preStepEkin, preStepLogEkin);
+      stopped = G4HepEmElectronManager::SampleLossFluctuations(theHepEmData, theHepEmPars, theElTrack, rnge);
+    }
+
+    if (stopped) {
+      // call annihilation for e+ !!!
+      if (!isElectron) {
+        G4HepEmPositronInteractionAnnihilation::Perform(theTLData, true);
+      }
+    } else if (aTrack->GetTrackStatus() != fStopAndKill) {
+      // === 4. Discrete part of the interaction (if any)
+      G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
       const double *pdir = thePrimaryTrack->GetDirection();
       postStepPoint.SetMomentumDirection(
           G4ThreeVector(pdir[0], pdir[1], pdir[2]));
+    }
 
-      // apply MSC displacement if its length is longer than a minimum and we
-      // are not on boundary
-      G4ThreeVector position = postStepPoint.GetPosition();
-      if (!postStepOnBoundary) {
-        const double *displacement =
-            theElTrack->GetMSCTrackData()->GetDisplacement();
-        const double dLength2 = displacement[0] * displacement[0] +
-                                displacement[1] * displacement[1] +
-                                displacement[2] * displacement[2];
-        const double kGeomMinLength = 5.0e-8; // 0.05 [nm]
-        const double kGeomMinLength2 =
-            kGeomMinLength * kGeomMinLength; // (0.05 [nm])^2
-        if (dLength2 > kGeomMinLength2) {
-          // apply displacement
-          bool isPositionChanged = true;
-          const double dispR = std::sqrt(dLength2);
-          const double postSafety =
-              0.99 * fSafetyHelper->ComputeSafety(position, dispR);
-          const G4ThreeVector theDisplacement(displacement[0], displacement[1],
-                                              displacement[2]);
-          // far away from geometry boundary
-          if (postSafety > 0.0 && dispR <= postSafety) {
-            position += theDisplacement;
-            // near the boundary
-          } else {
-            // displaced point is definitely within the volume
-            if (dispR < postSafety) {
-              position += theDisplacement;
-              // reduced displacement
-            } else if (postSafety > kGeomMinLength) {
-              position += theDisplacement * (postSafety / dispR);
-              // very small postSafety
-            } else {
-              isPositionChanged = false;
-            }
-          }
-          if (isPositionChanged) {
-            fSafetyHelper->ReLocateWithinVolume(position);
-            postStepPoint.SetPosition(position);
-          }
-        }
-      }
+    step.SetStepLength(totalTruePathLength);
 
-      step.UpdateTrack();
+    // energy, e-depo and status
+    const double ekin = thePrimaryTrack->GetEKin();
+    double edep = thePrimaryTrack->GetEnergyDeposit();
+    postStepPoint.SetKineticEnergy(ekin);
+    if (ekin <= 0.0) {
+      aTrack->SetTrackStatus(fStopAndKill);
+    }
+    step.UpdateTrack();
 
-      // secondary: only possible is e- or gamma at the moemnt
-      const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
-      const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
-      const int numSecondaries = numSecElectron + numSecGamma;
-      if (numSecondaries > 0) {
-        const G4ThreeVector &theG4PostStepPointPosition = position;
-        const G4double theG4PostStepGlobalTime =
-            postStepPoint.GetGlobalTime();
-        for (int is = 0; is < numSecElectron; ++is) {
-          G4HepEmTrack *secTrack =
-              theTLData->GetSecondaryElectronTrack(is)->GetTrack();
-          const double secEKin = secTrack->GetEKin();
-          const bool isElectron = secTrack->GetCharge() < 0.0;
-          if (applyCuts) {
-            if (isElectron && secEKin < (*theCutsElectron)[g4IMC]) {
-              edep += secEKin;
-              continue;
-            } else if (!isElectron &&
-                       CLHEP::electron_mass_c2 < (*theCutsGamma)[g4IMC] &&
-                       secEKin < (*theCutsPositron)[g4IMC]) {
-              edep += secEKin + 2 * CLHEP::electron_mass_c2;
-              continue;
-            }
-          }
-
-          const double *dir = secTrack->GetDirection();
-          const G4ParticleDefinition *partDef = G4Electron::Definition();
-          if (!isElectron) {
-            partDef = G4Positron::Definition();
-          }
-          G4DynamicParticle *dp = new G4DynamicParticle(
-              partDef, G4ThreeVector(dir[0], dir[1], dir[2]), secEKin);
-          G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                          theG4PostStepPointPosition);
-          aG4Track->SetParentID(trackID);
-          aG4Track->SetTouchableHandle(touchableHandle);
-          secondaries.push_back(aG4Track);
-        }
-        theTLData->ResetNumSecondaryElectronTrack();
-
-        for (int is = 0; is < numSecGamma; ++is) {
-          G4HepEmTrack *secTrack =
-              theTLData->GetSecondaryGammaTrack(is)->GetTrack();
-          const double secEKin = secTrack->GetEKin();
-          if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
+    const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
+    const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
+    const int numSecondaries = numSecElectron + numSecGamma;
+    if (numSecondaries > 0) {
+      const G4ThreeVector &theG4PostStepPointPosition =
+          postStepPoint.GetPosition();
+      const G4double theG4PostStepGlobalTime =
+          postStepPoint.GetGlobalTime();
+      for (int is = 0; is < numSecElectron; ++is) {
+        G4HepEmTrack *secTrack =
+            theTLData->GetSecondaryElectronTrack(is)->GetTrack();
+        const double secEKin = secTrack->GetEKin();
+        const bool isElectron = secTrack->GetCharge() < 0.0;
+        if (applyCuts) {
+          if (isElectron && secEKin < (*theCutsElectron)[g4IMC]) {
             edep += secEKin;
             continue;
+          } else if (!isElectron &&
+                     CLHEP::electron_mass_c2 < (*theCutsGamma)[g4IMC] &&
+                     secEKin < (*theCutsPositron)[g4IMC]) {
+            edep += secEKin + 2 * CLHEP::electron_mass_c2;
+            continue;
           }
-
-          const double *dir = secTrack->GetDirection();
-          G4DynamicParticle *dp = new G4DynamicParticle(
-              G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]),
-              secEKin);
-          G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                          theG4PostStepPointPosition);
-          aG4Track->SetParentID(trackID);
-          aG4Track->SetTouchableHandle(touchableHandle);
-          secondaries.push_back(aG4Track);
         }
-        theTLData->ResetNumSecondaryGammaTrack();
-      }
 
-      step.AddTotalEnergyDeposit(edep);
+        const double *dir = secTrack->GetDirection();
+        const G4ParticleDefinition *partDef = G4Electron::Definition();
+        if (!isElectron) {
+          partDef = G4Positron::Definition();
+        }
+        G4DynamicParticle *dp = new G4DynamicParticle(
+            partDef, G4ThreeVector(dir[0], dir[1], dir[2]), secEKin);
+        G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
+                                        theG4PostStepPointPosition);
+        aG4Track->SetParentID(trackID);
+        aG4Track->SetTouchableHandle(touchableHandle);
+        secondaries.push_back(aG4Track);
+      }
+      theTLData->ResetNumSecondaryElectronTrack();
+
+      for (int is = 0; is < numSecGamma; ++is) {
+        G4HepEmTrack *secTrack =
+            theTLData->GetSecondaryGammaTrack(is)->GetTrack();
+        const double secEKin = secTrack->GetEKin();
+        if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
+          edep += secEKin;
+          continue;
+        }
+
+        const double *dir = secTrack->GetDirection();
+        G4DynamicParticle *dp = new G4DynamicParticle(
+            G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]),
+            secEKin);
+        G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
+                                        theG4PostStepPointPosition);
+        aG4Track->SetParentID(trackID);
+        aG4Track->SetTouchableHandle(touchableHandle);
+        secondaries.push_back(aG4Track);
+      }
+      theTLData->ResetNumSecondaryGammaTrack();
     }
+
+    step.AddTotalEnergyDeposit(edep);
 
     // Need to get the true step length, not the geometry step length!
     aTrack->AddTrackLength(step.GetStepLength());
