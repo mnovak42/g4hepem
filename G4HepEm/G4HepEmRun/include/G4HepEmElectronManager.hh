@@ -73,6 +73,44 @@ public:
   /** Function that provides the information regarding how far a given e-/e+ particle goes.
     *
     * This function provides the information regarding how far a given e-/e+ particle goes
+    * till it's needed to be stopped again because a discrete interaction needs to be performed.
+    * The input/primary e-/e+ particle track is provided as G4HepEmElectronTrack which must have sampled
+    * `number-of-interaction-left`. The computed physics step length is written directly into the input
+    * track. There is no local (state) variable used in the computation.
+    *
+    * Note: This function does *not* involve multiple scattering!
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input information of the track. The data structure must have all entries
+    *   `number-of-interaction-left` sampled and is also used to deliver the results of the function call, i.e.
+    *   the computed physics step limit is written into its fPStepLength member.
+    */
+  G4HepEmHostDevice
+  static void HowFarToDiscreteInteraction(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+
+  /** Function that provides the information regarding how far a given e-/e+ particle goes.
+    *
+    * This function provides the information regarding how far a given e-/e+ particle goes
+    * till it's needed to be stopped again because of a MSC step limit.
+    * The input/primary e-/e+ particle track is provided as G4HepEmElectronTrack which must have sampled
+    * `number-of-interaction-left`. The computed physics step length is written directly into the input
+    * track. There is no local (state) variable used in the computation.
+    *
+    * Note: This function does *not* involve multiple scattering!
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input information of the track, used to deliver the results of
+    *   the function call, i.e.the computed physics step limit is written into its fPStepLength and
+    *   fGStepLength member.
+    */
+  G4HepEmHostDevice
+  static void HowFarToMSC(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
+
+  /** Function that provides the information regarding how far a given e-/e+ particle goes.
+    *
+    * This function provides the information regarding how far a given e-/e+ particle goes
     * till it's needed to be stopped again because some physics interaction(s) needs to be performed.
     * The input/primary e-/e+ particle track is provided as G4HepEmElectronTrack which must have sampled
     * `number-of-interaction-left`. The computed physics step length is written directly into the input
@@ -86,6 +124,48 @@ public:
     */
   G4HepEmHostDevice
   static void HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
+
+  /** Function that updates the physical step length after the geometry step.
+    *
+    * If MSC is active and we hit a boundary, convert the geometry step length
+    * to a true step length.
+    */
+  G4HepEmHostDevice
+  static void UpdatePStepLength(G4HepEmElectronTrack* theElTrack);
+
+  /** Update the number-of-interaction-left according to the physical step length.
+    *
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static void UpdateNumIALeft(G4HepEmElectronTrack* theElTrack);
+
+  /** Apply the mean energy loss along the physical step length.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static bool ApplyMeanEnergyLoss(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack);
+
+  /** Sample MSC direction change and displacement.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static void SampleMSC(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
+
+  /** Sample loss fluctuations for the mean energy loss.
+    * 
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param theElTrack pointer to the input and output information of the track.
+    */
+  G4HepEmHostDevice
+  static bool SampleLossFluctuations(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
 
   /** Functions that performs all continuous physics interactions for a given e-/e+ particle.
     *
@@ -113,6 +193,17 @@ public:
     */
   G4HepEmHostDevice
   static bool CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTrack* theTrack, double rand);
+
+  /** Functions that performs the discrete interaction for a given e-/e+ particle.
+    *
+    * @param hepEmData pointer to the top level, global, G4HepEmData structure.
+    * @param hepEmPars pointer to the global, G4HepEmParameters structure.
+    * @param tlData    pointer to a worker-local, G4HepEmTLData object. The corresonding object
+    *   is assumed to contain all the required input information in its primary G4HepEmTLData::fElectronTrack
+    *   member. All the results of this function call, i.e. the primary particle updated to its post-interaction(s)
+    *   state as well as the possible secondary particles, are also delivered through this G4HepEmTLData.
+    */
+  static void PerformDiscrete(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData);
 
   /** Functions that performs all physics interactions for a given e-/e+ particle.
     *

@@ -57,6 +57,22 @@ public:
   G4HepEmHostDevice
   double  GetPStepLength()             { return fPStepLength; }
 
+  G4HepEmHostDevice
+  void SavePreStepEKin()  {
+    fPreStepEKin    = fTrack.GetEKin();
+    fPreStepLogEKin = fTrack.GetLogEKin();
+  }
+  G4HepEmHostDevice
+  void SetPreStepEKin(double ekin, double lekin) {
+    fPreStepEKin    = ekin;
+    fPreStepLogEKin = lekin;
+  }
+
+  G4HepEmHostDevice
+  double GetPreStepEKin() const { return fPreStepEKin; }
+  G4HepEmHostDevice
+  double GetPreStepLogEKin() const { return fPreStepLogEKin; }
+
   // Reset all member values
   G4HepEmHostDevice
   void ReSet() {
@@ -72,6 +88,8 @@ private:
   G4HepEmMSCTrackData fMSCData;
   double              fRange;
   double              fPStepLength;  // physical step length >= fTrack.fGStepLength
+  double              fPreStepEKin;
+  double              fPreStepLogEKin;
 };
 
 

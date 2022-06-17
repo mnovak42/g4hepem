@@ -23,6 +23,13 @@ public:
 
   void HandOverOneTrack(G4Track *aTrack) override;
 
+  void SetMultipleSteps(G4bool val) {
+    fMultipleSteps = val;
+  }
+  G4bool MultipleSteps() const {
+    return fMultipleSteps;
+  }
+
 private:
   void TrackElectron(G4Track *aTrack);
   void TrackPositron(G4Track *aTrack);
@@ -36,6 +43,7 @@ private:
   const std::vector<G4double> *theCutsElectron = nullptr;
   const std::vector<G4double> *theCutsPositron = nullptr;
   G4bool applyCuts = false;
+  G4bool fMultipleSteps = true;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
