@@ -125,12 +125,11 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
   // Prepare data structures used while tracking.
   G4Step step;
-  step.NewSecondaryVector();
+  G4TrackVector& secondaries = *step.NewSecondaryVector();
   G4StepPoint& preStepPoint = *step.GetPreStepPoint();
   G4StepPoint& postStepPoint = *step.GetPostStepPoint();
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
-  G4TrackVector secondaries;
 
   // Start of tracking: Inform user and processes.
   if(userTrackingAction)
