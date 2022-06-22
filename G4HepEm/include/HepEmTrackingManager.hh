@@ -7,6 +7,7 @@
 class G4HepEmRunManager;
 class G4HepEmCLHEPRandomEngine;
 class G4SafetyHelper;
+class G4Step;
 
 #include <vector>
 
@@ -38,6 +39,7 @@ private:
   G4HepEmRunManager *fRunManager;
   G4HepEmCLHEPRandomEngine *fRandomEngine;
   G4SafetyHelper *fSafetyHelper;
+  G4Step *fStep;
 
   const std::vector<G4double> *theCutsGamma = nullptr;
   const std::vector<G4double> *theCutsElectron = nullptr;

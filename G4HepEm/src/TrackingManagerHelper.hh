@@ -137,14 +137,16 @@ class TrackingManagerHelper
   };
 
   template <typename PhysicsImpl, typename NavigationImpl>
-  static void TrackParticle(G4Track* aTrack, PhysicsImpl& physics,
-                            NavigationImpl& navigation);
+  static void TrackParticle(G4Track* aTrack, G4Step* aStep,
+                            PhysicsImpl& physics, NavigationImpl& navigation);
 
   template <typename PhysicsImpl>
-  static void TrackChargedParticle(G4Track* aTrack, PhysicsImpl& physics);
+  static void TrackChargedParticle(G4Track* aTrack, G4Step* aStep,
+                                   PhysicsImpl& physics);
 
   template <typename PhysicsImpl>
-  static void TrackNeutralParticle(G4Track* aTrack, PhysicsImpl& physics);
+  static void TrackNeutralParticle(G4Track* aTrack, G4Step* aStep,
+                                   PhysicsImpl& physics);
 };
 
 #include "TrackingManagerHelper.icc"

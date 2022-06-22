@@ -14,6 +14,8 @@ class G4ComptonScattering;
 class G4GammaConversion;
 class G4PhotoElectricEffect;
 
+class G4Step;
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 class G4EmTrackingManager : public G4VTrackingManager {
@@ -52,6 +54,8 @@ private:
     G4ComptonScattering *compton;
     G4GammaConversion *conversion;
   } gamma;
+
+  G4Step *fStep;
 
   static G4EmTrackingManager *masterTrackingManager;
 };

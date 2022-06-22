@@ -14,6 +14,8 @@
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
 
+#include "G4Step.hh"
+
 G4EmTrackingManager *G4EmTrackingManager::masterTrackingManager = nullptr;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -57,11 +59,15 @@ G4EmTrackingManager::G4EmTrackingManager() {
     gamma.compton->SetMasterProcess(masterTrackingManager->gamma.compton);
     gamma.conversion->SetMasterProcess(masterTrackingManager->gamma.conversion);
   }
+
+  fStep = new G4Step;
+  fStep->NewSecondaryVector();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4EmTrackingManager::~G4EmTrackingManager() {
+  delete fStep;
   if (masterTrackingManager == this) {
     masterTrackingManager = nullptr;
   }
@@ -244,7 +250,7 @@ void G4EmTrackingManager::TrackElectron(G4Track *aTrack) {
   };
 
   ElectronPhysics physics(*this);
-  TrackingManagerHelper::TrackChargedParticle(aTrack, physics);
+  TrackingManagerHelper::TrackChargedParticle(aTrack, fStep, physics);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -421,7 +427,7 @@ void G4EmTrackingManager::TrackPositron(G4Track *aTrack) {
   };
 
   PositronPhysics physics(*this);
-  TrackingManagerHelper::TrackChargedParticle(aTrack, physics);
+  TrackingManagerHelper::TrackChargedParticle(aTrack, fStep, physics);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -539,7 +545,7 @@ void G4EmTrackingManager::TrackGamma(G4Track *aTrack) {
   };
 
   GammaPhysics physics(*this);
-  TrackingManagerHelper::TrackNeutralParticle(aTrack, physics);
+  TrackingManagerHelper::TrackNeutralParticle(aTrack, fStep, physics);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
