@@ -58,7 +58,8 @@
 #include "G4VPhysicalVolume.hh"
 
 template <typename PhysicsImpl, typename NavigationImpl>
-void TrackingManagerHelper::TrackParticle(G4Track* aTrack, PhysicsImpl& physics,
+void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
+                                          PhysicsImpl& physics,
                                           NavigationImpl& navigation)
 {
   // Prepare for calling the user action.
@@ -102,12 +103,11 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, PhysicsImpl& physics,
   }
 
   // Prepare data structures used while tracking.
-  G4Step step;
-  step.NewSecondaryVector();
+  G4Step &step = *aStep;
+  G4TrackVector& secondaries = *step.GetfSecondary();
   G4StepPoint& preStepPoint = *step.GetPreStepPoint();
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
-  G4TrackVector secondaries;
 
   // Start of tracking: Inform user and processes.
   if(userTrackingAction)
@@ -241,8 +241,6 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, PhysicsImpl& physics,
   }
 
   evtMgr->StackTracks(&secondaries);
-
-  step.DeleteSecondaryVector();
 }
 
 TrackingManagerHelper::ChargedNavigation::ChargedNavigation()
@@ -445,11 +443,11 @@ void TrackingManagerHelper::ChargedNavigation::FinishStep(G4Track& track,
 }
 
 template <typename PhysicsImpl>
-void TrackingManagerHelper::TrackChargedParticle(G4Track* aTrack,
+void TrackingManagerHelper::TrackChargedParticle(G4Track* aTrack, G4Step* aStep,
                                                  PhysicsImpl& physics)
 {
   ChargedNavigation navigation;
-  TrackParticle(aTrack, physics, navigation);
+  TrackParticle(aTrack, aStep, physics, navigation);
 }
 
 TrackingManagerHelper::NeutralNavigation::NeutralNavigation()
@@ -563,9 +561,9 @@ void TrackingManagerHelper::NeutralNavigation::FinishStep(G4Track& track,
 }
 
 template <typename PhysicsImpl>
-void TrackingManagerHelper::TrackNeutralParticle(G4Track* aTrack,
+void TrackingManagerHelper::TrackNeutralParticle(G4Track* aTrack, G4Step *aStep,
                                                  PhysicsImpl& physics)
 {
   NeutralNavigation navigation;
-  TrackParticle(aTrack, physics, navigation);
+  TrackParticle(aTrack, aStep, physics, navigation);
 }

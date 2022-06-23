@@ -38,6 +38,8 @@ HepEmTrackingManager::HepEmTrackingManager() {
   fSafetyHelper =
       G4TransportationManager::GetTransportationManager()->GetSafetyHelper();
   fSafetyHelper->InitialiseHelper();
+  fStep = new G4Step;
+  fStep->NewSecondaryVector();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -45,6 +47,7 @@ HepEmTrackingManager::HepEmTrackingManager() {
 HepEmTrackingManager::~HepEmTrackingManager() {
   delete fRunManager;
   delete fRandomEngine;
+  delete fStep;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -124,13 +127,12 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   }
 
   // Prepare data structures used while tracking.
-  G4Step step;
-  step.NewSecondaryVector();
+  G4Step &step = *fStep;
+  G4TrackVector& secondaries = *step.GetfSecondary();
   G4StepPoint& preStepPoint = *step.GetPreStepPoint();
   G4StepPoint& postStepPoint = *step.GetPostStepPoint();
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
-  G4TrackVector secondaries;
 
   // Start of tracking: Inform user and processes.
   if(userTrackingAction)
@@ -493,8 +495,6 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   }
 
   evtMgr->StackTracks(&secondaries);
-
-  step.DeleteSecondaryVector();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -656,7 +656,7 @@ void HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   };
 
   GammaPhysics physics(*this);
-  TrackingManagerHelper::TrackNeutralParticle(aTrack, physics);
+  TrackingManagerHelper::TrackNeutralParticle(aTrack, fStep, physics);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
