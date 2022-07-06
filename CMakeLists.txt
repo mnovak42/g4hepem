@@ -68,6 +68,9 @@ elseif (TARGET Geant4::G4clhep-static)
   set(G4HepEm_CLHEP_TARGET Geant4::G4clhep-static)
 endif()
 
+# make the Geant4 version number available even where we don't depend on Geant4
+add_compile_definitions (G4VERSION_NUM=${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
+
 #----------------------------------------------------------------------------
 # CUDA
 option(G4HepEm_CUDA_BUILD "BUILD with CUDA support" OFF)

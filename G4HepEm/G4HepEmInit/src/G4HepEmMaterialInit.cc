@@ -9,6 +9,7 @@
 #include "G4HepEmElementData.hh"
 
 // g4 includes
+#include "G4Version.hh"
 #include "G4ProductionCutsTable.hh"
 #include "G4SandiaTable.hh"
 #include "G4MaterialCutsCouple.hh"
@@ -126,9 +127,17 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       matData.fZeff23                  = zeff13*zeff13;
       matData.fZeffSqrt                = std::sqrt(zeff);
       //
+// these parameters are taken from Geant4-11.0 (below are the values used before)
+// See G4HepEmElectronInteractionUMSC::StepLimit for further details on this.
+#if G4VERSION_NUMBER >= 1100
       matData.fUMSCPar                 = 9.62800E-1 - 8.4848E-2*matData.fZeffSqrt + 4.3769E-3*zeff;
       matData.fUMSCStepMinPars[0]      = 2.7725E+1/(1.0 + 2.03E-1*zeff);
       matData.fUMSCStepMinPars[1]      = 6.152    /(1.0 + 1.11E-1*zeff);
+#else // G4 version before 11.0
+      matData.fUMSCPar                 = 1.2 - zeff*(1.62e-2 - 9.22e-5*zeff);
+      matData.fUMSCStepMinPars[0]      = 15.99/(1. + 0.119*zeff);
+      matData.fUMSCStepMinPars[1]      = 4.390/(1. + 0.079*zeff);
+#endif
       const double dum0                = 9.90395E-1 + zeff16*(-1.68386E-1 + zeff16*9.3286E-2);
       matData.fUMSCThetaCoeff[0]       = dum0*(1.0 - 8.7780E-2/zeff);
       matData.fUMSCThetaCoeff[1]       = dum0*(4.0780E-2 + 1.7315E-4*zeff);
