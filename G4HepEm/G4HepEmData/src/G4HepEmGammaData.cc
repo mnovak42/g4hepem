@@ -71,6 +71,10 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
     gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvEgrid,  onHOST->fElemSelectorConvEgrid, sizeof( double ) * numElSelE,   cudaMemcpyHostToDevice ) );
     gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fElemSelectorConvData),  sizeof( double ) * numElSelDat ) );
     gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fElemSelectorConvData,   onHOST->fElemSelectorConvData,  sizeof( double ) * numElSelDat, cudaMemcpyHostToDevice ) );
+  } else {
+    gmDataHTo_d->fElemSelectorConvStartIndexPerMat = nullptr;
+    gmDataHTo_d->fElemSelectorConvEgrid = nullptr;
+    gmDataHTo_d->fElemSelectorConvData = nullptr;
   }
   //
   // Finaly copy the top level, i.e. the main struct with the already
