@@ -9,7 +9,7 @@
 
 // G4HepEm includes
 #include "G4HepEmRunManager.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 #include "G4HepEmStateInit.hh"
 #include "G4HepEmState.hh"
 #include "G4HepEmParameters.hh"
@@ -37,9 +37,9 @@ int main() {
   //     Therefore, here we create a `master` G4HepEmRunManager and call its Initialize()
   //     method for e- (could be any of e-: 0; e+: 1; or gamma: 2).
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), 0 );
-  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), 1 );
-  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), 2 );
+  runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), 0 );
+  runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), 1 );
+  runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), 2 );
 
   G4HepEmParameters* rmParams = runMgr->GetHepEmParameters();
   G4HepEmData* rmData = runMgr->GetHepEmData();

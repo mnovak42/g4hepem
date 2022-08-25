@@ -19,22 +19,16 @@
  * Holds a reference to the real engine and two function pointers to generate
  * one random number or fill an array with a given size, respectively.
  */
-class G4HepEmRandomEngine {
+class G4HepEmRandomEngine final {
 public:
-  typedef double (*FlatFn)(void *object);
-  typedef void (*FlatArrayFn)(void *object, const int size, double* vect);
+  G4HepEmHostDevice
+  G4HepEmRandomEngine(void *object)
+    : fObject(object), fIsGauss(false), fGauss(0.) { }
 
   G4HepEmHostDevice
-  G4HepEmRandomEngine(void *object, FlatFn flatFn, FlatArrayFn flatArrayFn)
-    : fObject(object), fFlatFn(flatFn), fFlatArrayFn(flatArrayFn),
-      fIsGauss(false), fGauss(0.) { }
-
+  double flat();
   G4HepEmHostDevice
-  double flat() { return fFlatFn(fObject); }
-  G4HepEmHostDevice
-  void flatArray(const int size, double* vect) {
-    fFlatArrayFn(fObject, size, vect);
-  }
+  void flatArray(const int size, double* vect);
 
   G4HepEmHostDevice
   double Gauss(const double mean, const double stDev) {
@@ -89,8 +83,6 @@ public:
 
 private:
   void *fObject;
-  FlatFn fFlatFn;
-  FlatArrayFn fFlatArrayFn;
 
   bool fIsGauss;
   double fGauss;

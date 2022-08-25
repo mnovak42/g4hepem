@@ -6,7 +6,6 @@ add_subdirectory(G4HepEmRun)
 
 # - Now top level G4HepEm library
 set(G4HEPEM_headers
-  include/G4HepEmCLHEPRandomEngine.hh
   include/G4HepEmNoProcess.hh
   include/G4HepEmProcess.hh
   include/G4HepEmRunManager.hh

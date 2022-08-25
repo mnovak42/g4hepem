@@ -5,7 +5,7 @@
 #include "globals.hh"
 
 class G4HepEmRunManager;
-class G4HepEmCLHEPRandomEngine;
+class G4HepEmRandomEngine;
 class G4SafetyHelper;
 class G4Step;
 
@@ -37,7 +37,7 @@ private:
   void TrackGamma(G4Track *aTrack);
 
   G4HepEmRunManager *fRunManager;
-  G4HepEmCLHEPRandomEngine *fRandomEngine;
+  G4HepEmRandomEngine *fRandomEngine;
   G4SafetyHelper *fSafetyHelper;
   G4Step *fStep;
 

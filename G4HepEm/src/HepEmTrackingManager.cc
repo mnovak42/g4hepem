@@ -1,7 +1,7 @@
 #include "HepEmTrackingManager.hh"
 #include "TrackingManagerHelper.hh"
 
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmRunManager.hh"
@@ -34,7 +34,7 @@
 
 HepEmTrackingManager::HepEmTrackingManager() {
   fRunManager = new G4HepEmRunManager(G4Threading::IsMasterThread());
-  fRandomEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
+  fRandomEngine = new G4HepEmRandomEngine(G4Random::getTheEngine());
   fSafetyHelper =
       G4TransportationManager::GetTransportationManager()->GetSafetyHelper();
   fSafetyHelper->InitialiseHelper();
