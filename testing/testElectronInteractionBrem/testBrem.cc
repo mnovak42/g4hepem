@@ -13,7 +13,7 @@
 // G4HepEm includes
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 
 
 int main(int argc, char *argv[]) {
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
   if (theTestType !=1 ) {
     int theG4HepEmParticleIndx = theIsElectron ? 0 : 1; // e-: 0; e+: 1;
     runMgr = new G4HepEmRunManager ( true );
-    runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), theG4HepEmParticleIndx );
+    runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), theG4HepEmParticleIndx );
   }
 
   //

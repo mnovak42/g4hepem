@@ -36,6 +36,7 @@ set(G4HEPEmRun_impl_headers
   include/G4HepEmRunUtils.icc
 )
 set(G4HEPEmRun_sources
+  src/G4HepEmRandomEngine.cc
   src/G4HepEmTLData.cc
 )
 

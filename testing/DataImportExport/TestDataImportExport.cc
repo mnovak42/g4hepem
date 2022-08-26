@@ -14,7 +14,7 @@
 // G4HepEm includes
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 
 int main(int argc, char* argv[])
 {
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
   // Construct the G4HepEmRunManager, which will fill the data structures
   // on calls to Initialize
   auto* runMgr    = new G4HepEmRunManager(true);
-  auto* rngEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
+  auto* rngEngine = new G4HepEmRandomEngine(G4Random::getTheEngine());
   runMgr->Initialize(rngEngine, 0);
   runMgr->Initialize(rngEngine, 1);
   runMgr->Initialize(rngEngine, 2);

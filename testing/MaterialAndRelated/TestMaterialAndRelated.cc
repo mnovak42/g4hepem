@@ -12,7 +12,7 @@
 // G4HepEm includes
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 
 int main() {
   int verbose = 1;
@@ -41,7 +41,7 @@ int main() {
   //     Therefore, here we create a `master` G4HepEmRunManager and call its Initialize()
   //     method for e- (could be any of e-, e+ or gamma).
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), 0 );
+  runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), 0 );
 
   //
   // --- Make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)

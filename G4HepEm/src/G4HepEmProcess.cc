@@ -7,7 +7,7 @@
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmTLData.hh"
 #include "G4HepEmRunManager.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 #include "G4HepEmNoProcess.hh"
 
 #include "G4HepEmElectronTrack.hh"
@@ -45,7 +45,7 @@ G4HepEmProcess::G4HepEmProcess()
   enablePostStepDoIt  = true;
 
   fTheG4HepEmRunManager   = new G4HepEmRunManager(G4Threading::IsMasterThread());
-  fTheG4HepEmRandomEngine = new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine());
+  fTheG4HepEmRandomEngine = new G4HepEmRandomEngine(G4Random::getTheEngine());
   fParticleChange  = new G4ParticleChange();
 
   fSafetyHelper = G4TransportationManager::GetTransportationManager()->GetSafetyHelper();

@@ -12,7 +12,7 @@
 // G4HepEm includes
 #include "G4HepEmRunManager.hh"
 #include "G4HepEmData.hh"
-#include "G4HepEmCLHEPRandomEngine.hh"
+#include "G4HepEmRandomEngine.hh"
 
 int main() {
   int verbose = 1;
@@ -43,7 +43,7 @@ int main() {
   //     related data.
   int g4HepEmParticleIndx = 2;
   G4HepEmRunManager* runMgr = new G4HepEmRunManager ( true );
-  runMgr->Initialize ( new G4HepEmCLHEPRandomEngine(G4Random::getTheEngine()), g4HepEmParticleIndx );
+  runMgr->Initialize ( new G4HepEmRandomEngine(G4Random::getTheEngine()), g4HepEmParticleIndx );
 
   //
   // --- Make all G4HepEmData member available on the device (only if G4HepEm_CUDA_BUILD)
