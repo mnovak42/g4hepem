@@ -55,8 +55,8 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
     // 2-3 % lower number of HITS (e.g. lower number of steps) in ATLAS when using
     // G4.11.0 compred to older G4 versions such as G4.10.6.p03.
     // We include this to ease validation though this is an improvment of G4 11.0
-#if G4VERSION_NUM < 1100
-    // G4 version before 11
+#if G4VERSION_NUM < 1070
+    // G4 version before 10.7
     mscData->fTlimitMin  = G4HepEmMax(0.70*matData.fZeffSqrt*stepMin, kTLimitMinfix);
 #else
     // this is like in Geant4.11.0
