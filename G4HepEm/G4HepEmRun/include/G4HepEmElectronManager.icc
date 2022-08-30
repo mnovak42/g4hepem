@@ -279,7 +279,10 @@ void G4HepEmElectronManager::SampleMSC(struct G4HepEmData* hepEmData, struct G4H
     // only to make sure that we also use E2 = E1 under the same condition as in G4
     double postStepEkin  = preStepEkin;
     double postStepLEkin = theElTrack->GetPreStepLogEKin();
-    if (pStepLength > theRange*0.01) {
+#if G4VERSION_NUM >= 1100
+    if (pStepLength > theRange*0.01)
+#endif
+    {
       // At this point, we have only computed the mean energy loss. Query the
       // track and if energy loss fluctuations are *not* active, we safe a log
       // call in the next step.
