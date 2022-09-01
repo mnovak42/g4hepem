@@ -16,6 +16,7 @@
 
 
 // g4 includes
+#include "G4Version.hh"
 #include "G4MollerBhabhaModel.hh"
 #include "G4SeltzerBergerModel.hh"
 #include "G4eBremsstrahlungRelModel.hh"
@@ -412,7 +413,12 @@ void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepE
     const G4Material* g4Mat = (*theG4MaterialTable)[matData.fG4MatIndex];
     // loop over the kinetic energies and comput the tr1 mxsec
     for (int ie=0; ie<numEner; ++ie) {
-      double     ekin   = std::abs(elData->fELossEnergyGrid[ie]-10.0)<1.0E-6 ? 10.0 : elData->fELossEnergyGrid[ie];
+      double ekin = elData->fELossEnergyGrid[ie];
+#if G4VERSION_NUMBER >= 1100
+      if (std::abs(ekin - 10.0) < 1.0E-6) {
+        ekin = 10.0;
+      }
+#endif
       double tr1mxsec   = std::max(0.0, mscModel->CrossSectionPerVolume(g4Mat, g4PartDef, ekin));
       theTr1MXsec[ie]   = tr1mxsec;
       theTr1MXsecSD[ie] = 0.0;
