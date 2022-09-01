@@ -49,6 +49,8 @@ else()
 endif()
 
 set_target_properties(g4HepEmRun PROPERTIES COMPILE_FLAGS "-x c++ ${CMAKE_CXX_FLAGS}")
+# Make the Geant4 version number available even where we don't depend on Geant4
+target_compile_definitions(g4HepEmRun PUBLIC G4VERSION_NUM=${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
 
 add_library(${PROJECT_NAME}::g4HepEmRun ALIAS g4HepEmRun)
 
