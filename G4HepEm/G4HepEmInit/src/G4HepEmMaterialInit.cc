@@ -129,11 +129,11 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       //
 // these parameters are taken from Geant4-11.0 (below are the values used before)
 // See G4HepEmElectronInteractionUMSC::StepLimit for further details on this.
-#if G4VERSION_NUMBER >= 1100
+#if G4VERSION_NUMBER >= 1070
       matData.fUMSCPar                 = 9.62800E-1 - 8.4848E-2*matData.fZeffSqrt + 4.3769E-3*zeff;
       matData.fUMSCStepMinPars[0]      = 2.7725E+1/(1.0 + 2.03E-1*zeff);
       matData.fUMSCStepMinPars[1]      = 6.152    /(1.0 + 1.11E-1*zeff);
-#else // G4 version before 11.0
+#else // G4 version before 10.7
       matData.fUMSCPar                 = 1.2 - zeff*(1.62e-2 - 9.22e-5*zeff);
       matData.fUMSCStepMinPars[0]      = 15.99/(1. + 0.119*zeff);
       matData.fUMSCStepMinPars[1]      = 4.390/(1. + 0.079*zeff);
