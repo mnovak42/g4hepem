@@ -26,27 +26,7 @@ if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
   )
 endif()
 
-if(BUILD_STATIC_LIBS)
-  add_library(g4HepEm STATIC ${G4HEPEM_sources})
-else()
-  add_library(g4HepEm SHARED ${G4HEPEM_sources})
-endif()
-
-add_library(${PROJECT_NAME}::g4HepEm ALIAS g4HepEm)
-
-target_compile_features(g4HepEm PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
-
-target_include_directories(g4HepEm PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
-
-target_link_libraries(g4HepEm PUBLIC g4HepEmData g4HepEmInit g4HepEmRun) # ${Geant4_LIBRARIES})
-
-## ----------------------------------------------------------------------------
-## Install G4HepEm libraries and headers
-install(FILES ${G4HEPEM_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
-install(TARGETS g4HepEm
-  EXPORT ${PROJECT_NAME}Targets
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+g4hepem_add_library(g4HepEm
+  SOURCES ${G4HEPEM_sources}
+  HEADERS ${G4HEPEM_headers}
+  LINK g4HepEmData g4HepEmInit g4HepEmRun)

@@ -42,29 +42,35 @@ set(G4HEPEmRun_sources
 
 # See Issue #11 and discussion...
 set_source_files_properties(${G4HEPEmRun_impl_headers} PROPERTIES LANGUAGE CXX)
-if(BUILD_STATIC_LIBS)
-  add_library(g4HepEmRun STATIC ${G4HEPEmRun_sources} ${G4HEPEmRun_impl_headers})
-else()
-  add_library(g4HepEmRun SHARED ${G4HEPEmRun_sources} ${G4HEPEmRun_impl_headers})
-endif()
 
-set_target_properties(g4HepEmRun PROPERTIES COMPILE_FLAGS "-x c++ ${CMAKE_CXX_FLAGS}")
+g4hepem_add_library(g4HepEmRun
+  SOURCES ${G4HEPEmRun_sources} ${G4HEPEmRun_impl_headers}
+  HEADERS ${G4HEPEMRun_headers} ${G4HEPEmRun_impl_headers}
+  LINK g4HepEmData)
+
 # Make the Geant4 version number available even where we don't depend on Geant4
-target_compile_definitions(g4HepEmRun PUBLIC G4VERSION_NUM=${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
+set(_g4version_num ${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
 
-add_library(${PROJECT_NAME}::g4HepEmRun ALIAS g4HepEmRun)
+if(BUILD_SHARED_LIBS)
+  set_target_properties(g4HepEmRun PROPERTIES COMPILE_FLAGS "-x c++ ${CMAKE_CXX_FLAGS}")
 
-target_compile_features(g4HepEmRun PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
-target_include_directories(g4HepEmRun PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
-target_link_libraries(g4HepEmRun g4HepEmData ${G4HepEm_CLHEP_TARGET}) # only SystemOfUnits is used from CLHEP
+  target_compile_definitions(g4HepEmRun PUBLIC G4VERSION_NUM=${_g4version_num})
 
-## ----------------------------------------------------------------------------
-## Install G4HepEm libraries and headers
-install(FILES ${G4HEPEmRun_headers} ${G4HEPEmRun_impl_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
-install(TARGETS g4HepEmRun
-  EXPORT ${PROJECT_NAME}Targets
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+  if(TARGET Geant4::G4clhep)
+    target_link_libraries(g4HepEmRun PUBLIC Geant4::G4clhep)
+  elseif(TARGET CLHEP::CLHEP)
+    target_link_libraries(g4HepEmRun PUBLIC CLHEP::CLHEP)
+  endif()
+endif()
+if(BUILD_STATIC_LIBS)
+  set_target_properties(g4HepEmRun-static PROPERTIES COMPILE_FLAGS "-x c++ ${CMAKE_CXX_FLAGS}")
+
+  target_compile_definitions(g4HepEmRun-static PUBLIC G4VERSION_NUM=${_g4version_num})
+
+  if(TARGET Geant4::G4clhep-static)
+    target_link_libraries(g4HepEmRun-static PUBLIC Geant4::G4clhep-static)
+  elseif(TARGET CLHEP::CLHEP)
+    # Not a typo, Geant4 also takes what it can get from CLHEP.
+    target_link_libraries(g4HepEmRun-static PUBLIC CLHEP::CLHEP)
+  endif()
+endif()

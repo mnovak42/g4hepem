@@ -56,17 +56,81 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 # Find Geant4, changing library build type to default Geant4 variant and
 # determining which CLHEP target to use
 find_package(Geant4 REQUIRED)
-if(Geant4_static_FOUND AND NOT Geant4_shared_FOUND)
-  set(BUILD_SHARED_LIBS OFF)
+if(Geant4_static_FOUND)
   set(BUILD_STATIC_LIBS ON)
 endif()
-
-set(G4HepEm_CLHEP_TARGET CLHEP::CLHEP)
-if(TARGET Geant4::G4clhep)
-  set(G4HepEm_CLHEP_TARGET Geant4::G4clhep)
-elseif (TARGET Geant4::G4clhep-static)
-  set(G4HepEm_CLHEP_TARGET Geant4::G4clhep-static)
+if(NOT Geant4_shared_FOUND)
+  set(BUILD_SHARED_LIBS OFF)
 endif()
+
+#----------------------------------------------------------------------------
+# Convenience function to add shared / static libraries as configured.
+#
+# The general idea is as follows:
+#  - if configured, shared libraries are created from a target called ${_name}.
+#  - if configured, static libraries are created from a target always called
+#    ${_name}-static but the final archive name is lib${_name}.a.
+#  - if only static libraries are configured, ALIAS targets ${_name} are added
+#    and exported.
+function(g4hepem_add_library _name)
+  cmake_parse_arguments(_g4hepem "" "" "HEADERS;SOURCES;LINK" ${ARGN})
+
+  # Build shared library, if enabled.
+  if(BUILD_SHARED_LIBS)
+    add_library(${_name} SHARED ${_g4hepem_SOURCES})
+    target_compile_features(${_name} PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
+    add_library(${PROJECT_NAME}::${_name} ALIAS ${_name})
+
+    target_include_directories(${_name} PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
+    target_link_libraries(${_name} PUBLIC ${_g4hepem_LINK})
+  endif()
+
+  # Build static library, if enabled.
+  if(BUILD_STATIC_LIBS)
+    add_library(${_name}-static STATIC ${_g4hepem_SOURCES})
+    set_target_properties(${_name}-static PROPERTIES OUTPUT_NAME ${_name})
+    target_compile_features(${_name}-static PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
+    add_library(${PROJECT_NAME}::${_name}-static ALIAS ${_name}-static)
+
+    target_include_directories(${_name}-static PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
+    foreach(_lib ${_g4hepem_LINK})
+      target_link_libraries(${_name}-static PUBLIC ${_lib}-static)
+    endforeach()
+
+    # If only the static library, add alias targets for convenience.
+    if(NOT BUILD_SHARED_LIBS)
+      add_library(${_name} ALIAS ${_name}-static)
+      add_library(${PROJECT_NAME}::${_name} ALIAS ${_name}-static)
+
+      # In that case, also change the name of the exported target.
+      set_target_properties(${_name}-static PROPERTIES EXPORT_NAME ${_name})
+    endif()
+  endif()
+
+  # Install headers.
+  install(FILES ${_g4hepem_HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
+
+  # Install libraries, as built.
+  if(BUILD_SHARED_LIBS)
+    install(TARGETS ${_name}
+      EXPORT ${PROJECT_NAME}Targets
+      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+  endif()
+
+  if(BUILD_STATIC_LIBS)
+    install(TARGETS ${_name}-static
+      EXPORT ${PROJECT_NAME}Targets
+      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+  endif()
+endfunction()
 
 #----------------------------------------------------------------------------
 # CUDA
