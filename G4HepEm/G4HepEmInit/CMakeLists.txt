@@ -21,25 +21,14 @@ set(G4HEPEMInit_sources
   src/G4HepEmStateInit.cc
 )
 
-if(BUILD_STATIC_LIBS)
-  add_library(g4HepEmInit STATIC ${G4HEPEMInit_sources})
-else()
-  add_library(g4HepEmInit SHARED ${G4HEPEMInit_sources})
-endif()
+set(G4HEPEMInit_Geant4_LIBRARIES
+  Geant4::G4global
+  Geant4::G4materials
+  Geant4::G4particles
+  Geant4::G4processes
+)
 
-add_library(${PROJECT_NAME}::g4HepEmInit ALIAS g4HepEmInit)
-
-target_compile_features(g4HepEmInit PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
-target_include_directories(g4HepEmInit PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
-target_link_libraries(g4HepEmInit PUBLIC g4HepEmData ${Geant4_LIBRARIES})
-
-## ----------------------------------------------------------------------------
-## Install G4HepEm libraries and headers
-install(FILES ${G4HEPEMInit_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
-install(TARGETS g4HepEmInit
-  EXPORT ${PROJECT_NAME}Targets
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+g4hepem_add_library(g4HepEmInit
+  SOURCES ${G4HEPEMInit_sources}
+  HEADERS ${G4HEPEMInit_headers}
+  LINK g4HepEmData ${G4HEPEMInit_Geant4_LIBRARIES})
