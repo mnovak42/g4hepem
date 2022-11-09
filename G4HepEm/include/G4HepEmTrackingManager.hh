@@ -1,5 +1,5 @@
-#ifndef HepEmTrackingManager_h
-#define HepEmTrackingManager_h 1
+#ifndef G4HepEmTrackingManager_h
+#define G4HepEmTrackingManager_h 1
 
 #include "G4VTrackingManager.hh"
 #include "globals.hh"
@@ -13,10 +13,10 @@ class G4Step;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-class HepEmTrackingManager : public G4VTrackingManager {
+class G4HepEmTrackingManager : public G4VTrackingManager {
 public:
-  HepEmTrackingManager();
-  ~HepEmTrackingManager();
+  G4HepEmTrackingManager();
+  ~G4HepEmTrackingManager();
 
   void BuildPhysicsTable(const G4ParticleDefinition &) override;
 
