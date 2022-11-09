@@ -1,5 +1,5 @@
 #include "PhysListHepEmTracking.hh"
-#include "HepEmTrackingManager.hh"
+#include "G4HepEmTrackingManager.hh"
 
 #include "G4EmParameters.hh"
 
@@ -29,7 +29,7 @@ PhysListHepEmTracking::~PhysListHepEmTracking()
 void PhysListHepEmTracking::ConstructProcess()
 {
   // Register custom tracking manager for e-/e+ and gammas.
-  auto* trackingManager = new HepEmTrackingManager;
+  auto* trackingManager = new G4HepEmTrackingManager;
 
   G4Electron::Definition()->SetTrackingManager(trackingManager);
   G4Positron::Definition()->SetTrackingManager(trackingManager);

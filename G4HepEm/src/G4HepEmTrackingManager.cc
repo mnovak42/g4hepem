@@ -1,4 +1,4 @@
-#include "HepEmTrackingManager.hh"
+#include "G4HepEmTrackingManager.hh"
 #include "TrackingManagerHelper.hh"
 
 #include "G4HepEmRandomEngine.hh"
@@ -32,7 +32,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-HepEmTrackingManager::HepEmTrackingManager() {
+G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fRunManager = new G4HepEmRunManager(G4Threading::IsMasterThread());
   fRandomEngine = new G4HepEmRandomEngine(G4Random::getTheEngine());
   fSafetyHelper =
@@ -44,7 +44,7 @@ HepEmTrackingManager::HepEmTrackingManager() {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-HepEmTrackingManager::~HepEmTrackingManager() {
+G4HepEmTrackingManager::~G4HepEmTrackingManager() {
   delete fRunManager;
   delete fRandomEngine;
   delete fStep;
@@ -52,7 +52,7 @@ HepEmTrackingManager::~HepEmTrackingManager() {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part) {
+void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part) {
   if (&part == G4Electron::Definition()) {
     fRunManager->Initialize(fRandomEngine, 0);
   } else if (&part == G4Positron::Definition()) {
@@ -69,7 +69,7 @@ void HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part) {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HepEmTrackingManager::PreparePhysicsTable(
+void G4HepEmTrackingManager::PreparePhysicsTable(
     const G4ParticleDefinition &part) {
   applyCuts = G4EmParameters::Instance()->ApplyCuts();
 
@@ -83,7 +83,7 @@ void HepEmTrackingManager::PreparePhysicsTable(
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
+void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   TrackingManagerHelper::ChargedNavigation navigation;
 
   // Prepare for calling the user action.
@@ -499,10 +499,10 @@ void HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
+void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   class GammaPhysics final : public TrackingManagerHelper::Physics {
   public:
-    GammaPhysics(HepEmTrackingManager &mgr) : fMgr(mgr) {}
+    GammaPhysics(G4HepEmTrackingManager &mgr) : fMgr(mgr) {}
 
     void StartTracking(G4Track *aTrack) override {
       fMgr.fRunManager->GetTheTLData()->GetPrimaryGammaTrack()->ReSet();
@@ -652,7 +652,7 @@ void HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     }
 
   private:
-    HepEmTrackingManager &fMgr;
+    G4HepEmTrackingManager &fMgr;
   };
 
   GammaPhysics physics(*this);
@@ -661,7 +661,7 @@ void HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
+void G4HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
   const G4ParticleDefinition *part = aTrack->GetParticleDefinition();
 
   if (part == G4Electron::Definition() || part == G4Positron::Definition()) {
