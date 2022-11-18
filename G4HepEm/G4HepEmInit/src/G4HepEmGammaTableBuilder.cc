@@ -31,42 +31,21 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   struct G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
   //
   // == Generate the enegry grid for Conversion
-  int numConvEkin = gmData->fConvEnergyGridSize;
-  // allocate array for the kinetic energy grid
-  if (gmData->fConvEnergyGrid) {
-    delete[] gmData->fConvEnergyGrid;
-  }
   double emin = 2.0*CLHEP::electron_mass_c2;
   double emax = 100.0*CLHEP::TeV;
+  int numConvEkin = gmData->fConvEnergyGridSize;
+  delete [] gmData->fConvEnergyGrid;
   gmData->fConvEnergyGrid = new double[numConvEkin]{};
-  gmData->fConvLogMinEkin = std::log(emin);
-  double delta = std::log(emax/emin)/(numConvEkin-1.0);
-  gmData->fConvEILDelta   = 1.0/delta;
-  // fill in
-  gmData->fConvEnergyGrid[0]             = emin;
-  gmData->fConvEnergyGrid[numConvEkin-1] = emax;
-  for (int i=1; i<numConvEkin-1; ++i) {
-    gmData->fConvEnergyGrid[i] = std::exp(gmData->fConvLogMinEkin+i*delta);
-  }
-  //
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numConvEkin, gmData->fConvLogMinEkin, gmData->fConvEILDelta, gmData->fConvEnergyGrid);
+
   // == Generate the enegry grid for Compton
-  int numCompEkin = gmData->fCompEnergyGridSize;
-  // allocate array for the kinetic energy grid
-  if (gmData->fCompEnergyGrid) {
-    delete[] gmData->fCompEnergyGrid;
-  }
   emin = 100.0* CLHEP::eV;
   emax = 100.0*CLHEP::TeV;
+  int numCompEkin = gmData->fCompEnergyGridSize;
+  delete [] gmData->fCompEnergyGrid;
   gmData->fCompEnergyGrid = new double[numCompEkin]{};
-  gmData->fCompLogMinEkin = std::log(emin);
-  delta = std::log(emax/emin)/(numCompEkin-1.0);
-  gmData->fCompEILDelta   = 1.0/delta;
-  // fill in
-  gmData->fCompEnergyGrid[0]             = emin;
-  gmData->fCompEnergyGrid[numCompEkin-1] = emax;
-  for (int i=1; i<numCompEkin-1; ++i) {
-    gmData->fCompEnergyGrid[i] = std::exp(gmData->fCompLogMinEkin+i*delta);
-  }
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numCompEkin, gmData->fCompLogMinEkin, gmData->fCompEILDelta, gmData->fCompEnergyGrid);
+
   //
   // == Compute the macroscopic cross sections: for Conversion and Compton over
   //    all materials
@@ -147,18 +126,10 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
   const double invlog106 = 1.0/(6.0*std::log(10.0));
   int numConvEkin = (int)(G4EmParameters::Instance()->NumberOfBinsPerDecade()*std::log(emax/emin)*invlog106);
   gmData->fElemSelectorConvEgridSize = numConvEkin;
-  // allocate array for the kinetic energy grid
-  gmData->fElemSelectorConvEgrid = new double[numConvEkin]{};
-  double lemin = std::log(emin);
-  double delta = std::log(emax/emin)/(numConvEkin-1.0);
-  gmData->fElemSelectorConvLogMinEkin = lemin;
-  gmData->fElemSelectorConvEILDelta   = 1.0/delta;
-  // fill in
-  gmData->fElemSelectorConvEgrid[0]             = emin;
-  gmData->fElemSelectorConvEgrid[numConvEkin-1] = emax;
-  for (int i=1; i<numConvEkin-1; ++i) {
-    gmData->fElemSelectorConvEgrid[i] = std::exp(lemin+i*delta);
-  }
+  gmData->fElemSelectorConvEgrid = new double[numpConvEkin]{};
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numConvEkin,
+                                        gmData->fElemSelectorConvLogMinEkin, gmData->fElemSelectorConvEILDelta, gmData->fElemSelectorConvEgrid);
+
   //
   // fill in with the element selectors (only for materials with #elemnt > 1)
   // get the G4HepEm material-cuts and material data: allocate memory for the

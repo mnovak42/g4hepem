@@ -60,6 +60,22 @@ public:
   // finds the lower index of the x-bin in an ordered, increasing x-grid such 
   // that x[i] <= x < x[i+1]
   static int    FindLowerBinIndex(double* xdata, int num, double x, int step=1);
+
+   /**
+   * Fills a pre-existing array with doubles uniformly spaced in log(x)
+   *
+   * @param[in] emin Inclusive lower bound
+   * @param[in] emax Inclusive upper bound
+   * @param[in] npoints Number of points in array, including upper/lower bounds
+   * @param[out] log_min_value Logarithm of @param emin
+   * @param[out] inverse_log_delta Inverse of logarithmic spacing between points
+   * @param[out] grid pointer to array
+   *
+   * @pre @param grid must not by `nullptr` and have capacity for at least @param npoints `double`s
+   * @post The [0,npoints-1] elements of @param grid will contain the data
+   */
+  static void FillLogarithmicGrid(const double emin, const double emax, const int npoints,
+                                  double& log_min_value, double& inverse_log_delta, double* grid);
 }; 
 
 #endif //  G4HepEmInitUtils_HH

@@ -239,4 +239,15 @@ int    G4HepEmInitUtils::FindLowerBinIndex(double* xdata, int num, double x, int
 }
 
 
+void G4HepEmInitUtils::FillLogarithmicGrid(const double emin, const double emax, const int npoints, double& log_min_value, double& inverse_log_delta, double* grid)
+{
+  double delta = std::log(emax/emin) / (npoints - 1);
+  log_min_value = std::log(emin);
+  inverse_log_delta = 1.0 / delta;
+  grid[0] = emin;
+  grid[npoints-1] = emax;
 
+  for (size_t i = 1; i < npoints-1; ++i) {
+    grid[i] = std::exp(log_min_value + i * delta);
+  }
+}
