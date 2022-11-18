@@ -44,10 +44,10 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
                                        : hepEmData->fThePositronData;
   //
   // generate the enegry grid (common for all mat-cuts)
-  delete [] elData->fELossEnergyGrid;
-  elData->fELossEnergyGrid = new double[numELoss]{};
   const int numELoss = hepEmParams->fNumLossTableBins+1;
   elData->fELossEnergyGridSize = numELoss;
+  delete [] elData->fELossEnergyGrid;
+  elData->fELossEnergyGrid = new double[numELoss]{};
   G4HepEmInitUtils::FillLogarithmicGrid(hepEmParams->fMinLossTableEnergy, hepEmParams->fMaxLossTableEnergy, numELoss,
                                         elData->fELossLogMinEkin, elData->fELossEILDelta, elData->fELossEnergyGrid);
 
