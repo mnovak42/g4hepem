@@ -129,7 +129,7 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
       theDEDXArray[ie] = dedxIoni + std::max(0.0, dedxBrem);
     }
     // set up a spline on the DEDX array for interpolation
-    G4HepEmInitUtils::Instance().PrepareSpline(numELoss, elData->fELossEnergyGrid, theDEDXArray, theDEDXSDArray);
+    G4HepEmInitUtils::PrepareSpline(numELoss, elData->fELossEnergyGrid, theDEDXArray, theDEDXSDArray);
     // integrate the restricted dedx to get the corresponding restricted range:
     // - first set the very first range value i.e. approximate the integral of
     //   the dE/dx on [0, E_0] by assuming that the dE/dx is proportional to $\beta$
@@ -138,7 +138,7 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
     int ngl     = 16;
     double* glX = new double[ngl]{};
     double* glW = new double[ngl]{};
-    G4HepEmInitUtils::Instance().GLIntegral(ngl, glX, glW);
+    G4HepEmInitUtils::GLIntegral(ngl, glX, glW);
     for (int i=0; i<numELoss-1; ++i) {
       // for each E_i, E_i+1 interval apply the GL by substitution
       const double emin  = elData->fELossEnergyGrid[i];
@@ -147,7 +147,7 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
       double res   = 0.0;
       for (int j=0; j<ngl; ++j) {
         const double xi = del*glX[j]+emin;
-        double dedx = G4HepEmInitUtils::Instance().GetSpline(elData->fELossEnergyGrid, theDEDXArray, theDEDXSDArray, xi, i); // i is the low Energy bin index
+        double dedx = G4HepEmInitUtils::GetSpline(elData->fELossEnergyGrid, theDEDXArray, theDEDXSDArray, xi, i); // i is the low Energy bin index
         if (dedx>0.0) {
           res += glW[j]/dedx;
         }
@@ -164,8 +164,8 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
     // prepare final form of the Range, dE/dx, inverse range and their second
     // derivatives for this macc and fill in to the G4HepEmElemData elData struct
     // - set up a spline on the range array for spline interpolation
-    G4HepEmInitUtils::Instance().PrepareSpline(numELoss, elData->fELossEnergyGrid, theRangeArray, theRangeSDArray);
-    G4HepEmInitUtils::Instance().PrepareSpline(numELoss, theRangeArray, elData->fELossEnergyGrid, theInvRangeSDArray);
+    G4HepEmInitUtils::PrepareSpline(numELoss, elData->fELossEnergyGrid, theRangeArray, theRangeSDArray);
+    G4HepEmInitUtils::PrepareSpline(numELoss, theRangeArray, elData->fELossEnergyGrid, theInvRangeSDArray);
     // start index of the [range,sd, dedx, sd, inv-range sd] values for this
     // material-cuts couple in the elData->fELossData array
     int indxStart = 5*numELoss*imc;
@@ -282,7 +282,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
       macXSec[ie] = theXSec;
     }
     // prepare for sline by computing the second derivatives
-    G4HepEmInitUtils::Instance().PrepareSpline(numEIoni, energyGrid, macXSec, secDerivs);
+    G4HepEmInitUtils::PrepareSpline(numEIoni, energyGrid, macXSec, secDerivs);
     // fill in into the continuous array:
     // - set the current index as starting point for this material-cust couple
     elData->fResMacXSecStartIndexPerMatCut[imc] = indxCont;
@@ -335,7 +335,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
       macXSec[ie] = theXSec;
     }
     // prepare for sline by computing the second derivatives
-    G4HepEmInitUtils::Instance().PrepareSpline(numEBrem, energyGrid, macXSec, secDerivs);
+    G4HepEmInitUtils::PrepareSpline(numEBrem, energyGrid, macXSec, secDerivs);
     // - fill in the number of Brem data, energyOfMaxVal, maxVal, logEmin and 1/log-delta values first
     xsecData[indxCont++] = numEBrem;
     xsecData[indxCont++] = macXSecMaxEner;
@@ -424,7 +424,7 @@ void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepE
       theTr1MXsecSD[ie] = 0.0;
     }
     // set up a spline on the TR1 MXsec array for interpolation
-    G4HepEmInitUtils::Instance().PrepareSpline(numEner, elData->fELossEnergyGrid, theTr1MXsec, theTr1MXsecSD);
+    G4HepEmInitUtils::PrepareSpline(numEner, elData->fELossEnergyGrid, theTr1MXsec, theTr1MXsecSD);
     // write the data into its final location
     int iStart = 2*numEner*im;
     for (int ie=0; ie<numEner; ++ie) {
