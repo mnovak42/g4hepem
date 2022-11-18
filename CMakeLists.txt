@@ -38,18 +38,6 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     FORCE)
 endif()
 
-
-# - Minimums required by G4HepEm
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 11)
-endif()
-# CMake recognizes invalid standard, e.g. "13", so we just confirm it's not "98"
-if(CMAKE_CXX_STANDARD EQUAL 98)
-  message(FATAL_ERROR "G4HepEm requires CMAKE_CXX_STANDARD >= 11")
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 # - Prefer shared libs
 set(BUILD_SHARED_LIBS ON)
 set(BUILD_STATIC_LIBS OFF)
@@ -60,14 +48,22 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 #----------------------------------------------------------------------------
 # Find Geant4, changing library build type to default Geant4 variant and
-# determining which CLHEP target to use
-find_package(Geant4 REQUIRED)
+# determining which CXX Standard and CLHEP target to use
+find_package(Geant4 10.6 REQUIRED)
 if(Geant4_static_FOUND)
   set(BUILD_STATIC_LIBS ON)
 endif()
 if(NOT Geant4_shared_FOUND)
   set(BUILD_SHARED_LIBS OFF)
 endif()
+
+set(CMAKE_CXX_STANDARD ${Geant4_CXX_STANDARD}) # use value from Geant4Config.cmake
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 11)
+  message(WARNING "Find of Geant4 did not set Geant4_CXX_STANDARD value expected from Geant4Config.cmake. Defaulting to C++11.")
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 #----------------------------------------------------------------------------
 # Convenience function to add shared / static libraries as configured.
