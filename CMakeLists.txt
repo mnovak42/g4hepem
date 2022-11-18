@@ -40,7 +40,13 @@ endif()
 
 
 # - Minimums required by G4HepEm
-set(CMAKE_CXX_STANDARD 11)
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+# CMake recognizes invalid standard, e.g. "13", so we just confirm it's not "98"
+if(CMAKE_CXX_STANDARD EQUAL 98)
+  message(FATAL_ERROR "G4HepEm requires CMAKE_CXX_STANDARD >= 11")
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
