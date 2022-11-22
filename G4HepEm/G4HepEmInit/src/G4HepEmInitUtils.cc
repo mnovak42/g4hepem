@@ -4,11 +4,6 @@
 #include <cmath>
 #include <algorithm>
 
-G4HepEmInitUtils& G4HepEmInitUtils::Instance() {
-  static G4HepEmInitUtils instance;
-  return instance;
-}
-
 
 void G4HepEmInitUtils::GLIntegral(int npoints, double* abscissas, double* weights,
                                   double min, double max) {

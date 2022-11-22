@@ -103,7 +103,7 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
       macXSec[ie] = std::max(0.0, ppModel->CrossSection(g4MatCut, g4PartDef, theEKin));
     }
     // prepare for sline by computing the second derivatives
-    G4HepEmInitUtils::Instance().PrepareSpline(numConvEkin, gmData->fConvEnergyGrid, macXSec, secDerivs);
+    G4HepEmInitUtils::PrepareSpline(numConvEkin, gmData->fConvEnergyGrid, macXSec, secDerivs);
     // fill in into the continuous array: index where data for this material starts from
     int mxStartIndx = hepEmMatIndx*2*(numConvEkin + numCompEkin);
     int indxCont    = mxStartIndx;
@@ -119,7 +119,7 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
 //      std::cout << " E = " << theEKin << " [MeV] Sigam-Compton(E) = " << macXSec[ie] << std::endl;
     }
     // prepare for sline by computing the second derivatives
-    G4HepEmInitUtils::Instance().PrepareSpline(numCompEkin, gmData->fCompEnergyGrid, macXSec, secDerivs);
+    G4HepEmInitUtils::PrepareSpline(numCompEkin, gmData->fCompEnergyGrid, macXSec, secDerivs);
     // fill in into the continuous array: the continuous index is used further here
     for (int i=0; i<numCompEkin; ++i) {
       gmData->fConvCompMacXsecData[indxCont++] = macXSec[i];
