@@ -4,6 +4,25 @@
 #include <cmath>
 #include <algorithm>
 
+namespace {
+// get spline interpolation of y(x) between (x1, x2) given y_N = y(x_N), y''N(x_N) 
+// NB: named "GetSplineImpl" to avoid seeming ADL lookup errors if it is named "GetSpline"
+//     almost appears that compiler never even considers that name...
+double GetSplineImpl(double x1, double x2, double y1, double y2, double secderiv1, double secderiv2, double x)
+{
+  // Unchecked precondition: x1 < x < x2
+  const double dl = x2 - x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = std::max(0., std::min(1., (x - x1)/dl));
+  const double os = 0.166666666667; // 1./6.
+  const double  a = 1.0 - b;
+  const double c0 = (a*a*a-a)*secderiv1;
+  const double c1 = (b*b*b-b)*secderiv2;
+  return a*y1 + b*y2 + (c0+c1)*dl*dl*os;
+}
+}
 
 void G4HepEmInitUtils::GLIntegral(int npoints, double* abscissas, double* weights,
                                   double min, double max) {
@@ -100,20 +119,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* xdata, double* ydata, d
   const double xv = std::max(xdata[0], std::min(xdata[ndata-1], x));
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
   const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
-  // perform the interpolation
-  const double x1 = xdata[idx];
-  const double x2 = xdata[idx+1];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*secderiv[idx];
-  const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(xdata[idx], xdata[idx+1], ydata[idx], ydata[idx+1], secderiv[idx], secderiv[idx+1], xv);
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
@@ -123,20 +129,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* xdata, double* ydata, d
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
   const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
   const int  idx2 = 2*idx;
-  // perform the interpolation
-  const double x1 = xdata[idx];
-  const double x2 = xdata[idx+1];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*ydata[idx2+1];
-  const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(xdata[idx], xdata[idx+1], ydata[idx2], ydata[idx2+2], ydata[idx2+1], ydata[idx2+3], xv);
 }
 
 
@@ -147,20 +140,7 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* data, double x, double 
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
   const int   idx = (int)std::max(0., std::min((logx-logxmin)*invLDBin, ndata-2.));
   const int  idx3 = 3*idx;
-  // perform the interpolation
-  const double x1 = data[idx3];
-  const double x2 = data[idx3+3];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (xv - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*data[idx3+2];
-  const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(data[idx3], data[idx+3], data[idx3+1], data[idx3+4], data[idx3+2], data[idx3+5], xv);
 }
 
 
@@ -169,58 +149,19 @@ double G4HepEmInitUtils::GetSplineLog(int ndata, double* data, double x, double 
 
 // this is used for getting inverse-range on host
 double G4HepEmInitUtils::GetSpline(double* xdata, double* ydata, double* secderiv, double x, int idx, int step) {
-  // perform the interpolation
-  const double x1 = xdata[step*idx];
-  const double x2 = xdata[step*(idx+1)];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (x - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*secderiv[idx];
-  const double c1 = (b*b*b-b)*secderiv[idx+1];
-  return a*ydata[idx] + b*ydata[idx+1] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(xdata[step*idx], xdata[step*(idx+1)], ydata[idx], ydata[idx+1], secderiv[idx], secderiv[idx+1], x);
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
 double G4HepEmInitUtils::GetSpline(double* xdata, double* ydata, double x, int idx) {
   const int  idx2 = 2*idx;
-  // perform the interpolation
-  const double x1 = xdata[idx];
-  const double x2 = xdata[idx+1];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (x - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*ydata[idx2+1];
-  const double c1 = (b*b*b-b)*ydata[idx2+3];
-  return a*ydata[idx2] + b*ydata[idx2+2] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(xdata[idx], xdata[idx+1], ydata[idx2], ydata[idx2+2], ydata[idx2+1], ydata[idx2+3], x);
 }
 
 // same as above but both xdata, ydata and secderiv are stored in data array
 double G4HepEmInitUtils::GetSpline(double* data, double x, int idx) {
   const int  idx3 = 3*idx;
-  // perform the interpolation
-  const double x1 = data[idx3];
-  const double x2 = data[idx3+3];
-  const double dl = x2-x1;
-  // note: all corner cases of the previous methods are covered and eventually
-  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
-  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
-  const double  b = std::max(0., std::min(1., (x - x1)/dl));
-  //
-  const double os = 0.166666666667; // 1./6.
-  const double  a = 1.0 - b;
-  const double c0 = (a*a*a-a)*data[idx3+2];
-  const double c1 = (b*b*b-b)*data[idx3+5];
-  return a*data[idx3+1] + b*data[idx3+4] + (c0+c1)*dl*dl*os;
+  return GetSplineImpl(data[idx3], data[idx3+3], data[idx3+1], data[idx3+4], data[idx3+2], data[idx3+5], x);
 }
 
 // this is used to get index for inverse range on host
