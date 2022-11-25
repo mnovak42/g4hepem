@@ -46,23 +46,11 @@ void BuildELossTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMode
   // generate the enegry grid (common for all mat-cuts)
   const int numELoss = hepEmParams->fNumLossTableBins+1;
   elData->fELossEnergyGridSize = numELoss;
-//  elData->fELossMinEnergy      = hepEmParams->fMinLossTableEnergy;
-//  elData->fELossMaxEnergy      = hepEmParams->fMaxLossTableEnergy;
-  // allocate arrays for the loss table energy grid and for the loss data
-  if (elData->fELossEnergyGrid) {
-    delete[] elData->fELossEnergyGrid;
-  }
-  elData->fELossEnergyGrid     = new double[numELoss]{};
-  elData->fELossLogMinEkin     = std::log(hepEmParams->fMinLossTableEnergy);
-  const double delta           = std::log(hepEmParams->fMaxLossTableEnergy/hepEmParams->fMinLossTableEnergy)/(numELoss-1.0);
-  elData->fELossEILDelta       = 1.0/delta;
-  // fill in
-  elData->fELossEnergyGrid[0]          = hepEmParams->fMinLossTableEnergy;
-  elData->fELossEnergyGrid[numELoss-1] = hepEmParams->fMaxLossTableEnergy;
-  for (int i=1; i<numELoss-1; ++i) {
-    elData->fELossEnergyGrid[i] = std::exp(elData->fELossLogMinEkin+i*delta);
-  }
-  //
+  delete [] elData->fELossEnergyGrid;
+  elData->fELossEnergyGrid = new double[numELoss]{};
+  G4HepEmInitUtils::FillLogarithmicGrid(hepEmParams->fMinLossTableEnergy, hepEmParams->fMaxLossTableEnergy, numELoss,
+                                        elData->fELossLogMinEkin, elData->fELossEILDelta, elData->fELossEnergyGrid);
+
   // get the g4 particle-definition
   G4ParticleDefinition* g4PartDef = G4Positron::Positron();
   if  (iselectron) {
@@ -246,35 +234,38 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   // a continuous index
   int indxCont = 0;
   for (int imc=0; imc<numHepEmMCCData; ++imc) {
+    // ====== Common data
     const struct G4HepEmMCCData& mccData = hepEmMCData->fMatCutData[imc];
     const G4MaterialCutsCouple* g4MatCut = theCoupleTable->GetMaterialCutsCouple(mccData.fG4MatCutIndex);
     const double     elCutE = mccData.fSecElProdCutE;  // already includes e- tracking cut
     const double    gamCutE = mccData.fSecGamProdCutE;
+
+    // Energy grid in/out parameters
+    const double       emax = hepEmParams->fMaxLossTableEnergy;
+    const int    numDefEkin = hepEmParams->fNumLossTableBins+1;
+    const double      scale = std::log(hepEmParams->fMaxLossTableEnergy/hepEmParams->fMinLossTableEnergy);
+
+    double logEmin  = -1.0;
+    double invLEDel = -1.0;
+
     //
     // ===== Ionisation
     //
+    // Fill the energy grid for Ioni
     // find out the lowest energy of the ioni Ekin grid and the number of entries
-    const double       emax = hepEmParams->fMaxLossTableEnergy;
     const double   eminIoni = iselectron ? 2*elCutE : elCutE;
-    const int    numDefEkin = hepEmParams->fNumLossTableBins+1;
-    const double      scale = std::log(hepEmParams->fMaxLossTableEnergy/hepEmParams->fMinLossTableEnergy);
     const double  scaleIoni = std::log(emax/eminIoni);
     const int      numEIoni = std::max(4, (int)std::lrint(numDefEkin*scaleIoni/scale)+1);
-    // generate the energy grid for Ioni
-    double          logEmin = std::log(eminIoni);
-    double            delta = scaleIoni/(numEIoni-1);
-    double         invLEDel =  1.0/delta;
+    G4HepEmInitUtils::FillLogarithmicGrid(eminIoni, emax, numEIoni, logEmin, invLEDel, energyGrid);
+
+    // compute macroscopic cross section for Ioni.
+    // track macroscopic cross section max and its energy
     double       macXSecMax = -1.0;
     double   macXSecMaxEner = -1.0;
-    energyGrid[0]           = eminIoni;
-    energyGrid[numEIoni-1]  = emax;
-    for (int ie=1; ie<numEIoni-1; ++ie) {
-      energyGrid[ie] = std::exp(logEmin+ie*delta);
-    }
+
     for (int ie=0; ie<numEIoni; ++ie) {
       const double theEKin  = energyGrid[ie];
       const double theXSec  = std::max(0.0, mbModel->CrossSection(g4MatCut, g4PartDef, theEKin, elCutE, theEKin));
-      // keep track of macroscopic cross section max and its energy
       if (theXSec>macXSecMax) {
         macXSecMax     = theXSec;
         macXSecMaxEner = theEKin;
@@ -297,24 +288,21 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
       xsecData[indxCont++] = macXSec[ie];
       xsecData[indxCont++] = secDerivs[ie];
     }
+
     //
     // ===== Bremsstrahlung
     //
+    // Fill the energy grid for Brem:
     const double   eminBrem = gamCutE;
     const double  scaleBrem = std::log(emax/eminBrem);
     const int      numEBrem = std::max(4, (int)std::lrint(numDefEkin*scaleBrem/scale)+1);
-    // generate the energy grid for Brem: smooth the mac-xsec values between the 2 models
-    logEmin                 = std::log(eminBrem);
-    delta                   = scaleBrem/(numEBrem-1);
-    invLEDel                =  1.0/delta;
+    G4HepEmInitUtils::FillLogarithmicGrid(eminBrem, emax, numEBrem, logEmin, invLEDel, energyGrid);
+
+    // compute macroscopic cross section for Brem: smooth the xsection values between the 2 models
+    // keep track of macroscopic cross section max and its energy
     macXSecMax              = -1.0;
     macXSecMaxEner          = -1.0;
-    energyGrid[0]           = eminBrem;
-    energyGrid[numEBrem-1]  = emax;
-    for (int ie=1; ie<numEBrem-1; ++ie) {
-      energyGrid[ie] = std::exp(logEmin+ie*delta);
-    }
-    // compute macroscopic cross section for Brem: smooth the xsection values between the 2 models
+
     for (int ie=0; ie<numEBrem; ++ie) {
       const double theEKin  = energyGrid[ie];
       double dlta = 0.0;
@@ -327,7 +315,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
                         ? std::max(0.0, rbModel->CrossSection(g4MatCut, g4PartDef, theEKin, gamCutE, theEKin))
                         : std::max(0.0, sbModel->CrossSection(g4MatCut, g4PartDef, theEKin, gamCutE, theEKin));
       theXSec *= (1.0+dlta/theEKin);
-      // keep track of macroscopic cross section max and its energy
+
       if (theXSec>macXSecMax) {
         macXSecMax     = theXSec;
         macXSecMaxEner = theEKin;
@@ -615,14 +603,9 @@ int InitElementSelectorEnergyGrid(int binsperdecade, double* egrid, double mine,
     numEnergyBins = 3;
   }
   ++numEnergyBins;
-  double delta = std::log(maxe/mine)/(numEnergyBins-1.0);
-  logMinEnergy = std::log(mine);
-  invLEDelta   = 1.0/delta;
-  egrid[0]     = mine;
-  egrid[numEnergyBins-1] = maxe;
-  for (int i=1; i<numEnergyBins-1; ++i) {
-    egrid[i] = std::exp(logMinEnergy+i*delta);
-  }
+
+  G4HepEmInitUtils::FillLogarithmicGrid(mine, maxe, numEnergyBins, logMinEnergy, invLEDelta, egrid);
+
   return numEnergyBins;
 }
 
