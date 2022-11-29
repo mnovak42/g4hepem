@@ -16,7 +16,9 @@ void RotateToReferenceFrame(double &u, double &v, double &w, const double* refDi
 G4HepEmHostDevice
 void RotateToReferenceFrame(double* dir, const double* refDir);
 
-
+// get spline interpolation of y(x) between (x1, x2) given y_N = y(x_N), y''N(x_N) 
+G4HepEmHostDevice
+double GetSpline(double x1, double x2, double y1, double y2, double secderiv1, double secderiv2, double x);
 
 // get spline interpolation over a log-spaced xgrid previously prepared by
 // PrepareSpline (separate storrage of ydata and second deriavtive)
@@ -54,7 +56,6 @@ double GetSpline(double* xdata, double* ydata, double x, int idx);
 // ydata and second deriavtive in data
 G4HepEmHostDevice
 double GetSpline(double* data, double x, int idx);
-
 
 // finds the lower index of the x-bin in an ordered, increasing x-grid such
 // that x[i] <= x < x[i+1]
