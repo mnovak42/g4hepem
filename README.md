@@ -1,4 +1,4 @@
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/mnovak42/g4hepem/cpu-build?label=Tests%20%28CI%29&logo=github&logoColor=white&style=plastic)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/mnovak42/g4hepem/cpu_build.yml?branch=master&label=Tests%20%28CI%29&logo=github&logoColor=white&style=plastic)
 ![Read the Docs](https://img.shields.io/readthedocs/g4hepem?label=%20Building%20docs&logo=read%20the%20docs&logoColor=white&style=plastic)
 
 <p align="center">  
