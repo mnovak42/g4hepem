@@ -45,7 +45,7 @@ set_source_files_properties(${G4HEPEmRun_impl_headers} PROPERTIES LANGUAGE CXX)
 
 g4hepem_add_library(g4HepEmRun
   SOURCES ${G4HEPEmRun_sources} ${G4HEPEmRun_impl_headers}
-  HEADERS ${G4HEPEMRun_headers} ${G4HEPEmRun_impl_headers}
+  HEADERS ${G4HEPEmRun_headers} ${G4HEPEmRun_impl_headers}
   LINK g4HepEmData)
 
 # Make the Geant4 version number available even where we don't depend on Geant4
