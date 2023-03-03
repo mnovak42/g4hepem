@@ -6,6 +6,7 @@
 
 class G4HepEmRunManager;
 class G4HepEmRandomEngine;
+class G4HepEmNoProcess;
 class G4SafetyHelper;
 class G4Step;
 
@@ -46,6 +47,13 @@ private:
   const std::vector<G4double> *theCutsPositron = nullptr;
   G4bool applyCuts = false;
   G4bool fMultipleSteps = true;
+
+  // A set of empty processes with the correct names and types just to be able
+  // to set them as process limiting the step and creating secondaries as some
+  // user codes rely on this information.
+  std::vector<G4HepEmNoProcess *> fElectronNoProcessVector;
+  std::vector<G4HepEmNoProcess *> fGammaNoProcessVector;
+  G4HepEmNoProcess *fTransportNoProcess;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

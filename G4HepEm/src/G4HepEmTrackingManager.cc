@@ -1,6 +1,8 @@
 #include "G4HepEmTrackingManager.hh"
 #include "TrackingManagerHelper.hh"
 
+#include "G4HepEmNoProcess.hh"
+
 #include "G4HepEmRandomEngine.hh"
 #include "G4HepEmData.hh"
 #include "G4HepEmMatCutData.hh"
@@ -26,6 +28,10 @@
 #include "G4EmParameters.hh"
 #include "G4ProductionCutsTable.hh"
 
+#include "G4EmProcessSubType.hh"
+#include "G4ProcessType.hh"
+#include "G4TransportationProcessType.hh"
+
 #include "G4Electron.hh"
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
@@ -40,11 +46,43 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fSafetyHelper->InitialiseHelper();
   fStep = new G4Step;
   fStep->NewSecondaryVector();
+
+  // Construct fake G4VProcess-es with the proper name and indices matching the
+  // hepEm process indices
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("eIoni", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fIonisation));
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("eBrem", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fBremsstrahlung));
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("annihl", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fAnnihilation));
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("msc", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fMultipleScattering));
+  fGammaNoProcessVector.push_back(
+      new G4HepEmNoProcess("conv", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fGammaConversion));
+  fGammaNoProcessVector.push_back(
+      new G4HepEmNoProcess("compt", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fComptonScattering));
+  fGammaNoProcessVector.push_back(
+      new G4HepEmNoProcess("phot", G4ProcessType::fElectromagnetic,
+                           G4EmProcessSubType::fPhotoElectricEffect));
+  fTransportNoProcess = new G4HepEmNoProcess(
+      "Transportation", G4ProcessType::fTransportation, TRANSPORTATION);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4HepEmTrackingManager::~G4HepEmTrackingManager() {
+  for (auto *proc : fElectronNoProcessVector) {
+    delete proc;
+  }
+  for (auto *proc : fGammaNoProcessVector) {
+    delete proc;
+  }
   delete fRunManager;
   delete fRandomEngine;
   delete fStep;
@@ -373,10 +411,15 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       stopped = G4HepEmElectronManager::SampleLossFluctuations(theHepEmData, theHepEmPars, theElTrack, rnge);
     }
 
+    const G4VProcess *proc = nullptr;
     if (stopped) {
       // call annihilation for e+ !!!
       if (!isElectron) {
         G4HepEmPositronInteractionAnnihilation::Perform(theTLData, true);
+        proc = fElectronNoProcessVector[2];
+      } else {
+        // otherwise ionization limited the step
+        proc = fElectronNoProcessVector[0];
       }
     } else if (aTrack->GetTrackStatus() != fStopAndKill) {
       // === 4. Discrete part of the interaction (if any)
@@ -384,8 +427,25 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       const double *pdir = thePrimaryTrack->GetDirection();
       postStepPoint.SetMomentumDirection(
           G4ThreeVector(pdir[0], pdir[1], pdir[2]));
+
+      // Get the final process defining the step - might still be MSC!
+      const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
+      if (thePrimaryTrack->GetOnBoundary()) {
+        proc = fTransportNoProcess;
+      } else if (iDProc == -1) {
+        // ionization
+        proc = fElectronNoProcessVector[0];
+      } else if (iDProc == -2) {
+        proc = fElectronNoProcessVector[3];
+      } else {
+        proc = fElectronNoProcessVector[iDProc];
+      }
+    } else {
+      // Else the particle left the world.
+      proc = fTransportNoProcess;
     }
 
+    postStepPoint.SetProcessDefinedStep(proc);
     step.SetStepLength(totalTruePathLength);
 
     // energy, e-depo and status
@@ -432,6 +492,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
                                         theG4PostStepPointPosition);
         aG4Track->SetParentID(trackID);
+        aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
         secondaries.push_back(aG4Track);
       }
@@ -453,6 +514,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
                                         theG4PostStepPointPosition);
         aG4Track->SetParentID(trackID);
+        aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
         secondaries.push_back(aG4Track);
       }
@@ -551,6 +613,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       if (onBoundary) {
         thePrimaryTrack->SetGStepLength(track.GetStepLength());
         G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
+        theG4PostStepPoint->SetProcessDefinedStep(fMgr.fTransportNoProcess);
         return;
       }
       // NOTE: this primary track is the same as in the last call in the
@@ -567,6 +630,10 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       G4HepEmGammaManager::Perform(fMgr.fRunManager->GetHepEmData(),
                                    fMgr.fRunManager->GetHepEmParameters(),
                                    theTLData);
+
+      const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
+      const G4VProcess *proc = fMgr.fGammaNoProcessVector[iDProc];
+      theG4PostStepPoint->SetProcessDefinedStep(proc);
 
       // energy, e-depo, momentum direction and status
       const double ekin = thePrimaryTrack->GetEKin();
@@ -621,6 +688,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
                                           theG4PostStepPointPosition);
           aG4Track->SetParentID(track.GetTrackID());
+          aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
           secondaries.push_back(aG4Track);
         }
@@ -642,6 +710,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
                                           theG4PostStepPointPosition);
           aG4Track->SetParentID(track.GetTrackID());
+          aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
           secondaries.push_back(aG4Track);
         }

@@ -51,11 +51,23 @@ G4HepEmProcess::G4HepEmProcess()
   fSafetyHelper = G4TransportationManager::GetTransportationManager()->GetSafetyHelper();
   fSafetyHelper->InitialiseHelper();
 
-  fElectronNoProcessVector.resize(4, nullptr);
-  fGammaNoProcessVector.resize(4, nullptr);
+  // construct fake G4VProcess-es with the proper name and indices matching the hepEm process indices
+  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("eIoni",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fIonisation));
+  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("eBrem",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fBremsstrahlung));
+  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("annihl", G4ProcessType::fElectromagnetic, G4EmProcessSubType::fAnnihilation));
+  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("msc",    G4ProcessType::fElectromagnetic, G4EmProcessSubType::fMultipleScattering));
+  fGammaNoProcessVector.push_back(new G4HepEmNoProcess("conv",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fGammaConversion));
+  fGammaNoProcessVector.push_back(new G4HepEmNoProcess("compt",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fComptonScattering));
+  fGammaNoProcessVector.push_back(new G4HepEmNoProcess("phot",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fPhotoElectricEffect));
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
+  for (auto *proc : fElectronNoProcessVector) {
+    delete proc;
+  }
+  for (auto *proc : fGammaNoProcessVector) {
+    delete proc;
+  }
   delete fTheG4HepEmRunManager;
   delete fTheG4HepEmRandomEngine;
 }
@@ -71,21 +83,10 @@ void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
 
   if (partDef.GetPDGEncoding()==11) {          // e-
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 0);
-    // construct fake G4VProcess-es with the proper name and indices matching the hepEm process indices
-    fElectronNoProcessVector[0] = new G4HepEmNoProcess("eIoni",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fIonisation);
-    fElectronNoProcessVector[1] = new G4HepEmNoProcess("eBrem",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fBremsstrahlung);
-    fElectronNoProcessVector[3] = new G4HepEmNoProcess("msc",    G4ProcessType::fElectromagnetic, G4EmProcessSubType::fMultipleScattering);
   } else if (partDef.GetPDGEncoding()==-11) {  // e+
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 1);
-    fElectronNoProcessVector[0] = new G4HepEmNoProcess("eIoni",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fIonisation);
-    fElectronNoProcessVector[1] = new G4HepEmNoProcess("eBrem",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fBremsstrahlung);
-    fElectronNoProcessVector[2] = new G4HepEmNoProcess("annihl", G4ProcessType::fElectromagnetic, G4EmProcessSubType::fAnnihilation);
-    fElectronNoProcessVector[3] = new G4HepEmNoProcess("msc",    G4ProcessType::fElectromagnetic, G4EmProcessSubType::fMultipleScattering);
   } else if (partDef.GetPDGEncoding()==22) {   // gamma
     fTheG4HepEmRunManager->Initialize(fTheG4HepEmRandomEngine, 2);
-    fGammaNoProcessVector[0]    = new G4HepEmNoProcess("conv",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fGammaConversion);
-    fGammaNoProcessVector[1]    = new G4HepEmNoProcess("compt",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fComptonScattering);
-    fGammaNoProcessVector[2]    = new G4HepEmNoProcess("phot",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fPhotoElectricEffect);
   } else {
     std::cerr << " **** ERROR in G4HepEmProcess::BuildPhysicsTable: unknown particle " << std::endl;
     exit(-1);
