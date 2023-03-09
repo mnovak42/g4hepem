@@ -34,7 +34,6 @@ public:
 
 private:
   void TrackElectron(G4Track *aTrack);
-  void TrackPositron(G4Track *aTrack);
   void TrackGamma(G4Track *aTrack);
 
   G4HepEmRunManager *fRunManager;
