@@ -37,9 +37,16 @@ class G4HepEmTLData {
 
 public:
 
-  G4HepEmTLData();
+  G4HepEmTLData() {
+    fRNGEngine = nullptr;
+    fElectronSecondaryTracks.resize(2);
+    fNumSecondaryElectronTracks = 0;
 
- ~G4HepEmTLData();
+    fGammaSecondaryTracks.resize(2);
+    fNumSecondaryGammaTracks = 0;
+  }
+
+ ~G4HepEmTLData() {}
 
   void SetRandomEngine(G4HepEmRandomEngine* rnge) { fRNGEngine = rnge; }
   G4HepEmRandomEngine* GetRNGEngine() { return fRNGEngine; }
