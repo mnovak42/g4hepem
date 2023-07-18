@@ -6,12 +6,14 @@ set(G4HEPEmRun_headers
   include/G4HepEmElectronInteractionUMSC.hh
   include/G4HepEmElectronManager.hh
   include/G4HepEmElectronTrack.hh
+  include/G4HepEmExp.hh
   include/G4HepEmGammaInteractionCompton.hh
   include/G4HepEmGammaInteractionConversion.hh
   include/G4HepEmGammaInteractionPhotoelectric.hh
   include/G4HepEmGammaManager.hh
   include/G4HepEmGammaTrack.hh
   include/G4HepEmInteractionUtils.hh
+  include/G4HepEmLog.hh
   include/G4HepEmMacros.hh
   include/G4HepEmMath.hh
   include/G4HepEmMSCTrackData.hh
@@ -37,7 +39,6 @@ set(G4HEPEmRun_impl_headers
 )
 set(G4HEPEmRun_sources
   src/G4HepEmRandomEngine.cc
-  src/G4HepEmTLData.cc
 )
 
 # See Issue #11 and discussion...

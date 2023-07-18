@@ -143,6 +143,8 @@ namespace nlohmann
         j["fDRoverRange"]          = d->fDRoverRange;
         j["fLinELossLimit"]        = d->fLinELossLimit;
         j["fElectronBremModelLim"] = d->fElectronBremModelLim;
+        j["fMSCRangeFactor"]       = d->fMSCRangeFactor;
+        j["fMSCSafetyFactor"]      = d->fMSCSafetyFactor;
       }
     }
 
@@ -164,7 +166,8 @@ namespace nlohmann
         d->fDRoverRange          = j.at("fDRoverRange").get<double>();
         d->fLinELossLimit        = j.at("fLinELossLimit").get<double>();
         d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
-
+        d->fMSCRangeFactor       = j.at("fMSCRangeFactor").get<double>();
+        d->fMSCSafetyFactor      = j.at("fMSCSafetyFactor").get<double>();
         return d;
       }
     }
@@ -313,10 +316,21 @@ namespace nlohmann
       j["fDensityCorfactor"] = d.fDensityCorFactor;
       j["fElectronDensity"]  = d.fElectronDensity;
       j["fRadiationLength"]  = d.fRadiationLength;
+      j["fMeanExEnergy"]     = d.fMeanExEnergy;
       j["fSandiaEnergies"] =
         make_span(d.fNumOfSandiaIntervals, d.fSandiaEnergies);
       j["fSandiaCoefficients"] =
         make_span(4 * d.fNumOfSandiaIntervals, d.fSandiaCoefficients);
+
+      j["fZeff"]      = d.fZeff;
+      j["fZeff23"]    = d.fZeff23;
+      j["fZeffSqrt"]  = d.fZeffSqrt;
+
+      j["fUMSCPar"]         = d.fUMSCPar;
+      j["fUMSCStepMinPars"] = d.fUMSCStepMinPars;
+      j["fUMSCTailCoeff"]   = d.fUMSCTailCoeff;
+      j["fUMSCThetaCoeff"]  = d.fUMSCThetaCoeff;
+
     }
 
     static G4HepEmMatData from_json(const json& j)
@@ -336,6 +350,7 @@ namespace nlohmann
       j.at("fDensityCorfactor").get_to(d.fDensityCorFactor);
       j.at("fElectronDensity").get_to(d.fElectronDensity);
       j.at("fRadiationLength").get_to(d.fRadiationLength);
+      j.at("fMeanExEnergy").get_to(d.fMeanExEnergy);
 
       auto tmpSandiaEnergies =
         j.at("fSandiaEnergies").get<dynamic_array<double>>();
@@ -345,6 +360,15 @@ namespace nlohmann
       auto tmpSandiaCoefficients =
         j.at("fSandiaCoefficients").get<dynamic_array<double>>();
       d.fSandiaCoefficients = tmpSandiaCoefficients.data;
+
+      j.at("fZeff").get_to(d.fZeff);
+      j.at("fZeff23").get_to(d.fZeff23);
+      j.at("fZeffSqrt").get_to(d.fZeffSqrt);
+
+      j.at("fUMSCPar").get_to(d.fUMSCPar);
+      j.at("fUMSCStepMinPars").get_to(d.fUMSCStepMinPars);
+      j.at("fUMSCTailCoeff").get_to(d.fUMSCTailCoeff);
+      j.at("fUMSCThetaCoeff").get_to(d.fUMSCThetaCoeff);
 
       return d;
     }
@@ -487,6 +511,7 @@ namespace nlohmann
       else
       {
         j["fNumMatCuts"]      = d->fNumMatCuts;
+        j["fNumMaterials"]    = d->fNumMaterials;
         j["fELossLogMinEkin"] = d->fELossLogMinEkin;
         j["fELossEILDelta"]   = d->fELossEILDelta;
 
@@ -500,6 +525,10 @@ namespace nlohmann
           make_span(d->fNumMatCuts, d->fResMacXSecStartIndexPerMatCut);
         j["fResMacXSecData"] =
           make_span(d->fResMacXSecNumData, d->fResMacXSecData);
+
+        const int nTr1MacXsec = 2 * (d->fELossEnergyGridSize) * (d->fNumMaterials);
+        j["fTr1MacXSecData"] =
+          make_span(nTr1MacXsec, d->fTr1MacXSecData);
 
         j["fElemSelectorIoniStartIndexPerMatCut"] =
           make_span(d->fNumMatCuts, d->fElemSelectorIoniStartIndexPerMatCut);
@@ -530,6 +559,7 @@ namespace nlohmann
         AllocateElectronData(&d);
 
         j.at("fNumMatCuts").get_to(d->fNumMatCuts);
+        j.at("fNumMaterials").get_to(d->fNumMaterials);
         j.at("fELossLogMinEkin").get_to(d->fELossLogMinEkin);
         j.at("fELossEILDelta").get_to(d->fELossEILDelta);
 
@@ -551,6 +581,9 @@ namespace nlohmann
           auto tmpData = j.at("fResMacXSecData").get<dynamic_array<double>>();
           d->fResMacXSecNumData = tmpData.N;
           d->fResMacXSecData    = tmpData.data;
+
+          auto tmpTr1Data = j.at("fTr1MacXSecData").get<dynamic_array<double>>();
+          d->fTr1MacXSecData    = tmpTr1Data.data;
         }
 
         {

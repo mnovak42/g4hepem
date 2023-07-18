@@ -8,6 +8,7 @@
 #include  "G4HepEmMaterialData.hh"
 #include  "G4HepEmMatCutData.hh"
 #include  "G4HepEmRunUtils.hh"
+#include  "G4HepEmConstants.hh"
 
 void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData) {
   G4HepEmGammaTrack* theGammaTrack = tlData->GetPrimaryGammaTrack();
@@ -111,7 +112,7 @@ void G4HepEmGammaInteractionPhotoelectric::SamplePhotoElectronDirection(const do
   const double costheta = 1.0 - tsam;
 
   const double sint = std::sqrt(tsam*(2.0 - tsam));
-  const double phi  = CLHEP::twopi*rnge->flat();
+  const double phi  = k2Pi*rnge->flat();
 
   theDir[0] = sint * std::cos(phi);
   theDir[1] = sint * std::sin(phi);
