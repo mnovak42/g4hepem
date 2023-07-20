@@ -7,26 +7,32 @@
 # - Project properties
 set_and_check(G4HepEm_INCLUDE_DIR "@PACKAGE_G4HEPEM_EXPORTED_INCLUDE_DIR@")
 
-set(G4HepEm_cuda_FOUND @G4HepEm_CUDA_BUILD@)
 
 # - Project dependencies
 include(CMakeFindDependencyMacro)
 
-find_dependency(Geant4 @Geant4_VERSION@ REQUIRED)
+set(G4HepEm_geant4_FOUND @G4HepEm_GEANT4_BUILD@)
+if(G4HepEm_geant4_FOUND)
+  find_dependency(Geant4 @Geant4_VERSION@ REQUIRED)
+else()
+  find_dependency(CLHEP @CLHEP_VERSION@ REQUIRED)
+endif()
 
 # Direct CUDA deps to be determined, but should be handled by
 # target properties (remains to be seen if we need find_dependency on CUDA Toolkit
 # and to transport CUDA architecture flags)
+set(G4HepEm_cuda_FOUND @G4HepEm_CUDA_BUILD@)
 
 # - Project targets
 include(${CMAKE_CURRENT_LIST_DIR}/G4HepEmTargets.cmake)
 
 # - TEMPORARY back compatibility
 set(G4HepEm_LIBRARIES
-  G4HepEm::g4HepEm
   G4HepEm::g4HepEmData
-  G4HepEm::g4HepEmInit
-  G4HepEm::g4HepEmInit)
+  G4HepEm::g4HepEmRun)
+if(G4HepEm_geant4_FOUND)
+  list(APPEND G4HepEm_LIBRARIES G4HepEm::g4HepEmInit G4HepEm::g4HepEm)
+endif()
 
 # - Requested component check
 check_required_components(G4HepEm)

@@ -50,7 +50,11 @@ g4hepem_add_library(g4HepEmRun
   LINK g4HepEmData)
 
 # Make the Geant4 version number available even where we don't depend on Geant4
-set(_g4version_num ${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
+if(G4HepEm_GEANT4_BUILD)
+  set(_g4version_num ${Geant4_VERSION_MAJOR}${Geant4_VERSION_MINOR}${Geant4_VERSION_PATCH})
+else()
+  set(_g4version_num 1100)
+endif()
 
 if(BUILD_SHARED_LIBS)
   set_target_properties(g4HepEmRun PROPERTIES COMPILE_FLAGS "-x c++ ${CMAKE_CXX_FLAGS}")
