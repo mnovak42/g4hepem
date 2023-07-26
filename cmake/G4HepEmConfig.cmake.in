@@ -14,8 +14,6 @@ include(CMakeFindDependencyMacro)
 set(G4HepEm_geant4_FOUND @G4HepEm_GEANT4_BUILD@)
 if(G4HepEm_geant4_FOUND)
   find_dependency(Geant4 @Geant4_VERSION@ REQUIRED)
-else()
-  find_dependency(CLHEP @CLHEP_VERSION@ REQUIRED)
 endif()
 
 # Direct CUDA deps to be determined, but should be handled by

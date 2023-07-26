@@ -16,8 +16,16 @@
  *
  * A simple abstraction for a random number engine.
  *
- * Holds a reference to the real engine and two function pointers to generate
- * one random number or fill an array with a given size, respectively.
+ * Holds a reference to the real engine and two member functions to use the
+ * engine to generate one random number or fill an array with a given size, respectively.
+ *
+ * When G4HepEm is compiled with support for Geant4, the reference must be a pointer
+ * to an instance of `CLHEP::HepRandomEngine` for host-side use. For device-side use,
+ * the user must implement a suitable reference _and_ compile/link `__device__` implementations
+ * for the `flat` and `flatArray` member functions.
+ *
+ * For G4HepEm built in standalone mode without Geant4 support, the user must compile and
+ * link in both host- and device- side implementations for the engine and member functions.
  */
 class G4HepEmRandomEngine final {
 public:
@@ -25,8 +33,16 @@ public:
   G4HepEmRandomEngine(void *object)
     : fObject(object), fIsGauss(false), fGauss(0.) { }
 
+  /** Return a random number uniformly distributed between 0 and 1.
+   */
   G4HepEmHostDevice
   double flat();
+  /** Fill elements of array with random numbers uniformly distributed between 0 and 1.
+   *
+   *  @param [in] size Number of elements in `vect` input array
+   *  @param [in][out] vect Array to fill with random numbers
+   *  @pre `size` must be less than or equal to the number of elements in `vect`
+   */
   G4HepEmHostDevice
   void flatArray(const int size, double* vect);
 

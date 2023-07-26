@@ -130,10 +130,7 @@ if(G4HepEm_GEANT4_BUILD)
 
   set(CMAKE_CXX_STANDARD ${Geant4_CXX_STANDARD}) # use value from Geant4Config.cmake
 else()
-  # Still currently need CLHEP for G4HepEmRun's random engine
-  find_package(CLHEP REQUIRED)
-
-  # And need workaround for G4VERSION_NUM G4HepEmRun...
+  # Need workaround for G4VERSION_NUM G4HepEmRun...
   # ... done in that component for now.
 endif()
 
