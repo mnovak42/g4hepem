@@ -8,63 +8,6 @@ project(G4HepEm VERSION 0.1.0)
 include(GNUInstallDirs)
 include(CheckLanguage)
 
-# CMake and Build Settings
-# - Don't allow absolute paths other than CMAKE_INSTALL_PREFIX
-set(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION ON)
-
-# - Never export to or search in user/system package registry
-set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
-set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
-set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
-
-# - Force project directories to appear first in any list of includes
-set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
-
-# - Only relink shared libs when interface changes
-set(CMAKE_LINK_DEPENDS_NO_SHARED ON)
-
-# - Only report newly installed files
-set(CMAKE_INSTALL_MESSAGE LAZY)
-
-# - Default to Release mode build in single mode
-if(NOT CMAKE_CONFIGURATION_TYPES)
-  if(NOT CMAKE_BUILD_TYPE)
-    # Default to a Release build if nothing else...
-    set(CMAKE_BUILD_TYPE Release)
-  endif()
-  # Force to the cache, but use existing value.
-  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}"
-    CACHE STRING "Choose the type of build, options are: None Release Debug RelWithDebInfo MinSizeRel"
-    FORCE)
-endif()
-
-# - Prefer shared libs
-set(BUILD_SHARED_LIBS ON)
-set(BUILD_STATIC_LIBS OFF)
-
-# - Single location for library build products
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-
-#----------------------------------------------------------------------------
-# Find Geant4, changing library build type to default Geant4 variant and
-# determining which CXX Standard and CLHEP target to use
-find_package(Geant4 10.6 REQUIRED)
-if(Geant4_static_FOUND)
-  set(BUILD_STATIC_LIBS ON)
-endif()
-if(NOT Geant4_shared_FOUND)
-  set(BUILD_SHARED_LIBS OFF)
-endif()
-
-set(CMAKE_CXX_STANDARD ${Geant4_CXX_STANDARD}) # use value from Geant4Config.cmake
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 11)
-  message(WARNING "Find of Geant4 did not set Geant4_CXX_STANDARD value expected from Geant4Config.cmake. Defaulting to C++11.")
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 #----------------------------------------------------------------------------
 # Convenience function to add shared / static libraries as configured.
 #
@@ -134,6 +77,71 @@ function(g4hepem_add_library _name)
   endif()
 endfunction()
 
+# CMake and Build Settings
+# - Don't allow absolute paths other than CMAKE_INSTALL_PREFIX
+set(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION ON)
+
+# - Never export to or search in user/system package registry
+set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
+set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
+set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
+
+# - Force project directories to appear first in any list of includes
+set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
+
+# - Only relink shared libs when interface changes
+set(CMAKE_LINK_DEPENDS_NO_SHARED ON)
+
+# - Only report newly installed files
+set(CMAKE_INSTALL_MESSAGE LAZY)
+
+# - Default to Release mode build in single mode
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  if(NOT CMAKE_BUILD_TYPE)
+    # Default to a Release build if nothing else...
+    set(CMAKE_BUILD_TYPE Release)
+  endif()
+  # Force to the cache, but use existing value.
+  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}"
+    CACHE STRING "Choose the type of build, options are: None Release Debug RelWithDebInfo MinSizeRel"
+    FORCE)
+endif()
+
+# - Prefer shared libs
+set(BUILD_SHARED_LIBS ON)
+set(BUILD_STATIC_LIBS OFF)
+
+# - Single location for library build products
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+
+#----------------------------------------------------------------------------
+# Find Geant4, changing library build type to default Geant4 variant and
+# determining which CXX Standard and CLHEP target to use
+option(G4HepEm_GEANT4_BUILD "Build with Geant4 runtime support" ON)
+if(G4HepEm_GEANT4_BUILD)
+  find_package(Geant4 10.6 REQUIRED)
+  if(Geant4_static_FOUND)
+    set(BUILD_STATIC_LIBS ON)
+  endif()
+  if(NOT Geant4_shared_FOUND)
+    set(BUILD_SHARED_LIBS OFF)
+  endif()
+
+  set(CMAKE_CXX_STANDARD ${Geant4_CXX_STANDARD}) # use value from Geant4Config.cmake
+else()
+  # Need workaround for G4VERSION_NUM G4HepEmRun...
+  # ... done in that component for now.
+endif()
+
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 11)
+  message(WARNING "Find of Geant4 did not set Geant4_CXX_STANDARD value expected from Geant4Config.cmake. Defaulting to C++11.")
+endif()
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 #----------------------------------------------------------------------------
 # CUDA
 option(G4HepEm_CUDA_BUILD "BUILD with CUDA support" OFF)
@@ -175,8 +183,12 @@ add_subdirectory(G4HepEm)
 option(BUILD_TESTING "Build the testing tree." OFF)
 include(CTest)
 if(BUILD_TESTING)
-  message(STATUS "Building test programs is enabled!")
-  add_subdirectory(testing)
+  if(G4HepEm_GEANT4_BUILD)
+    message(STATUS "Building test programs is enabled!")
+    add_subdirectory(testing)
+  else()
+    message(WARNING "BUILD_TESTING is ON, but no tests will be created as Geant4 runtime support is disabled")
+  endif()
 endif()
 
 #-----------------------------------------------------------------------------
