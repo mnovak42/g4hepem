@@ -77,12 +77,8 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4HepEmTrackingManager::~G4HepEmTrackingManager() {
-  for (auto *proc : fElectronNoProcessVector) {
-    delete proc;
-  }
-  for (auto *proc : fGammaNoProcessVector) {
-    delete proc;
-  }
+  // Per behaviour in Physics Constructors, we do not delete the G4HepEmNoProcess
+  // instances as these are owned by G4ProcessTable.
   delete fRunManager;
   delete fRandomEngine;
   delete fStep;
