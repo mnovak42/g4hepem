@@ -15,7 +15,7 @@ The ``G4HepEm`` R&D project was initiated by the `Electromagnetic Physics Workin
 
 ## Description
 
-The project (initially) targets the most performance critical part of the HEP detector simulation applications, i.e. the EM shower generation covering <img src="https://render.githubusercontent.com/render/math?math=e^{-}/e^{%2B}"> and <img src="https://render.githubusercontent.com/render/math?math=\gamma"> particle transport. By
+The project (initially) targets the most performance critical part of the HEP detector simulation applications, i.e. the EM shower generation covering $e^{-}/e^{+}$ and $\gamma$ particle transport. By
 
   - starting from the EM physics modelling part, the project **isolates and extracts** **all the data and functionalities** required for EM shower simulation in HEP detectors **in a clear, compact and well documented form**
 
