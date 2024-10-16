@@ -62,12 +62,6 @@ G4HepEmProcess::G4HepEmProcess()
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
-  for (auto *proc : fElectronNoProcessVector) {
-    delete proc;
-  }
-  for (auto *proc : fGammaNoProcessVector) {
-    delete proc;
-  }
   delete fTheG4HepEmRunManager;
   delete fTheG4HepEmRandomEngine;
 }
