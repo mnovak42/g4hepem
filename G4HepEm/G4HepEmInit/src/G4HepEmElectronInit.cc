@@ -62,19 +62,17 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   G4double energyLimit = std::min(modelSB->HighEnergyLimit(), hepEmPars->fElectronBremModelLim);
   modelSB->SetHighEnergyLimit(energyLimit);
   modelSB->SetSecondaryThreshold(G4EmParameters::Instance()->BremsstrahlungTh());
-  modelSB->SetLPMFlag(false);
   // get cuts for secondary gamma
   const G4DataVector* theGamCuts = static_cast<const G4DataVector*>(theCoupleTable->GetEnergyCutsVector(0));
   // ACTIVATE sampling tables
   modelSB->Initialise(g4PartDef, *theGamCuts);
   //
-  // 3. High energy brem. model with LPM correction:
+  // 3. High energy brem. model with LPM correction (LPM flag is set by G4EmParameters):
   // --- used on [1GeV : E_max]
   G4eBremsstrahlungRelModel* modelRB = new G4eBremsstrahlungRelModel();
   modelRB->SetLowEnergyLimit(energyLimit);
   modelRB->SetHighEnergyLimit(emModelEMax);
   modelRB->SetSecondaryThreshold(G4EmParameters::Instance()->BremsstrahlungTh());
-  modelRB->SetLPMFlag(true);
   modelRB->Initialise(g4PartDef, *theGamCuts);
   //
   // 4. Urban msc model:
