@@ -208,6 +208,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
   const G4DynamicParticle *theG4DPart = aTrack->GetDynamicParticle();
   const G4int trackID = aTrack->GetTrackID();
+  const G4double trackWeight = aTrack->GetWeight();
 
   // Init state that never changes for a track.
   const double charge = aTrack->GetParticleDefinition()->GetPDGCharge();
@@ -508,6 +509,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         aG4Track->SetParentID(trackID);
         aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
+        aG4Track->SetWeight(trackWeight);
         secondaries.push_back(aG4Track);
       }
       theTLData->ResetNumSecondaryElectronTrack();
@@ -530,6 +532,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         aG4Track->SetParentID(trackID);
         aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
+        aG4Track->SetWeight(trackWeight);
         secondaries.push_back(aG4Track);
       }
       theTLData->ResetNumSecondaryGammaTrack();
@@ -714,6 +717,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           aG4Track->SetParentID(track.GetTrackID());
           aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
+          aG4Track->SetWeight(track.GetWeight());
           secondaries.push_back(aG4Track);
         }
         theTLData->ResetNumSecondaryElectronTrack();
@@ -736,6 +740,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           aG4Track->SetParentID(track.GetTrackID());
           aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
+          aG4Track->SetWeight(track.GetWeight());
           secondaries.push_back(aG4Track);
         }
         theTLData->ResetNumSecondaryGammaTrack();
