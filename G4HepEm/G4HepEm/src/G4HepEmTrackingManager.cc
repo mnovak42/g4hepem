@@ -21,6 +21,8 @@
 #include "G4StepStatus.hh"
 #include "G4Threading.hh"
 #include "G4Track.hh"
+#include "G4TrackingManager.hh"
+#include "G4VTrajectory.hh"
 
 #include "G4SafetyHelper.hh"
 #include "G4TransportationManager.hh"
@@ -183,6 +185,12 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   {
     userTrackingAction->PreUserTrackingAction(aTrack);
   }
+
+  // Store the trajectory only if the user requested in the G4TrackingManager
+  // and set their own trajectory object (usually in the PreUserTrackingAction).
+  G4TrackingManager* trMgr = evtMgr->GetTrackingManager();
+  G4VTrajectory* theTrajectory = trMgr->GetStoreTrajectory() == 0
+                                 ? nullptr : trMgr->GimmeTrajectory();
 
   // === StartTracking ===
   G4HepEmTLData *theTLData = fRunManager->GetTheTLData();
@@ -552,6 +560,11 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     {
       regionalAction->UserSteppingAction(&step);
     }
+
+    // Append the trajectory if it was requested.
+    if (theTrajectory != nullptr) {
+      theTrajectory->AppendStep(&step);
+    }
   }
 
   // End of tracking: Inform processes and user.
@@ -560,6 +573,11 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   if(userTrackingAction)
   {
     userTrackingAction->PostUserTrackingAction(aTrack);
+  }
+
+  // Delete the trajectory object (if the user set any)
+  if (theTrajectory != nullptr) {
+    delete theTrajectory;
   }
 
   evtMgr->StackTracks(&secondaries);
