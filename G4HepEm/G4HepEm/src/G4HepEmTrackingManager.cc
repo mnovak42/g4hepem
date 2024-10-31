@@ -162,6 +162,11 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     aTrack->SetNextTouchableHandle(touchableHandle);
   }
 
+  // Set OriginTouchableHandle for primary track(set at stacking for secondaries)
+  if (aTrack->GetParentID() == 0) {
+    aTrack->SetOriginTouchableHandle(aTrack->GetTouchableHandle());
+  }
+
   // Set vertex information: in normal tracking this is done in
   //  `G4TrackingManager::ProcessOneTrack` when calling
   //  `G4SteppingManager::SetInitialStep`
