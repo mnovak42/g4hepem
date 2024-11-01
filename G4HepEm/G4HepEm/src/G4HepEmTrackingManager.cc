@@ -21,6 +21,8 @@
 #include "G4StepStatus.hh"
 #include "G4Threading.hh"
 #include "G4Track.hh"
+#include "G4TrackingManager.hh"
+#include "G4VTrajectory.hh"
 
 #include "G4SafetyHelper.hh"
 #include "G4TransportationManager.hh"
@@ -160,6 +162,21 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     aTrack->SetNextTouchableHandle(touchableHandle);
   }
 
+  // Set OriginTouchableHandle for primary track(set at stacking for secondaries)
+  if (aTrack->GetParentID() == 0) {
+    aTrack->SetOriginTouchableHandle(aTrack->GetTouchableHandle());
+  }
+
+  // Set vertex information: in normal tracking this is done in
+  //  `G4TrackingManager::ProcessOneTrack` when calling
+  //  `G4SteppingManager::SetInitialStep`
+  if (aTrack->GetCurrentStepNumber() == 0) {
+    aTrack->SetVertexPosition(aTrack->GetPosition());
+    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
+    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
+    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
+  }
+
   // Prepare data structures used while tracking.
   G4Step &step = *fStep;
   G4TrackVector& secondaries = *step.GetfSecondary();
@@ -173,6 +190,12 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   {
     userTrackingAction->PreUserTrackingAction(aTrack);
   }
+
+  // Store the trajectory only if the user requested in the G4TrackingManager
+  // and set their own trajectory object (usually in the PreUserTrackingAction).
+  G4TrackingManager* trMgr = evtMgr->GetTrackingManager();
+  G4VTrajectory* theTrajectory = trMgr->GetStoreTrajectory() == 0
+                                 ? nullptr : trMgr->GimmeTrajectory();
 
   // === StartTracking ===
   G4HepEmTLData *theTLData = fRunManager->GetTheTLData();
@@ -190,6 +213,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
   const G4DynamicParticle *theG4DPart = aTrack->GetDynamicParticle();
   const G4int trackID = aTrack->GetTrackID();
+  const G4double trackWeight = aTrack->GetWeight();
 
   // Init state that never changes for a track.
   const double charge = aTrack->GetParticleDefinition()->GetPDGCharge();
@@ -490,6 +514,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         aG4Track->SetParentID(trackID);
         aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
+        aG4Track->SetWeight(trackWeight);
         secondaries.push_back(aG4Track);
       }
       theTLData->ResetNumSecondaryElectronTrack();
@@ -512,6 +537,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         aG4Track->SetParentID(trackID);
         aG4Track->SetCreatorProcess(proc);
         aG4Track->SetTouchableHandle(touchableHandle);
+        aG4Track->SetWeight(trackWeight);
         secondaries.push_back(aG4Track);
       }
       theTLData->ResetNumSecondaryGammaTrack();
@@ -542,6 +568,11 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     {
       regionalAction->UserSteppingAction(&step);
     }
+
+    // Append the trajectory if it was requested.
+    if (theTrajectory != nullptr) {
+      theTrajectory->AppendStep(&step);
+    }
   }
 
   // End of tracking: Inform processes and user.
@@ -550,6 +581,11 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   if(userTrackingAction)
   {
     userTrackingAction->PostUserTrackingAction(aTrack);
+  }
+
+  // Delete the trajectory object (if the user set any)
+  if (theTrajectory != nullptr) {
+    delete theTrajectory;
   }
 
   evtMgr->StackTracks(&secondaries);
@@ -686,6 +722,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           aG4Track->SetParentID(track.GetTrackID());
           aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
+          aG4Track->SetWeight(track.GetWeight());
           secondaries.push_back(aG4Track);
         }
         theTLData->ResetNumSecondaryElectronTrack();
@@ -708,6 +745,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           aG4Track->SetParentID(track.GetTrackID());
           aG4Track->SetCreatorProcess(proc);
           aG4Track->SetTouchableHandle(theG4TouchableHandle);
+          aG4Track->SetWeight(track.GetWeight());
           secondaries.push_back(aG4Track);
         }
         theTLData->ResetNumSecondaryGammaTrack();

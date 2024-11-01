@@ -42,6 +42,8 @@
 #include "G4UserSteppingAction.hh"
 #include "G4UserTrackingAction.hh"
 #include "G4VSensitiveDetector.hh"
+#include "G4TrackingManager.hh"
+#include "G4VTrajectory.hh"
 
 #include "G4Field.hh"
 #include "G4FieldManager.hh"
@@ -102,6 +104,21 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
     aTrack->SetNextTouchableHandle(touchableHandle);
   }
 
+  // Set OriginTouchableHandle for primary track(set at stacking for secondaries)
+  if (aTrack->GetParentID() == 0) {
+    aTrack->SetOriginTouchableHandle(aTrack->GetTouchableHandle());
+  }
+
+  // Set vertex information: in normal tracking this is done in
+  //  `G4TrackingManager::ProcessOneTrack` when calling
+  //  `G4SteppingManager::SetInitialStep`
+  if (aTrack->GetCurrentStepNumber() == 0) {
+    aTrack->SetVertexPosition(aTrack->GetPosition());
+    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
+    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
+    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
+  }
+
   // Prepare data structures used while tracking.
   G4Step &step = *aStep;
   G4TrackVector& secondaries = *step.GetfSecondary();
@@ -114,6 +131,12 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
   {
     userTrackingAction->PreUserTrackingAction(aTrack);
   }
+
+  // Store the trajectory only if the user requested in the G4TrackingManager
+  // and set their own trajectory object (usually in the PreUserTrackingAction).
+  G4TrackingManager* trMgr = evtMgr->GetTrackingManager();
+  G4VTrajectory* theTrajectory = trMgr->GetStoreTrajectory() == 0
+                                 ? nullptr : trMgr->GimmeTrajectory();
 
   physics.StartTracking(aTrack);
 
@@ -196,6 +219,11 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
     {
       regionalAction->UserSteppingAction(&step);
     }
+
+    // Append the trajectory if it was requested.
+    if (theTrajectory != nullptr) {
+      theTrajectory->AppendStep(&step);
+    }
   }
 
   if(aTrack->GetTrackStatus() == fStopButAlive &&
@@ -230,6 +258,11 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
     {
       regionalAction->UserSteppingAction(&step);
     }
+
+    // Append the trajectory if it was requested.
+    if (theTrajectory != nullptr) {
+      theTrajectory->AppendStep(&step);
+    }
   }
 
   // End of tracking: Inform processes and user.
@@ -238,6 +271,11 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
   if(userTrackingAction)
   {
     userTrackingAction->PostUserTrackingAction(aTrack);
+  }
+
+  // Delete the trajectory object (if the user set any)
+  if (theTrajectory != nullptr) {
+    delete theTrajectory;
   }
 
   evtMgr->StackTracks(&secondaries);
