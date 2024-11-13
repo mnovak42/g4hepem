@@ -35,6 +35,8 @@
 #include "G4ProcessType.hh"
 #include "G4TransportationProcessType.hh"
 
+#include "G4RegionStore.hh"
+
 #include "G4Electron.hh"
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
@@ -80,6 +82,12 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fFastSimProcess[0] = nullptr;
   fFastSimProcess[1] = nullptr;
   fFastSimProcess[2] = nullptr;
+
+  // ATLAS XTR RELATED:
+  // Init the ATLAS specific transition radiation process related ptrs
+  // NOTE: they stay `nullptr` if used outside ATLAS Athena causing no harm
+  fXTRRegion  = nullptr;
+  fXTRProcess = nullptr;
 
 }
 
@@ -491,6 +499,10 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       stopped = G4HepEmElectronManager::SampleLossFluctuations(theHepEmData, theHepEmPars, theElTrack, rnge);
     }
 
+    // ATLAS XTR RELATED:
+    // For the XTR process (if any)
+    G4VParticleChange* particleChangeXTR = nullptr;
+
     const G4VProcess *proc = nullptr;
     if (stopped) {
       // call annihilation for e+ !!!
@@ -520,6 +532,25 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       } else {
         proc = fElectronNoProcessVector[iDProc];
       }
+
+      // ATLAS XTR RELATED:
+      // Invoke the TRTTransitionRadiation process for e-/e+ fXTRProcess:
+      // But only if the step was done in the Radiator region with energy > 255 MeV (m_EkinMin)
+      if (fXTRProcess != nullptr && fXTRRegion == preStepPoint.GetPhysicalVolume()->GetLogicalVolume()->GetRegion() && thePrimaryTrack->GetEKin() > 255.0) {
+        // the TRTTransitionRadiation process might create photons as secondary
+        // and changes the primary e-/e+ energy only but nothing more than that
+        // requires: kinetic energy and momentum direction from the track (dynamic part.) and logical volume
+        //           step length and post step point position from the step
+        // all these are up-to-date except the kinetic energy and momentum direction of the dynamic particle
+        G4DynamicParticle* mutableG4DPart = const_cast<G4DynamicParticle*>(theG4DPart);
+        mutableG4DPart->SetKineticEnergy(thePrimaryTrack->GetEKin());
+        mutableG4DPart->SetMomentumDirection(postStepPoint.GetMomentumDirection());
+        particleChangeXTR = fXTRProcess->PostStepDoIt(*aTrack, step);
+        if (particleChangeXTR->GetNumberOfSecondaries() > 0) {
+          thePrimaryTrack->SetEKin(static_cast<G4ParticleChange*>(particleChangeXTR)->GetEnergy());
+        }
+      }
+
     } else {
       // Else the particle left the world.
       proc = fTransportNoProcess;
@@ -539,6 +570,26 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
     // Stack secondaries created by the HepEm physics above
     edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
+
+    // ATLAS XTR RELATED:
+    // Stack XTR secondaries (if any)
+    if (particleChangeXTR != nullptr) {
+      const int numXTRPhotons = particleChangeXTR->GetNumberOfSecondaries();
+      for (int i = 0; i < numXTRPhotons; i++) {
+        G4Track *secTrack = particleChangeXTR->GetSecondary(i);
+        const double secEKin = secTrack->GetKineticEnergy();
+        if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
+          edep += secEKin;
+          continue;
+        }
+        secTrack->SetParentID(aTrack->GetTrackID());
+        secTrack->SetCreatorProcess(fXTRProcess);
+        secTrack->SetTouchableHandle(aTrack->GetTouchableHandle());
+        secTrack->SetWeight(aTrack->GetWeight());
+        secondaries.push_back(secTrack);
+      }
+      particleChangeXTR->Clear();
+    }
 
     step.AddTotalEnergyDeposit(edep);
 
@@ -981,6 +1032,28 @@ void G4HepEmTrackingManager::InitFastSimRelated(int particleID) {
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
     if( (*processVector)[ip]->GetProcessType()==G4ProcessType::fParameterisation) {
       fFastSimProcess[particleID] = (*processVector)[ip];
+      break;
+    }
+  }
+}
+
+// ATLAS XTR RELATED:
+void G4HepEmTrackingManager::InitXTRRelated() {
+  // Try to get the pointer to the detector region that contains the TRT radiators
+  // NOTE: becomes `nullptr` if there is no detector region with the name ensuring
+  //       that everything works fine also outside ATLAS Athena
+  // NOTE: after the suggested changes in Athena, the region name should be
+  //       `TRT_RADIATOR` but till that it's `DefaultRegionForTheWorld`
+  const std::string nameTRTDetectorRegion = "TRT_RADIATOR";
+  fXTRRegion = G4RegionStore::GetInstance()->GetRegion(nameTRTDetectorRegion);
+  // Try to get the pointer to the TRTTransitionRadiation process
+  // NOTE: stays `nullptr` if gamma dosen't have process with the name ensuring
+  //       that everything works fine also outside ATLAS Athena
+  const std::string nameXTRProcess = "XTR";
+  const G4ProcessVector* processVector = G4Gamma::Definition()->GetProcessManager()->GetProcessList();
+  for (std::size_t ip=0; ip<processVector->entries(); ip++) {
+    if( (*processVector)[ip]->GetProcessName()==nameXTRProcess) {
+      fXTRProcess = (*processVector)[ip];
       break;
     }
   }
