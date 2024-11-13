@@ -228,8 +228,6 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   G4HepEmParameters *theHepEmPars = fRunManager->GetHepEmParameters();
 
   const G4DynamicParticle *theG4DPart = aTrack->GetDynamicParticle();
-  const G4int trackID = aTrack->GetTrackID();
-  const G4double trackWeight = aTrack->GetWeight();
 
   // Init state that never changes for a track.
   const double charge = aTrack->GetParticleDefinition()->GetPDGCharge();
@@ -539,71 +537,8 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
     step.UpdateTrack();
 
-    const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
-    const int numSecGamma = theTLData->GetNumSecondaryGammaTrack();
-    const int numSecondaries = numSecElectron + numSecGamma;
-    if (numSecondaries > 0) {
-      const G4ThreeVector &theG4PostStepPointPosition =
-          postStepPoint.GetPosition();
-      const G4double theG4PostStepGlobalTime =
-          postStepPoint.GetGlobalTime();
-      for (int is = 0; is < numSecElectron; ++is) {
-        G4HepEmTrack *secTrack =
-            theTLData->GetSecondaryElectronTrack(is)->GetTrack();
-        const double secEKin = secTrack->GetEKin();
-        const bool isElectron = secTrack->GetCharge() < 0.0;
-        if (applyCuts) {
-          if (isElectron && secEKin < (*theCutsElectron)[g4IMC]) {
-            edep += secEKin;
-            continue;
-          } else if (!isElectron &&
-                     CLHEP::electron_mass_c2 < (*theCutsGamma)[g4IMC] &&
-                     secEKin < (*theCutsPositron)[g4IMC]) {
-            edep += secEKin + 2 * CLHEP::electron_mass_c2;
-            continue;
-          }
-        }
-
-        const double *dir = secTrack->GetDirection();
-        const G4ParticleDefinition *partDef = G4Electron::Definition();
-        if (!isElectron) {
-          partDef = G4Positron::Definition();
-        }
-        G4DynamicParticle *dp = new G4DynamicParticle(
-            partDef, G4ThreeVector(dir[0], dir[1], dir[2]), secEKin);
-        G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                        theG4PostStepPointPosition);
-        aG4Track->SetParentID(trackID);
-        aG4Track->SetCreatorProcess(proc);
-        aG4Track->SetTouchableHandle(touchableHandle);
-        aG4Track->SetWeight(trackWeight);
-        secondaries.push_back(aG4Track);
-      }
-      theTLData->ResetNumSecondaryElectronTrack();
-
-      for (int is = 0; is < numSecGamma; ++is) {
-        G4HepEmTrack *secTrack =
-            theTLData->GetSecondaryGammaTrack(is)->GetTrack();
-        const double secEKin = secTrack->GetEKin();
-        if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
-          edep += secEKin;
-          continue;
-        }
-
-        const double *dir = secTrack->GetDirection();
-        G4DynamicParticle *dp = new G4DynamicParticle(
-            G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]),
-            secEKin);
-        G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                        theG4PostStepPointPosition);
-        aG4Track->SetParentID(trackID);
-        aG4Track->SetCreatorProcess(proc);
-        aG4Track->SetTouchableHandle(touchableHandle);
-        aG4Track->SetWeight(trackWeight);
-        secondaries.push_back(aG4Track);
-      }
-      theTLData->ResetNumSecondaryGammaTrack();
-    }
+    // Stack secondaries created by the HepEm physics above
+    edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
 
     step.AddTotalEnergyDeposit(edep);
 
@@ -752,8 +687,6 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   G4HepEmParameters *theHepEmPars = fRunManager->GetHepEmParameters();
 
   const G4DynamicParticle *theG4DPart = aTrack->GetDynamicParticle();
-  const G4int trackID = aTrack->GetTrackID();
-  const G4double trackWeight = aTrack->GetWeight();
 
   thePrimaryTrack->SetCharge(0);
 
@@ -877,76 +810,13 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
 
         step.UpdateTrack();
 
-        // Stack secondaries if any
-        const int numSecElectron = theTLData->GetNumSecondaryElectronTrack();
-        const int numSecGamma    = theTLData->GetNumSecondaryGammaTrack();
-        const int numSecondaries = numSecElectron + numSecGamma;
-        if (numSecondaries > 0) {
-          const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
-          const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
-          const G4TouchableHandle& theG4TouchableHandle       = aTrack->GetTouchableHandle();
-          for (int is = 0; is < numSecElectron; ++is) {
-            G4HepEmTrack *secTrack = theTLData->GetSecondaryElectronTrack(is)->GetTrack();
-            const double  secEKin  = secTrack->GetEKin();
-            const bool isElectron  = secTrack->GetCharge() < 0.0;
-            if (applyCuts) {
-              if (isElectron && secEKin < (*theCutsElectron)[g4IMC]) {
-                edep += secEKin;
-                continue;
-              } else if (!isElectron &&
-                         CLHEP::electron_mass_c2 < (*theCutsGamma)[g4IMC] &&
-                         secEKin < (*theCutsPositron)[g4IMC]) {
-                edep += secEKin + 2 * CLHEP::electron_mass_c2;
-                continue;
-              }
-            }
-
-            const double *dir = secTrack->GetDirection();
-            const G4ParticleDefinition *partDef = G4Electron::Definition();
-            if (!isElectron) {
-              partDef = G4Positron::Definition();
-            }
-            G4DynamicParticle *dp = new G4DynamicParticle(
-                partDef, G4ThreeVector(dir[0], dir[1], dir[2]), secEKin);
-            G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                            theG4PostStepPointPosition);
-            aG4Track->SetParentID(trackID);
-            aG4Track->SetCreatorProcess(proc);
-            aG4Track->SetTouchableHandle(theG4TouchableHandle);
-            aG4Track->SetWeight(trackWeight);
-            secondaries.push_back(aG4Track);
-          }
-          theTLData->ResetNumSecondaryElectronTrack();
-
-          for (int is = 0; is < numSecGamma; ++is) {
-            G4HepEmTrack *secTrack = theTLData->GetSecondaryGammaTrack(is)->GetTrack();
-            const double secEKin = secTrack->GetEKin();
-            if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
-              edep += secEKin;
-              continue;
-            }
-
-            const double *dir = secTrack->GetDirection();
-            G4DynamicParticle *dp = new G4DynamicParticle(
-                G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]),
-                secEKin);
-            G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
-                                            theG4PostStepPointPosition);
-            aG4Track->SetParentID(aTrack->GetTrackID());
-            aG4Track->SetCreatorProcess(proc);
-            aG4Track->SetTouchableHandle(theG4TouchableHandle);
-            aG4Track->SetWeight(aTrack->GetWeight());
-            secondaries.push_back(aG4Track);
-          }
-          theTLData->ResetNumSecondaryGammaTrack();
-        } // END stacking secondaries
+        // Stack secondaries created by the HepEm physics above
+        edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
 
         step.AddTotalEnergyDeposit(edep);
-
       } // END if NOT onBoundary
 
       postStepPoint.SetProcessDefinedStep(proc);
-
     } // END status is NOT fStopAndKill
 
     aTrack->AddTrackLength(step.GetStepLength());
@@ -971,7 +841,6 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     }
 
   } // END while loop of stepping till status is fAlive
-
 
   // End of tracking: Inform processes and user.
   // === EndTracking ===
@@ -1007,6 +876,86 @@ void G4HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
 
   aTrack->SetTrackStatus(fStopAndKill);
   delete aTrack;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC) {
+  const int numSecElectron = aTLData->GetNumSecondaryElectronTrack();
+  const int numSecGamma    = aTLData->GetNumSecondaryGammaTrack();
+  const int numSecondaries = numSecElectron + numSecGamma;
+  // return early if there are no secondaries created by HepEm physics
+  double edep = 0.0;
+  if (numSecondaries == 0) {
+    return edep;
+  }
+
+  G4Step&        step           = *fStep;
+  G4TrackVector& secondaries    = *step.GetfSecondary();
+  G4StepPoint&   postStepPoint  = *step.GetPostStepPoint();
+
+  const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
+  const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
+  const G4TouchableHandle& theG4TouchableHandle       = aG4PrimaryTrack->GetTouchableHandle();
+  const double             theG4ParentTrackWeight     = aG4PrimaryTrack->GetWeight();
+  const int                theG4ParentTrackID         = aG4PrimaryTrack->GetTrackID();
+
+  for (int is = 0; is < numSecElectron; ++is) {
+    G4HepEmTrack *secTrack = aTLData->GetSecondaryElectronTrack(is)->GetTrack();
+    const double  secEKin  = secTrack->GetEKin();
+    const bool isElectron  = secTrack->GetCharge() < 0.0;
+    if (applyCuts) {
+      if (isElectron && secEKin < (*theCutsElectron)[aG4IMC]) {
+        edep += secEKin;
+        continue;
+      } else if (!isElectron &&
+                 CLHEP::electron_mass_c2 < (*theCutsGamma)[aG4IMC] &&
+                 secEKin < (*theCutsPositron)[aG4IMC]) {
+        edep += secEKin + 2 * CLHEP::electron_mass_c2;
+        continue;
+      }
+    }
+
+    const double *dir = secTrack->GetDirection();
+    const G4ParticleDefinition *partDef = G4Electron::Definition();
+    if (!isElectron) {
+      partDef = G4Positron::Definition();
+    }
+    G4DynamicParticle *dp = new G4DynamicParticle(
+        partDef, G4ThreeVector(dir[0], dir[1], dir[2]), secEKin);
+    G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
+                                    theG4PostStepPointPosition);
+    aG4Track->SetParentID(theG4ParentTrackID);
+    aG4Track->SetCreatorProcess(aG4CreatorProcess);
+    aG4Track->SetTouchableHandle(theG4TouchableHandle);
+    aG4Track->SetWeight(theG4ParentTrackWeight);
+    secondaries.push_back(aG4Track);
+  }
+  aTLData->ResetNumSecondaryElectronTrack();
+
+  for (int is = 0; is < numSecGamma; ++is) {
+    G4HepEmTrack *secTrack = aTLData->GetSecondaryGammaTrack(is)->GetTrack();
+    const double secEKin = secTrack->GetEKin();
+    if (applyCuts && secEKin < (*theCutsGamma)[aG4IMC]) {
+      edep += secEKin;
+      continue;
+    }
+
+    const double *dir = secTrack->GetDirection();
+    G4DynamicParticle *dp = new G4DynamicParticle(
+        G4Gamma::Definition(), G4ThreeVector(dir[0], dir[1], dir[2]),
+        secEKin);
+    G4Track *aG4Track = new G4Track(dp, theG4PostStepGlobalTime,
+                                    theG4PostStepPointPosition);
+    aG4Track->SetParentID(theG4ParentTrackID);
+    aG4Track->SetCreatorProcess(aG4CreatorProcess);
+    aG4Track->SetTouchableHandle(theG4TouchableHandle);
+    aG4Track->SetWeight(theG4ParentTrackWeight);
+    secondaries.push_back(aG4Track);
+  }
+  aTLData->ResetNumSecondaryGammaTrack();
+
+  return edep;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

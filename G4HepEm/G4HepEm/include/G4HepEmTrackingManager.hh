@@ -7,6 +7,7 @@
 class G4HepEmRunManager;
 class G4HepEmRandomEngine;
 class G4HepEmNoProcess;
+class G4HepEmTLData;
 class G4SafetyHelper;
 class G4Step;
 class G4VProcess;
@@ -36,6 +37,11 @@ public:
 private:
   void TrackElectron(G4Track *aTrack);
   void TrackGamma(G4Track *aTrack);
+
+  // Stacks secondaries created by HepEm physics (if any) and returns with the
+  // energy deposit while stacking due to applying secondary production cuts
+  double StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack,
+                          const G4VProcess* aG4CreatorProcess, int aG4IMC);
 
   // Checks if the particles has fast simulation maanger process attached and
   // stores in the local `fFastSimProcess` array (indexed by HepEm particle ID)
