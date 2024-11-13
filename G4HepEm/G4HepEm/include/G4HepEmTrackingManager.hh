@@ -11,6 +11,7 @@ class G4HepEmTLData;
 class G4SafetyHelper;
 class G4Step;
 class G4VProcess;
+class G4Region;
 
 #include <vector>
 
@@ -47,6 +48,15 @@ private:
   // stores in the local `fFastSimProcess` array (indexed by HepEm particle ID)
   void InitFastSimRelated(int particleID);
 
+  // ATLAS XTR RELATED:
+  // Called at init to find the ATLAS specific,Athena local transition radiation
+  // process, detector region pointers and store them in field variables allowing
+  // to invoke that process during the e-/e+ tracking
+  // NOTE: the fields stays nullptr if no such process/region are found causing
+  //       no harm outside Athena.
+  void InitXTRRelated();
+
+
   G4HepEmRunManager *fRunManager;
   G4HepEmRandomEngine *fRandomEngine;
   G4SafetyHelper *fSafetyHelper;
@@ -68,6 +78,12 @@ private:
   // Pointers to the fast simulation manager processes of the 3 particles if any
   // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
   G4VProcess* fFastSimProcess[3];
+
+  // ATLAS XTR RELATED:
+  // Fields to store ptrs to the ATLAS XTR (transition radiation) process and
+  // detector region that contain the tradiator volumes
+  G4VProcess* fXTRProcess;
+  G4Region*   fXTRRegion;
 
 };
 
