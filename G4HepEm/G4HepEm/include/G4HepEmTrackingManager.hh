@@ -9,6 +9,7 @@ class G4HepEmRandomEngine;
 class G4HepEmNoProcess;
 class G4SafetyHelper;
 class G4Step;
+class G4VProcess;
 
 #include <vector>
 
@@ -36,6 +37,10 @@ private:
   void TrackElectron(G4Track *aTrack);
   void TrackGamma(G4Track *aTrack);
 
+  // Checks if the particles has fast simulation maanger process attached and
+  // stores in the local `fFastSimProcess` array (indexed by HepEm particle ID)
+  void InitFastSimRelated(int particleID);
+
   G4HepEmRunManager *fRunManager;
   G4HepEmRandomEngine *fRandomEngine;
   G4SafetyHelper *fSafetyHelper;
@@ -53,6 +58,11 @@ private:
   std::vector<G4HepEmNoProcess *> fElectronNoProcessVector;
   std::vector<G4HepEmNoProcess *> fGammaNoProcessVector;
   G4HepEmNoProcess *fTransportNoProcess;
+
+  // Pointers to the fast simulation manager processes of the 3 particles if any
+  // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
+  G4VProcess* fFastSimProcess[3];
+
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
