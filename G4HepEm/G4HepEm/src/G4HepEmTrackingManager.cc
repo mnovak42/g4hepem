@@ -109,6 +109,8 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     fRunManager->Initialize(fRandomEngine, particleID);
     // Find the fast simulation manager process for e- (if has been attached)
     InitFastSimRelated(particleID);
+    // Find the ATLAS specific trans. rad. (XTR) process (if has been attached)
+    InitXTRRelated();
   } else if (&part == G4Positron::Definition()) {
     int particleID = 1;
     fRunManager->Initialize(fRandomEngine, particleID);
@@ -1044,17 +1046,24 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   //       that everything works fine also outside ATLAS Athena
   // NOTE: after the suggested changes in Athena, the region name should be
   //       `TRT_RADIATOR` but till that it's `DefaultRegionForTheWorld`
-  const std::string nameTRTDetectorRegion = "TRT_RADIATOR";
-  fXTRRegion = G4RegionStore::GetInstance()->GetRegion(nameTRTDetectorRegion);
-  // Try to get the pointer to the TRTTransitionRadiation process
+  fXTRRegion = G4RegionStore::GetInstance()->GetRegion(fXTRRegionName);
+  // Try to get the pointer to the TRTTransitionRadiation process (same for e-/e+)
   // NOTE: stays `nullptr` if gamma dosen't have process with the name ensuring
   //       that everything works fine also outside ATLAS Athena
-  const std::string nameXTRProcess = "XTR";
-  const G4ProcessVector* processVector = G4Gamma::Definition()->GetProcessManager()->GetProcessList();
+  const G4ProcessVector* processVector = G4Electron::Definition()->GetProcessManager()->GetProcessList();
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-    if( (*processVector)[ip]->GetProcessName()==nameXTRProcess) {
+    if( (*processVector)[ip]->GetProcessName()==fXTRProcessName) {
       fXTRProcess = (*processVector)[ip];
       break;
     }
+  }
+  // Print information if the XTR process was found (enable to check)
+  if (fXTRProcess != nullptr) {
+    std::cout << " G4HepEmTrackingManager: found the ATLAS specific "
+              << fXTRProcess->GetProcessName() << " process";
+    if (fXTRRegion != nullptr) {
+      std::cout << " with the " << fXTRRegion->GetName() << " region.";
+    }
+    std::cout << std::endl;
   }
 }
