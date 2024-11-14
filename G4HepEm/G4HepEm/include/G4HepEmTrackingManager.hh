@@ -35,6 +35,13 @@ public:
     return fMultipleSteps;
   }
 
+  // ATLAS XTR RELATED:
+  // Set the names of the ATLAS specific transition radiation process and
+  // radiator region (only for ATLAS and only if different than init.ed below)
+  void SetXTRProcessName(const std::string& name) { fXTRProcessName = name; }
+  void SetXTRRegionName(const std::string& name)  { fXTRRegionName  = name; }
+
+
 private:
   void TrackElectron(G4Track *aTrack);
   void TrackGamma(G4Track *aTrack);
@@ -84,7 +91,9 @@ private:
   // detector region that contain the tradiator volumes
   G4VProcess* fXTRProcess;
   G4Region*   fXTRRegion;
-
+  // The names that will be used to find the XTR process and detector region.
+  std::string fXTRProcessName = {"XTR"};
+  std::string fXTRRegionName  = {"TRT_RADIATOR"};
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
