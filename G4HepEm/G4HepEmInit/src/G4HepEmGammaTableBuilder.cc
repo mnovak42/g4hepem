@@ -15,6 +15,8 @@
 #include "G4PairProductionRelModel.hh"
 #include "G4KleinNishinaCompton.hh"
 
+#include "G4CrossSectionDataStore.hh"
+
 #include "G4ParticleDefinition.hh"
 #include "G4Gamma.hh"
 #include "G4ProductionCutsTable.hh"
@@ -26,7 +28,7 @@
 #include <cmath>
 
 void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton* knModel,
-                     struct G4HepEmData* hepEmData) {
+                       G4CrossSectionDataStore* hadGNucXSDataStore, struct G4HepEmData* hepEmData) {
   // get the pointer to the already allocated G4HepEmGammaData from the HepEmData
   struct G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
   //
@@ -46,9 +48,17 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   gmData->fCompEnergyGrid = new double[numCompEkin]{};
   G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numCompEkin, gmData->fCompLogMinEkin, gmData->fCompEILDelta, gmData->fCompEnergyGrid);
 
+  // == Generate the enegry grid for Gamma-nuclear
+  emin = 2.0*CLHEP::electron_mass_c2;
+  emax = 100.0*CLHEP::TeV;
+  int numGNucEkin = gmData->fConvEnergyGridSize;
+  delete [] gmData->fGNucEnergyGrid;
+  gmData->fGNucEnergyGrid = new double[numGNucEkin]{};
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numGNucEkin, gmData->fGNucLogMinEkin, gmData->fGNucEILDelta, gmData->fGNucEnergyGrid);
+
   //
-  // == Compute the macroscopic cross sections: for Conversion and Compton over
-  //    all materials
+  // == Compute the macroscopic cross sections: for Conversion, Compton and
+  //    gamma-nuclear interactions over all materials
   //
   // get the G4HepEm material-cuts and material data: allocate memory for the
   // max-xsec data
@@ -57,8 +67,8 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   int numHepEmMCCData   = hepEmMCData->fNumMatCutData;
   int numHepEmMatData   = hepEmMatData->fNumMaterialData;
   gmData->fNumMaterials = numHepEmMatData;
-  gmData->fConvCompMacXsecData    = new double[numHepEmMatData*2*(numConvEkin + numCompEkin)]{};
-  std::vector<bool> isThisMatDone = std::vector<bool>(numHepEmMatData,false);
+  gmData->fConvCompGNucMacXsecData = new double[numHepEmMatData*2*(numConvEkin + numCompEkin + numGNucEkin)]{};
+  std::vector<bool> isThisMatDone  = std::vector<bool>(numHepEmMatData,false);
   //
   // copute the macroscopic cross sections
   // get the g4 particle-definition
@@ -66,8 +76,8 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   // we will need to obtain the correspondig G4MaterialCutsCouple object pointers
   G4ProductionCutsTable* theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
   // a temporary container for the mxsec data and for their second deriv
-  double* macXSec   = new double[std::max(numConvEkin,numCompEkin)]{};
-  double* secDerivs = new double[std::max(numConvEkin,numCompEkin)]{};
+  double* macXSec   = new double[std::max(std::max(numConvEkin,numCompEkin), numGNucEkin)]{};
+  double* secDerivs = new double[std::max(std::max(numConvEkin,numCompEkin), numGNucEkin)]{};
   for (int imc=0; imc<numHepEmMCCData; ++imc) {
     const struct G4HepEmMCCData& mccData = hepEmMCData->fMatCutData[imc];
     int hepEmMatIndx = mccData.fHepEmMatIndex;
@@ -81,14 +91,14 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
       const double theEKin = gmData->fConvEnergyGrid[ie];
       macXSec[ie] = std::max(0.0, ppModel->CrossSection(g4MatCut, g4PartDef, theEKin));
     }
-    // prepare for sline by computing the second derivatives
+    // prepare for spline by computing the second derivatives
     G4HepEmInitUtils::PrepareSpline(numConvEkin, gmData->fConvEnergyGrid, macXSec, secDerivs);
     // fill in into the continuous array: index where data for this material starts from
-    int mxStartIndx = hepEmMatIndx*2*(numConvEkin + numCompEkin);
+    int mxStartIndx = hepEmMatIndx*2*(numConvEkin + numCompEkin + numGNucEkin);
     int indxCont    = mxStartIndx;
     for (int i=0; i<numConvEkin; ++i) {
-      gmData->fConvCompMacXsecData[indxCont++] = macXSec[i];
-      gmData->fConvCompMacXsecData[indxCont++] = secDerivs[i];
+      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
+      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
     }
     // == Compton
 //    std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
@@ -97,13 +107,31 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
       macXSec[ie] = std::max(0.0, knModel->CrossSection(g4MatCut, g4PartDef, theEKin));
 //      std::cout << " E = " << theEKin << " [MeV] Sigam-Compton(E) = " << macXSec[ie] << std::endl;
     }
-    // prepare for sline by computing the second derivatives
+    // prepare for spline by computing the second derivatives
     G4HepEmInitUtils::PrepareSpline(numCompEkin, gmData->fCompEnergyGrid, macXSec, secDerivs);
     // fill in into the continuous array: the continuous index is used further here
     for (int i=0; i<numCompEkin; ++i) {
-      gmData->fConvCompMacXsecData[indxCont++] = macXSec[i];
-      gmData->fConvCompMacXsecData[indxCont++] = secDerivs[i];
+      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
+      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
     }
+    // == Gamma-nuclear
+    std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
+    G4DynamicParticle* dyGamma = new G4DynamicParticle(g4PartDef, G4ThreeVector(0,0,1), 0);
+    for (int ie=0; ie<numGNucEkin; ++ie) {
+      const double theEKin = gmData->fGNucEnergyGrid[ie];
+      dyGamma->SetKineticEnergy(theEKin);
+      macXSec[ie] = std::max(0.0, hadGNucXSDataStore->ComputeCrossSection(dyGamma, g4MatCut->GetMaterial()));
+      std::cout << " E = " << theEKin << " [MeV] Sigam-GNuc(E) = " << macXSec[ie] << std::endl;
+    }
+    delete dyGamma;
+    // prepare for spline by computing the second derivatives
+    G4HepEmInitUtils::PrepareSpline(numGNucEkin, gmData->fGNucEnergyGrid, macXSec, secDerivs);
+    // fill in into the continuous array: the continuous index is used further here
+    for (int i=0; i<numGNucEkin; ++i) {
+      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
+      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
+    }
+
     //
     // set this material index to be done
     isThisMatDone[hepEmMatIndx] = true;

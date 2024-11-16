@@ -8,6 +8,7 @@
 //class G4ParticleDefinition;
 class G4PairProductionRelModel;
 class G4KleinNishinaCompton;
+class G4CrossSectionDataStore;
 
 struct G4HepEmData;
 struct G4HepEmParameters;
@@ -16,7 +17,7 @@ struct G4HepEmParameters;
 
 // Should receive pointers to G4 models that are already initialised
 void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton* knModel,
-                     struct G4HepEmData* hepEmData);
+                       G4CrossSectionDataStore* hadGNucXSDataStore, struct G4HepEmData* hepEmData);
 
 void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepEmData* hepEmData);
 

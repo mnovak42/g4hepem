@@ -19,11 +19,17 @@
 #include "G4PairProductionRelModel.hh"
 #include "G4KleinNishinaCompton.hh"
 
+#include "G4VCrossSectionDataSet.hh"
+#include "G4CrossSectionDataSetRegistry.hh"
+#include "G4GammaNuclearXS.hh"
+#include "G4CrossSectionDataStore.hh"
+
 #include "G4HepEmMaterialData.hh"
 #include "G4HepEmElementData.hh"
 
 #include <iostream>
 
+#include "G4NistManager.hh"
 
 void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/) {
   // clean previous G4HepEmElectronData (if any)
@@ -44,13 +50,32 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   const G4DataVector* theElCuts = static_cast<const G4DataVector*>(G4ProductionCutsTable::GetProductionCutsTable()->GetEnergyCutsVector(1));
   modelPP->Initialise(g4PartDef, *theElCuts);
   //
-  //
   // 2. The simple Klein-Nishina model for Compton scattering:
   // --- used on [E_min : E_max]
   G4KleinNishinaCompton* modelKN = new G4KleinNishinaCompton();
   modelKN->SetLowEnergyLimit(emModelEMin);
   modelKN->SetHighEnergyLimit(emModelEMax);
   modelKN->Initialise(g4PartDef, *theElCuts);
+  //
+  // 3. ....:
+  // using the `` as in Geant4-11.2.2 G4EmExtraPhysics (the alternative is `PhotoNuclearXS`)
+  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("PhotoNuclearXS");//("GammaNuclearXS");
+  if (nullptr == xs) {
+    xs = new G4GammaNuclearXS();
+  }
+  G4CrossSectionDataStore hadGNucXSDataStore;
+  hadGNucXSDataStore.AddDataSet(xs);
+
+//  G4DynamicParticle dGamma(G4Gamma::Definition(), G4ThreeVector(0,0,1), 1.022);
+//  double xsec = hXSDataStore.ComputeCrossSection(&dGamma, G4NistManager::Instance()->FindOrBuildMaterial("G4_Pb"));
+//  std::cout << " xsec (1.022, Pb) = " << xsec << " (reference: 1.37287e-07)"<<std::endl;
+//  dGamma.SetKineticEnergy(7.19686e+07);
+//  xsec = hXSDataStore.ComputeCrossSection(&dGamma, G4NistManager::Instance()->FindOrBuildMaterial("G4_Pb"));
+//  std::cout << " xsec (7.19686e+07, Pb) = " << xsec << " (refrence: 8.69015e-05)"<<std::endl;
+//  then I can use the ComputeCrossSection(dp, mat) of the store to get mac-xsec
+
+
+
   //
   // === Use the G4HepEmGammaTableBuilder to build all data tables used at
   //     run time: macroscopic cross section tables and target element
@@ -61,7 +86,7 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   AllocateGammaData(&(hepEmData->fTheGammaData));
   // build macroscopic cross section data for Conversion and Compton
   std::cout << "     ---  BuildLambdaTables ... " << std::endl;
-  BuildLambdaTables(modelPP, modelKN, hepEmData);
+  BuildLambdaTables(modelPP, modelKN, &hadGNucXSDataStore, hepEmData);
   // build element selectors
   std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
   BuildElementSelectorTables(modelPP, hepEmData);

@@ -505,10 +505,6 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     // For the XTR process (if any)
     G4VParticleChange* particleChangeXTR = nullptr;
 
-    // Set the true (possible accumulated) step length here as some G4 processes
-    // (e.g. XTR) might need below in their DoIt
-    step.SetStepLength(totalTruePathLength);
-
     const G4VProcess *proc = nullptr;
     if (stopped) {
       // call annihilation for e+ !!!
@@ -563,6 +559,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
 
     postStepPoint.SetProcessDefinedStep(proc);
+    step.SetStepLength(totalTruePathLength);
 
     // energy, e-depo and status
     const double ekin = thePrimaryTrack->GetEKin();

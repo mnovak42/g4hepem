@@ -128,17 +128,23 @@ double  G4HepEmGammaManager::GetMacXSec(const struct G4HepEmGammaData* gmData, c
   // get number of Conversion and Compton discrete energy grid points
   const int numConvData = gmData->fConvEnergyGridSize;
   const int numCompData = gmData->fCompEnergyGridSize;
-  const int      iStart = imat*2*(numConvData + numCompData);
+  const int numGNucData = gmData->fGNucEnergyGridSize;
+  const int      iStart = imat*2*(numConvData + numCompData + numGNucData);
   // use the G4HepEmRunUtils GetSplineLog function for interpolation
   switch (iprocess) {
     case 0: { // Conversion
-              const double  mxsec = GetSplineLog(numConvData, gmData->fConvEnergyGrid, &(gmData->fConvCompMacXsecData[iStart]) , ekin, lekin, gmData->fConvLogMinEkin, gmData->fConvEILDelta);
+              const double  mxsec = GetSplineLog(numConvData, gmData->fConvEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart]) , ekin, lekin, gmData->fConvLogMinEkin, gmData->fConvEILDelta);
               return G4HepEmMax(0.0, mxsec);
             }
     case 1: { // Compton
-              const double  mxsec = GetSplineLog(numCompData, gmData->fCompEnergyGrid, &(gmData->fConvCompMacXsecData[iStart+2*numConvData]) , ekin, lekin, gmData->fCompLogMinEkin, gmData->fCompEILDelta);
+              const double  mxsec = GetSplineLog(numCompData, gmData->fCompEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart+2*numConvData]) , ekin, lekin, gmData->fCompLogMinEkin, gmData->fCompEILDelta);
               return G4HepEmMax(0.0, mxsec);
             }
+    case 2: { // Gamma-nuclear
+              const double  mxsec = GetSplineLog(numGNucData, gmData->fGNucEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart+2*(numConvData+numCompData)]) , ekin, lekin, gmData->fGNucLogMinEkin, gmData->fGNucEILDelta);
+              return G4HepEmMax(0.0, mxsec);
+            }
+
     default:
             return 0.0;
   }

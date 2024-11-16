@@ -17,7 +17,9 @@ void FreeGammaData (struct G4HepEmGammaData** theGammaData)  {
   if (*theGammaData != nullptr) {
     delete[] (*theGammaData)->fConvEnergyGrid ;
     delete[] (*theGammaData)->fCompEnergyGrid;
+    delete[] (*theGammaData)->fGNucEnergyGrid;
     delete[] (*theGammaData)->fConvCompMacXsecData;
+    delete[] (*theGammaData)->fConvCompGNucMacXsecData;
     delete[] (*theGammaData)->fElemSelectorConvStartIndexPerMat;
     delete[] (*theGammaData)->fElemSelectorConvEgrid;
     delete[] (*theGammaData)->fElemSelectorConvData;
