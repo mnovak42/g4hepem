@@ -57,9 +57,9 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   modelKN->SetHighEnergyLimit(emModelEMax);
   modelKN->Initialise(g4PartDef, *theElCuts);
   //
-  // 3. ....:
-  // using the `` as in Geant4-11.2.2 G4EmExtraPhysics (the alternative is `PhotoNuclearXS`)
-  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("PhotoNuclearXS");//("GammaNuclearXS");
+  // 3. The Gamma-nuclear cross section:
+  // --- using the `GammaNuclearXS` as the default in Geant4-11.2.2 G4EmExtraPhysics (the alternative is `PhotoNuclearXS`)
+  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("GammaNuclearXS");
   if (nullptr == xs) {
     xs = new G4GammaNuclearXS();
   }
