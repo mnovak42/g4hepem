@@ -1124,6 +1124,9 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
     for (std::size_t ip=0; ip<processVector->entries(); ip++) {
       if( (*processVector)[ip]->GetProcessName()=="photonNuclear") {
         fGNucProcess = (*processVector)[ip];
+        // make sure the process is initialised (element selectors needs to be built)
+        fGNucProcess->PreparePhysicsTable(*partDef);
+        fGNucProcess->BuildPhysicsTable(*partDef);
         break;
       }
     }
