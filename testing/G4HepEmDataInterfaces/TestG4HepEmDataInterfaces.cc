@@ -117,7 +117,12 @@ void G4HepEmGammaDataTester(G4HepEmGammaData* d) {
   // Energy grid has a fixed size, but dynamic allocation
   EXPECT_EQ(d->fCompEnergyGridSize, 85);
   EXPECT_EQ(d->fCompEnergyGrid, nullptr);
-  EXPECT_EQ(d->fConvCompMacXsecData, nullptr);
+
+  // Energy grid has a fixed size, but dynamic allocation
+  EXPECT_EQ(d->fGNucEnergyGridSize, 147);
+  EXPECT_EQ(d->fGNucEnergyGrid, nullptr);
+
+  EXPECT_EQ(d->fConvCompGNucMacXsecData, nullptr);
 
   EXPECT_EQ(d->fElemSelectorConvEgridSize, 0);
   EXPECT_EQ(d->fElemSelectorConvNumData, 0);
