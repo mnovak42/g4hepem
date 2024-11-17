@@ -115,13 +115,13 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
       gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
     }
     // == Gamma-nuclear
-    std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
+    // std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
     G4DynamicParticle* dyGamma = new G4DynamicParticle(g4PartDef, G4ThreeVector(0,0,1), 0);
     for (int ie=0; ie<numGNucEkin; ++ie) {
       const double theEKin = gmData->fGNucEnergyGrid[ie];
       dyGamma->SetKineticEnergy(theEKin);
       macXSec[ie] = std::max(0.0, hadGNucXSDataStore->ComputeCrossSection(dyGamma, g4MatCut->GetMaterial()));
-      std::cout << " E = " << theEKin << " [MeV] Sigam-GNuc(E) = " << macXSec[ie] << std::endl;
+      // std::cout << " E = " << theEKin << " [MeV] Sigam-GNuc(E) = " << macXSec[ie] << std::endl;
     }
     delete dyGamma;
     // prepare for spline by computing the second derivatives
