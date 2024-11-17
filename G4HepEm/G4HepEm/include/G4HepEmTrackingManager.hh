@@ -11,6 +11,7 @@ class G4HepEmTLData;
 class G4SafetyHelper;
 class G4Step;
 class G4VProcess;
+class G4VParticleChange;
 class G4Region;
 
 #include <vector>
@@ -51,6 +52,14 @@ private:
   double StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack,
                           const G4VProcess* aG4CreatorProcess, int aG4IMC);
 
+  // Stacks secondaries created by Geant4 physics (if any) and returns with the
+  // energy deposit while stacking due to applying secondary production cuts
+  double StackG4Secondaries(G4VParticleChange* particleChange,
+                            G4Track* aG4PrimaryTrack,
+                            const G4VProcess* aG4CreatorProcess, int aG4IMC);
+
+  void InitNuclearProcesses(int particleID);
+
   // Checks if the particles has fast simulation maanger process attached and
   // stores in the local `fFastSimProcess` array (indexed by HepEm particle ID)
   void InitFastSimRelated(int particleID);
@@ -81,6 +90,9 @@ private:
   std::vector<G4HepEmNoProcess *> fElectronNoProcessVector;
   std::vector<G4HepEmNoProcess *> fGammaNoProcessVector;
   G4HepEmNoProcess *fTransportNoProcess;
+
+  // Pointers to the Gamma-nuclear process (if any)
+  G4VProcess* fGNucProcess;
 
   // Pointers to the fast simulation manager processes of the 3 particles if any
   // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
