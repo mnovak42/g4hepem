@@ -51,7 +51,7 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   // == Generate the enegry grid for Gamma-nuclear
   emin = 2.0*CLHEP::electron_mass_c2;
   emax = 100.0*CLHEP::TeV;
-  int numGNucEkin = gmData->fConvEnergyGridSize;
+  int numGNucEkin = gmData->fGNucEnergyGridSize;
   delete [] gmData->fGNucEnergyGrid;
   gmData->fGNucEnergyGrid = new double[numGNucEkin]{};
   G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numGNucEkin, gmData->fGNucLogMinEkin, gmData->fGNucEILDelta, gmData->fGNucEnergyGrid);
