@@ -88,6 +88,10 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList(),
   G4EmExtraPhysics* emExtra = new G4EmExtraPhysics();
   // During the development: deactiavte electron nuclear till we don't have in HepEm
   emExtra->ElectroNuclear(false);
+  // Turn off muon nuclear as well (not improtant as no muon production but
+  // remove it as we don't have in HepEm)
+  emExtra->MuonNuclear(false);
+
   fEmExtraPhysics = emExtra;
 
 }
