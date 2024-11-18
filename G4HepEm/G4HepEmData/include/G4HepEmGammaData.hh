@@ -35,9 +35,8 @@ struct G4HepEmGammaData {
   double*       fGNucEnergyGrid = nullptr;     // [fGNucEnergyGridSize]
 
 
-  // the macroscopic cross sections for all materials and for [conversion,compton]
+  // the macroscopic cross sections for all materials and for [conversion,compton,gamma-nuclear]
   // at each material
-  double*       fConvCompMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize)]
   double*       fConvCompGNucMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize+fGNucEnergyGridSize)]
 
 
