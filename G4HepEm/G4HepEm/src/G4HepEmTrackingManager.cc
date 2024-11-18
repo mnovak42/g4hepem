@@ -763,6 +763,10 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   if (fFastSimProc != nullptr) {
     fFastSimProc->StartTracking(aTrack);
   }
+
+  if (fGNucProcess != nullptr) {
+    fGNucProcess->StartTracking(aTrack);
+  }
   // === StartTracking ===
 
   while (aTrack->GetTrackStatus() == fAlive) {
@@ -902,6 +906,10 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           // Invoke the gamma-nuclear interaction using the Geant4 process
           G4VParticleChange* particleChangeGNuc = nullptr;
           if (fGNucProcess != nullptr) {
+            // call to set some fields of the process like material, energy etc...
+            G4ForceCondition forceCondition;
+            fGNucProcess->PostStepGetPhysicalInteractionLength(*aTrack, 0.0, &forceCondition);
+            //
             postStepPoint.SetStepStatus(fPostStepDoItProc);
             particleChangeGNuc = fGNucProcess->PostStepDoIt(*aTrack, step);
             // update the track and stack according to the result of the interaction
