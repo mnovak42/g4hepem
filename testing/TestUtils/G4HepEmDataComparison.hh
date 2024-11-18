@@ -310,14 +310,30 @@ bool operator==(const G4HepEmGammaData& lhs, const G4HepEmGammaData& rhs)
     return false;
   }
 
+  // gamma-nuclear data grid
+  if(std::tie(lhs.fGNucLogMinEkin, lhs.fGNucEILDelta) !=
+     std::tie(rhs.fGNucLogMinEkin, rhs.fGNucEILDelta))
+  {
+    return false;
+  }
+
+  if(!compare_arrays(lhs.fGNucEnergyGridSize, lhs.fGNucEnergyGrid,
+                     rhs.fGNucEnergyGridSize, rhs.fGNucEnergyGrid))
+  {
+    return false;
+  }
+
+
   // the macroscopic cross sections for all materials and for
-  // [conversion,compton] at each material
+  // [conversion,compton,gamma-nuclear] at each material
   const int lhsXsecSize =
-    lhs.fNumMaterials * 2 * (lhs.fConvEnergyGridSize + lhs.fCompEnergyGridSize);
+    lhs.fNumMaterials * 2 * (lhs.fConvEnergyGridSize + lhs.fCompEnergyGridSize
+                             + lhs.fGNucEnergyGridSize);
   const int rhsXsecSize =
-    rhs.fNumMaterials * 2 * (rhs.fConvEnergyGridSize + rhs.fCompEnergyGridSize);
-  if(!compare_arrays(lhsXsecSize, lhs.fConvCompMacXsecData, rhsXsecSize,
-                     rhs.fConvCompMacXsecData))
+    rhs.fNumMaterials * 2 * (rhs.fConvEnergyGridSize + rhs.fCompEnergyGridSize
+                             + rhs.fGNucEnergyGridSize);
+  if(!compare_arrays(lhsXsecSize, lhs.fConvCompGNucMacXsecData, rhsXsecSize,
+                     rhs.fConvCompGNucMacXsecData))
   {
     return false;
   }
