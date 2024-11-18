@@ -63,6 +63,7 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   if (nullptr == xs) {
     xs = new G4GammaNuclearXS();
   }
+  xs->BuildPhysicsTable(*g4PartDef);
   G4CrossSectionDataStore hadGNucXSDataStore;
   hadGNucXSDataStore.AddDataSet(xs);
 
