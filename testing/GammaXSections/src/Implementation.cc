@@ -78,7 +78,7 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
   for (int i=0; i<numTestCases; ++i) {
     tsOutMXConv[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinConv[i], tsInLogEkinConv[i], 0); // conversion
     tsOutMXComp[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinComp[i], tsInLogEkinComp[i], 1); // Compton
-    tsOutMXGNuc[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinComp[i], tsInLogEkinComp[i], 2); // gamma-nuclear
+    tsOutMXGNuc[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinGNuc[i], tsInLogEkinGNuc[i], 2); // gamma-nuclear
   }
 
 
@@ -87,7 +87,8 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
   // Perform the test case evaluations on the device
   double* tsOutOnDeviceMXConv = new double[numTestCases];
   double* tsOutOnDeviceMXComp = new double[numTestCases];
-  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkinConv, tsInLogEkinConv, tsInEkinComp, tsInLogEkinComp, tsOutOnDeviceMXConv, tsOutOnDeviceMXComp, numTestCases);
+  double* tsOutOnDeviceMXGNuc = new double[numTestCases];
+  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkinConv, tsInLogEkinConv, tsInEkinComp, tsInLogEkinComp, tsInEkinGNuc, tsInLogEkinGNuc, tsOutOnDeviceMXConv, tsOutOnDeviceMXComp, tsOutOnDeviceMXGNuc, numTestCases);
   for (int i=0; i<numTestCases; ++i) {
     if ( std::abs( 1.0 - tsOutMXConv[i]/tsOutOnDeviceMXConv[i] ) > 1.0E-14 ) {
       isPassed = false;
@@ -99,10 +100,16 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
       std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Compton) mismatch: " <<  std::setprecision(16) << tsOutMXComp[i] << " != " << tsOutOnDeviceMXComp[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinConv[i] << ") " << std::endl;
       break;
     }
+    if ( std::abs( 1.0 - tsOutMXGNuc[i]/tsOutOnDeviceMXGNuc[i] ) > 1.0E-14 ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Gamma-nuclear) mismatch: " <<  std::setprecision(16) << tsOutMXGNuc[i] << " != " << tsOutOnDeviceMXGNuc[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinGNuc[i] << ") " << std::endl;
+      break;
+    }
   }
   //
   delete [] tsOutOnDeviceMXConv;
   delete [] tsOutOnDeviceMXComp;
+  delete [] tsOutOnDeviceMXGNuc;
 #endif // G4HepEm_CUDA_BUILD
 
   //
