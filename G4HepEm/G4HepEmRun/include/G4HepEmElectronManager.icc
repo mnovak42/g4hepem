@@ -36,7 +36,7 @@ void G4HepEmElectronManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepE
   G4HepEmElectronTrack* theElTrack = tlData->GetPrimaryElectronTrack();
   G4HepEmTrack* theTrack = theElTrack->GetTrack();
   // Sample the `number-of-interaction-left`
-  for (int ip=0; ip<3; ++ip) {
+  for (int ip=0; ip<4; ++ip) {
     if (theTrack->GetNumIALeft(ip)<=0.) {
       theTrack->SetNumIALeft(-G4HepEmLog(tlData->GetRNGEngine()->flat()), ip);
     }
@@ -69,16 +69,17 @@ void G4HepEmElectronManager::HowFarToDiscreteInteraction(struct G4HepEmData* hep
 //  std::cout << " pStepLength = " << pStepLength << " range = " << range << " frange = " << frange << std::endl;
   // === 2. Discrete limits due to eestricted Ioni and Brem (accounting e-loss)
   const int theImat = (hepEmData->fTheMatCutData->fMatCutData[theIMC]).fHepEmMatIndex;
-  double mxSecs[3];
-  // ioni, brem and annihilation to 2 gammas (only for e+)
+  double mxSecs[4];
+  // ioni, brem and annihilation to 2 gammas (only for e+), electron/positron nuclear
   mxSecs[0] = GetRestMacXSecForStepping(theElectronData, theIMC, theEkin, theLEkin, true);
   mxSecs[1] = GetRestMacXSecForStepping(theElectronData, theIMC, theEkin, theLEkin, false);
   mxSecs[2] = (isElectron)
               ? 0.0
               : ComputeMacXsecAnnihilationForStepping(theEkin, hepEmData->fTheMaterialData->fMaterialData[theImat].fElectronDensity);
+  mxSecs[3] = GetMacXSecNuclearForStepping(theElectronData, theImat, theEkin, theLEkin);
   // compute mfp and see if we need to sample the `number-of-interaction-left`
   // before we use it to get the current discrete proposed step length
-  for (int ip=0; ip<3; ++ip) {
+  for (int ip=0; ip<4; ++ip) {
     const double mxsec = mxSecs[ip];
     const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
     // save the mac-xsec for the update of the `number-of-interaction-left`:
@@ -207,6 +208,7 @@ void G4HepEmElectronManager::UpdateNumIALeft(G4HepEmElectronTrack* theElTrack) {
   numInterALeft[0] -= pStepLength/preStepMFP[0];
   numInterALeft[1] -= pStepLength/preStepMFP[1];
   numInterALeft[2] -= pStepLength/preStepMFP[2];
+  numInterALeft[3] -= pStepLength/preStepMFP[3];
 }
 
 bool G4HepEmElectronManager::ApplyMeanEnergyLoss(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack) {
@@ -405,9 +407,10 @@ bool G4HepEmElectronManager::CheckDelta(struct G4HepEmData* hepEmData, G4HepEmTr
   const int theMatIndex = hepEmData->fTheMatCutData->fMatCutData[theIMC].fHepEmMatIndex;
   const double theEkin  = theTrack->GetEKin();
   const double theLEkin = theTrack->GetLogEKin();
-  const double mxsec = (iDProc<2)
-                      ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0)
-                      : ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[theMatIndex].fElectronDensity);
+  const double mxsec = (iDProc<2 ? GetRestMacXSec(elData, theIMC, theEkin, theLEkin, iDProc==0) :
+                       (iDProc<3 ? ComputeMacXsecAnnihilation(theEkin, hepEmData->fTheMaterialData->fMaterialData[theMatIndex].fElectronDensity)
+                                 : GetMacXSecNuclear(elData, theMatIndex, theEkin, theLEkin))
+                       );
   return mxsec <= 0.0 || rand > mxsec*theTrack->GetMFP(iDProc);
 }
 
@@ -441,6 +444,8 @@ void G4HepEmElectronManager::PerformDiscrete(struct G4HepEmData* hepEmData, stru
             break;
     case 2: // invoke annihilation (in-flight) for e+
             G4HepEmPositronInteractionAnnihilation::Perform(tlData, false);
+            break;
+    case 3: // electron/positorn - nuclear interaction is not handled by HepEm: do nothing
             break;
   }
 }
@@ -518,6 +523,15 @@ double  G4HepEmElectronManager::GetRestMacXSec(const struct G4HepEmElectronData*
   return G4HepEmMax(0.0, mxsec);
 }
 
+double  G4HepEmElectronManager::GetMacXSecNuclear(const struct G4HepEmElectronData* elData, const int imat, const double ekin, const double lekin) {
+  if (ekin < elData->fENucEnergyGrid[0]) { return 0.0; }
+  const int numEKin   = elData->fENucEnergyGridSize; // #energy point per material
+  const int iStartMat = imat*2*numEKin; // value and second derivative at each energy point
+  // use the G4HepEmRunUtils function for interpolation
+  const double mxsec = GetSplineLog(numEKin, elData->fENucEnergyGrid, &(elData->fENucMacXsecData[iStartMat]), ekin, lekin, elData->fENucLogMinEkin, elData->fENucEILDelta);
+  return G4HepEmMax(0.0, mxsec);
+}
+
 
 double  G4HepEmElectronManager::GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin, double lekin, bool isioni) {
   constexpr double log08 = -0.22314355131420971;
@@ -543,6 +557,11 @@ double  G4HepEmElectronManager::GetRestMacXSecForStepping(const struct G4HepEmEl
   // use the G4HepEmRunUtils function for interpolation
   const double mxsec = GetSplineLog(numData, &(elData->fResMacXSecData[iStart+5]), ekin, lekin, elData->fResMacXSecData[iStart+3], elData->fResMacXSecData[iStart+4]);
   return G4HepEmMax(0.0, mxsec);
+}
+
+double  G4HepEmElectronManager::GetMacXSecNuclearForStepping(const struct G4HepEmElectronData* elData, const int imat, const double ekin, const double lekin) {
+  // assuming increasing macroscopic cross section with increasing energy
+  return GetMacXSecNuclear(elData, imat, ekin, lekin);
 }
 
 

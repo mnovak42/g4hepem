@@ -335,7 +335,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     thePrimaryTrack->SetSafety(preSafety);
 
     // Sample the `number-of-interaction-left`
-    for (int ip=0; ip<3; ++ip) {
+    for (int ip=0; ip<4; ++ip) {
       if (thePrimaryTrack->GetNumIALeft(ip)<=0.) {
         thePrimaryTrack->SetNumIALeft(-G4HepEmLog(rnge->flat()), ip);
       }
