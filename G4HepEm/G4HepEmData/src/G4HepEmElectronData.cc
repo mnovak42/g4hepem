@@ -21,6 +21,8 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData)  {
     delete[] (*theElectronData)->fELossEnergyGrid;
     delete[] (*theElectronData)->fELossData;
     delete[] (*theElectronData)->fResMacXSecData;
+    delete[] (*theElectronData)->fENucEnergyGrid;
+    delete[] (*theElectronData)->fENucMacXsecData;
     delete[] (*theElectronData)->fTr1MacXSecData;
     delete[] (*theElectronData)->fResMacXSecStartIndexPerMatCut;
     delete[] (*theElectronData)->fElemSelectorIoniStartIndexPerMatCut;
@@ -80,7 +82,7 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   // allocate memory for all the tr1-mxsec data on _d and compy from _h
   const int numTr1MacXSecs = 2 * numELossGridData * numHepEmMats;
   gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fTr1MacXSecData), sizeof( double ) * numTr1MacXSecs ) );
-  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fTr1MacXSecData,  onHOST->fTr1MacXSecData, sizeof( double ) * numTr1MacXSecs,  cudaMemcpyHostToDevice ) ); 
+  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fTr1MacXSecData,  onHOST->fTr1MacXSecData, sizeof( double ) * numTr1MacXSecs,  cudaMemcpyHostToDevice ) );
   //
   //  === Target element selector data (for ioni and brem EM models)
   //
