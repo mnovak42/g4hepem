@@ -554,15 +554,16 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     } else if (aTrack->GetTrackStatus() != fStopAndKill) {
       // === 4. Discrete part of the interaction (if any)
       const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
-      if (iDProc != 3) {
+      if (thePrimaryTrack->GetOnBoundary()) {
+        // no disrete interaction in this case
+        proc = fTransportNoProcess;
+      } else if (iDProc != 3) {
         // interactions handled by the HepEm physics: ioni, brem or annihilation (for e+)
         G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
         const double *pdir = thePrimaryTrack->GetDirection();
         postStepPoint.SetMomentumDirection( G4ThreeVector(pdir[0], pdir[1], pdir[2]) );
         // Get the final process defining the step - might still be MSC!
-        if (thePrimaryTrack->GetOnBoundary()) {
-          proc = fTransportNoProcess;
-        } else if (iDProc == -1) {
+        if (iDProc == -1) {
           // ionization
           proc = fElectronNoProcessVector[0];
         } else if (iDProc == -2) {
