@@ -34,8 +34,6 @@
 
 #include <iostream>
 
-#include "G4NistManager.hh"
-
 void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/) {
   // clean previous G4HepEmElectronData (if any)
   //
@@ -79,17 +77,6 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   xs->BuildPhysicsTable(*g4PartDef);
   G4CrossSectionDataStore hadGNucXSDataStore;
   hadGNucXSDataStore.AddDataSet(xs);
-
-//  G4DynamicParticle dGamma(G4Gamma::Definition(), G4ThreeVector(0,0,1), 1.022);
-//  double xsec = hXSDataStore.ComputeCrossSection(&dGamma, G4NistManager::Instance()->FindOrBuildMaterial("G4_Pb"));
-//  std::cout << " xsec (1.022, Pb) = " << xsec << " (reference: 1.37287e-07)"<<std::endl;
-//  dGamma.SetKineticEnergy(7.19686e+07);
-//  xsec = hXSDataStore.ComputeCrossSection(&dGamma, G4NistManager::Instance()->FindOrBuildMaterial("G4_Pb"));
-//  std::cout << " xsec (7.19686e+07, Pb) = " << xsec << " (refrence: 8.69015e-05)"<<std::endl;
-//  then I can use the ComputeCrossSection(dp, mat) of the store to get mac-xsec
-
-
-
   //
   // === Use the G4HepEmGammaTableBuilder to build all data tables used at
   //     run time: macroscopic cross section tables and target element
