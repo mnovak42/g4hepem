@@ -405,7 +405,7 @@ void BuildNuclearLambdaTables(G4CrossSectionDataStore* hadENucXSDataStore, struc
   for (int im=0; im<numMaterials; ++im) {
     const struct G4HepEmMatData& matData = hepEmMatData->fMaterialData[im];
     const G4Material* g4Mat = (*theG4MaterialTable)[matData.fG4MatIndex];
-    std::cout << " ===== Material = " << g4Mat->GetName() << std::endl;
+    // std::cout << " ===== Material = " << g4Mat->GetName() << std::endl;
     // loop over the kinetic energies and comput the electron-nuclear mxsec
     for (int ie=0; ie<numENucEkin; ++ie) {
       const double ekin = elData->fENucEnergyGrid[ie];
@@ -414,7 +414,6 @@ void BuildNuclearLambdaTables(G4CrossSectionDataStore* hadENucXSDataStore, struc
       theENucMXsec[ie]   = mxsec;
       theENucMXsecSD[ie] = 0.0;
       // std::cout << " E = " << ekin << " [MeV] Sigam-ENuc(E) = " << mxsec << std::endl;
-       std::cout <<  ekin <<" " << mxsec << std::endl;
     }
     // set up a spline on the electron-nuclear MXsec array for interpolation
     G4HepEmInitUtils::PrepareSpline(numENucEkin, elData->fENucEnergyGrid, theENucMXsec, theENucMXsecSD);
