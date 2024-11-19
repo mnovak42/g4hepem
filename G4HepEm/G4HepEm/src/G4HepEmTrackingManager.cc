@@ -42,7 +42,6 @@
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
 
-#include "G4HadXSHelper.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
