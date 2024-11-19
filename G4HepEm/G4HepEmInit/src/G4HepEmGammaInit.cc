@@ -21,7 +21,10 @@
 
 #include "G4VCrossSectionDataSet.hh"
 #include "G4CrossSectionDataSetRegistry.hh"
+#if G4VERSION_NUMBER >= 1100
 #include "G4GammaNuclearXS.hh"
+#endif
+#include "G4PhotoNuclearCrossSection.hh"
 #include "G4CrossSectionDataStore.hh"
 
 #include "G4HepEmMaterialData.hh"
@@ -59,10 +62,18 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   //
   // 3. The Gamma-nuclear cross section:
   // --- using the `GammaNuclearXS` as the default in Geant4-11.2.2 G4EmExtraPhysics (the alternative is `PhotoNuclearXS`)
+  // The `GammaNuclearXS` is availabel from 10.7 but known by the Registry only from 11.0: use `PhotoNuclearXS` before 11.0
+#if G4VERSION_NUMBER >= 1100
   G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("GammaNuclearXS");
   if (nullptr == xs) {
     xs = new G4GammaNuclearXS();
   }
+#else
+  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("PhotoNuclearXS");
+  if (nullptr == xs) {
+    xs = new G4PhotoNuclearCrossSection();
+  }
+#endif
   xs->BuildPhysicsTable(*g4PartDef);
   G4CrossSectionDataStore hadGNucXSDataStore;
   hadGNucXSDataStore.AddDataSet(xs);
