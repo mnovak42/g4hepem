@@ -8,6 +8,8 @@
 #include "G4HepEmGammaTableBuilder.hh"
 
 // g4 includes
+#include "G4Version.hh"
+
 #include "G4EmParameters.hh"
 #include "G4ProductionCutsTable.hh"
 
