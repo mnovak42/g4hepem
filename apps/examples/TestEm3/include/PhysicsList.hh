@@ -54,7 +54,6 @@ public:
     virtual void ConstructProcess();
 
     void AddPhysicsList(const G4String& name);
-    void AddStepMax();
 
 private:
 
@@ -62,8 +61,7 @@ private:
 
     G4String fEmName;
     G4VPhysicsConstructor*  fEmPhysicsList;
-    G4VPhysicsConstructor*  fDecayPhysics;
-
+    G4VPhysicsConstructor*  fEmExtraPhysics;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

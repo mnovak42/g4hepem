@@ -28,9 +28,17 @@ struct G4HepEmGammaData {
   double        fCompEILDelta = 0.0;       // =  3.040061373322763; // 1./[log(emax/emin)/84]
   double*       fCompEnergyGrid = nullptr;     // [fCompEnergyGridSize]
 
-  // the macroscopic cross sections for all materials and for [conversion,compton]
+//// === gamma nuclear related data. 146 bins form  2mc^2 - 100 TeV
+  const int     fGNucEnergyGridSize = 147;
+  double        fGNucLogMinEkin = 0.0;     // =  0.021759358706830;  // log(2mc^2)
+  double        fGNucEILDelta = 0.0;       // =  7.935247775833226;  // 1./[log(emax/emin)/146]
+  double*       fGNucEnergyGrid = nullptr;     // [fGNucEnergyGridSize]
+
+
+  // the macroscopic cross sections for all materials and for [conversion,compton,gamma-nuclear]
   // at each material
-  double*       fConvCompMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize)]
+  double*       fConvCompGNucMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize+fGNucEnergyGridSize)]
+
 
 //// === element selector for conversion (note: KN compton interaction do not know anything about Z)
   int           fElemSelectorConvEgridSize = 0;

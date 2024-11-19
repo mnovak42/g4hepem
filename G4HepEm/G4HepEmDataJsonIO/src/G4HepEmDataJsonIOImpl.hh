@@ -737,11 +737,19 @@ namespace nlohmann
         j["fCompEnergyGrid"] =
           make_span(d->fCompEnergyGridSize, d->fCompEnergyGrid);
 
+        //// === compton related data. 84 bins (7 per decades) from 100 eV - 100
+        /// TeV
+        j["fGNucLogMinEkin"] = d->fGNucLogMinEkin;
+        j["fGNucEILDelta"]   = d->fGNucEILDelta;
+        j["fGNucEnergyGrid"] =
+          make_span(d->fGNucEnergyGridSize, d->fGNucEnergyGrid);
+
+
         const int macXsecDataSize =
           d->fNumMaterials * 2 *
-          (d->fConvEnergyGridSize + d->fCompEnergyGridSize);
-        j["fConvCompMacXsecData"] =
-          make_span(macXsecDataSize, d->fConvCompMacXsecData);
+          (d->fConvEnergyGridSize + d->fCompEnergyGridSize + d->fGNucEnergyGridSize);
+        j["fConvCompGNucMacXsecData"] =
+          make_span(macXsecDataSize, d->fConvCompGNucMacXsecData);
 
         //// === element selector for conversion (note: KN compton interaction
         /// do not know anything about Z)
@@ -787,12 +795,20 @@ namespace nlohmann
           j.at("fCompEnergyGrid").get<dynamic_array<double>>();
         d->fCompEnergyGrid = tmpCompEnergyGrid.data;
 
+        j.at("fGNucLogMinEkin").get_to(d->fGNucLogMinEkin);
+        j.at("fGNucEILDelta").get_to(d->fGNucEILDelta);
+        // Get the array but ignore the size (fGNucEnergyGridSize) as this is a
+        // const (at time of writing)
+        auto tmpGNucEnergyGrid =
+          j.at("fGNucEnergyGrid").get<dynamic_array<double>>();
+        d->fGNucEnergyGrid = tmpGNucEnergyGrid.data;
+
         // We don't store the size of the following array, rather should
         // validate that it is expected size: d->fNumMaterials * 2 *
-        // (d->fConvEnergyGridSize + d->fCompEnergyGridSize);
-        auto tmpConvCompXsecData =
-          j.at("fConvCompMacXsecData").get<dynamic_array<double>>();
-        d->fConvCompMacXsecData = tmpConvCompXsecData.data;
+        // (d->fConvEnergyGridSize + d->fCompEnergyGridSize + d->fGNucEnergyGridSize);
+        auto tmpConvCompGNucXsecData =
+          j.at("fConvCompGNucMacXsecData").get<dynamic_array<double>>();
+        d->fConvCompGNucMacXsecData = tmpConvCompGNucXsecData.data;
 
         j.at("fElemSelectorConvLogMinEkin")
           .get_to(d->fElemSelectorConvLogMinEkin);

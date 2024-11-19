@@ -32,6 +32,7 @@
 
 #include "G4VProcess.hh"
 #include "G4EmProcessSubType.hh"
+#include "G4HadronicProcessType.hh"
 #include "G4ProcessType.hh"
 #include "G4TransportationProcessType.hh"
 
@@ -40,6 +41,7 @@
 #include "G4Electron.hh"
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -75,8 +77,15 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fGammaNoProcessVector.push_back(
       new G4HepEmNoProcess("phot", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fPhotoElectricEffect));
+   fGammaNoProcessVector.push_back(
+       new G4HepEmNoProcess("photonNuclear", G4ProcessType::fHadronic,
+                            G4HadronicProcessType::fHadronInelastic));
+
   fTransportNoProcess = new G4HepEmNoProcess(
       "Transportation", G4ProcessType::fTransportation, TRANSPORTATION);
+
+  // Init the gamma-nuclear process
+  fGNucProcess = nullptr;
 
   // Init the fast sim mamanger process ptrs of the 3 particles
   fFastSimProcess[0] = nullptr;
@@ -119,6 +128,8 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
   } else if (&part == G4Gamma::Definition()) {
     int particleID = 2;
     fRunManager->Initialize(fRandomEngine, particleID);
+    // Find the gamma-nuclear process if has been attached
+    InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for gamma (if has been attached)
     InitFastSimRelated(particleID);
   } else {
@@ -751,6 +762,10 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   if (fFastSimProc != nullptr) {
     fFastSimProc->StartTracking(aTrack);
   }
+
+  if (fGNucProcess != nullptr) {
+    fGNucProcess->StartTracking(aTrack);
+  }
   // === StartTracking ===
 
   while (aTrack->GetTrackStatus() == fAlive) {
@@ -850,25 +865,67 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
         thePrimaryTrack->SetGStepLength(aTrack->GetStepLength());
         G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
       } else {
-        // (NOTE: Ekin, MC-index, step-length, onBoundary have all set)
-        G4HepEmGammaManager::Perform(theHepEmData, theHepEmPars, theTLData);
-        proc = fGammaNoProcessVector[thePrimaryTrack->GetWinnerProcessIndex()];
+        double edep = 0.0;
+        // NOTE: gamma-nuclear interaction needs to be done here while others in HepEm
+        const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
+        if (iDProc != 3) {
+          // Conversion, Compton or photoelectric --> use HepEm for the interaction
+          // (NOTE: Ekin, MC-index, step-length, onBoundary have all set)
+          G4HepEmGammaManager::Perform(theHepEmData, theHepEmPars, theTLData);
+          // energy, e-depo, momentum direction and status
+          const double ekin = thePrimaryTrack->GetEKin();
+          edep = thePrimaryTrack->GetEnergyDeposit();
+          postStepPoint.SetKineticEnergy(ekin);
+          if (ekin <= 0.0) {
+            aTrack->SetTrackStatus(fStopAndKill);
+          }
+          const double *pdir = thePrimaryTrack->GetDirection();
+          postStepPoint.SetMomentumDirection( G4ThreeVector(pdir[0], pdir[1], pdir[2]) );
 
-        // energy, e-depo, momentum direction and status
-        const double ekin = thePrimaryTrack->GetEKin();
-        double edep = thePrimaryTrack->GetEnergyDeposit();
-        postStepPoint.SetKineticEnergy(ekin);
-        if (ekin <= 0.0) {
-          aTrack->SetTrackStatus(fStopAndKill);
+          step.UpdateTrack();
+
+          // Stack secondaries created by the HepEm physics above
+          edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
+
+        } else {
+          // Gamma-nuclear: --> use Geant4 for the interaction:
+          // NOTE: it's destructive i.e. stopps and kills the gammma when the
+          //    interaction happens so we do not use anymore the primary HepEm
+          //    track thus we should not update the number of interaction length
+          //    left and the others done in G4HepEmGammaManager::Perform before
+          //    the interaction. HOWEVER, the interaction might not happen at
+          //    the end so we do what we need in that case anyway for clarity:
+          // - update the number of interaction length left for all process
+          // - reset the number of interaction lenght left for the winner
+          //   process, i.e. the one that will be invoked (the gamnma nuclear)
+          // - reset the energy deposit to zero
+          G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
+          thePrimaryTrack->SetNumIALeft(-1.0, iDProc);
+          thePrimaryTrack->SetEnergyDeposit(0.0);
+          // Invoke the gamma-nuclear interaction using the Geant4 process
+          G4VParticleChange* particleChangeGNuc = nullptr;
+          if (fGNucProcess != nullptr) {
+            // call to set some fields of the process like material, energy etc...
+            G4ForceCondition forceCondition;
+            fGNucProcess->PostStepGetPhysicalInteractionLength(*aTrack, 0.0, &forceCondition);
+            //
+            postStepPoint.SetStepStatus(fPostStepDoItProc);
+            particleChangeGNuc = fGNucProcess->PostStepDoIt(*aTrack, step);
+            // update the track and stack according to the result of the interaction
+            particleChangeGNuc->UpdateStepForPostStep(&step);
+            step.UpdateTrack();
+            aTrack->SetTrackStatus(particleChangeGNuc->GetTrackStatus());
+            // need to add secondaries to the secondary vector of the current track
+            // NOTE: as we use Geant4, we should care only those changes that are
+            //   not included in the above update step and track, i.e. the energy
+            //   deposited due to applying the cut when stacking the secondaries
+            edep = StackG4Secondaries(particleChangeGNuc, aTrack, fGammaNoProcessVector[iDProc], g4IMC);
+            // done: clear the particle change
+            particleChangeGNuc->Clear();
+          }
         }
-        const double *pdir = thePrimaryTrack->GetDirection();
-        postStepPoint.SetMomentumDirection( G4ThreeVector(pdir[0], pdir[1], pdir[2]) );
-
-        step.UpdateTrack();
-
-        // Stack secondaries created by the HepEm physics above
-        edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
-
+        // Set process defined setp and add edep to the step
+        proc = fGammaNoProcessVector[iDProc];
         step.AddTotalEnergyDeposit(edep);
       } // END if NOT onBoundary
 
@@ -934,8 +991,9 @@ void G4HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
   delete aTrack;
 }
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+// Helper that can be used to stack secondary e-/e+ and gamma i.e. everything
+// that HepEm physics can produce
 double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC) {
   const int numSecElectron = aTLData->GetNumSecondaryElectronTrack();
   const int numSecGamma    = aTLData->GetNumSecondaryGammaTrack();
@@ -1014,7 +1072,74 @@ double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track*
   return edep;
 }
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+// Helper that can be used to stack secondary e-/e+ and gamma i.e. everything
+// that HepEm physics can produce
+double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleChange, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC) {
+  const int numSecondaries = particleChange->GetNumberOfSecondaries();
+  // return early if there are no secondaries created by the physics interaction
+  double edep = 0.0;
+  if (numSecondaries == 0) {
+    return edep;
+  }
+
+  G4Step&        step           = *fStep;
+  G4TrackVector& secondaries    = *step.GetfSecondary();
+  G4StepPoint&   postStepPoint  = *step.GetPostStepPoint();
+
+  const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
+  const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
+  const G4TouchableHandle& theG4TouchableHandle       = aG4PrimaryTrack->GetTouchableHandle();
+  const double             theG4ParentTrackWeight     = aG4PrimaryTrack->GetWeight();
+  const int                theG4ParentTrackID         = aG4PrimaryTrack->GetTrackID();
+
+  for (int isec=0; isec<particleChange->GetNumberOfSecondaries(); ++isec) {
+    G4Track *secTrack = particleChange->GetSecondary(isec);
+    double   secEKin  = secTrack->GetKineticEnergy();
+    const G4ParticleDefinition* secPartDef = secTrack->GetParticleDefinition();
+//    std::cout << "applycutS = " << applyCuts << " Ekin = " << secEKin  << " imc = " << aG4IMC << " par = " << secPartDef->GetParticleName()<<std::endl;
+
+    if (applyCuts) {
+      if (secPartDef == G4Gamma::Definition() && secEKin < (*theCutsGamma)[aG4IMC]) {
+        edep += secEKin;
+        continue;
+      } else if (secPartDef == G4Electron::Definition() && secEKin < (*theCutsElectron)[aG4IMC]) {
+        edep += secEKin;
+        continue;
+      } else if (secPartDef == G4Positron::Definition() && CLHEP::electron_mass_c2 < (*theCutsGamma)[aG4IMC]
+                 && secEKin < (*theCutsPositron)[aG4IMC]) {
+        edep += secEKin + 2 * CLHEP::electron_mass_c2;
+        continue;
+      }
+    }
+    secTrack->SetParentID(theG4ParentTrackID);
+    secTrack->SetCreatorProcess(aG4CreatorProcess);
+    secTrack->SetTouchableHandle(theG4TouchableHandle);
+    secTrack->SetWeight(theG4ParentTrackWeight);
+    secondaries.push_back(secTrack);
+  }
+
+  return edep;
+}
+
+
+// Try to get the nuclear process pointer from the process manager of the particle
+void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
+  if (particleID == 2) {
+    G4ParticleDefinition* partDef = G4Gamma::Definition();
+    const G4ProcessVector* processVector = partDef->GetProcessManager()->GetProcessList();
+    for (std::size_t ip=0; ip<processVector->entries(); ip++) {
+      if( (*processVector)[ip]->GetProcessName()=="photonNuclear") {
+        fGNucProcess = (*processVector)[ip];
+        // make sure the process is initialised (element selectors needs to be built)
+        fGNucProcess->PreparePhysicsTable(*partDef);
+        fGNucProcess->BuildPhysicsTable(*partDef);
+        break;
+      }
+    }
+  }
+}
+
 
 // Try to get the fast sim mamanger process for the particle (e- 0, e+ 1, gamma 2)
 void G4HepEmTrackingManager::InitFastSimRelated(int particleID) {

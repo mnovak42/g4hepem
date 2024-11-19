@@ -8,6 +8,8 @@
 #include "G4HepEmGammaTableBuilder.hh"
 
 // g4 includes
+#include "G4Version.hh"
+
 #include "G4EmParameters.hh"
 #include "G4ProductionCutsTable.hh"
 
@@ -19,11 +21,18 @@
 #include "G4PairProductionRelModel.hh"
 #include "G4KleinNishinaCompton.hh"
 
+#include "G4VCrossSectionDataSet.hh"
+#include "G4CrossSectionDataSetRegistry.hh"
+#if G4VERSION_NUMBER >= 1100
+#include "G4GammaNuclearXS.hh"
+#endif
+#include "G4PhotoNuclearCrossSection.hh"
+#include "G4CrossSectionDataStore.hh"
+
 #include "G4HepEmMaterialData.hh"
 #include "G4HepEmElementData.hh"
 
 #include <iostream>
-
 
 void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/) {
   // clean previous G4HepEmElectronData (if any)
@@ -44,13 +53,30 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   const G4DataVector* theElCuts = static_cast<const G4DataVector*>(G4ProductionCutsTable::GetProductionCutsTable()->GetEnergyCutsVector(1));
   modelPP->Initialise(g4PartDef, *theElCuts);
   //
-  //
   // 2. The simple Klein-Nishina model for Compton scattering:
   // --- used on [E_min : E_max]
   G4KleinNishinaCompton* modelKN = new G4KleinNishinaCompton();
   modelKN->SetLowEnergyLimit(emModelEMin);
   modelKN->SetHighEnergyLimit(emModelEMax);
   modelKN->Initialise(g4PartDef, *theElCuts);
+  //
+  // 3. The Gamma-nuclear cross section:
+  // --- using the `GammaNuclearXS` as the default in Geant4-11.2.2 G4EmExtraPhysics (the alternative is `PhotoNuclearXS`)
+  // The `GammaNuclearXS` is availabel from 10.7 but known by the Registry only from 11.0: use `PhotoNuclearXS` before 11.0
+#if G4VERSION_NUMBER >= 1100
+  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("GammaNuclearXS");
+  if (nullptr == xs) {
+    xs = new G4GammaNuclearXS();
+  }
+#else
+  G4VCrossSectionDataSet* xs = G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet("PhotoNuclearXS");
+  if (nullptr == xs) {
+    xs = new G4PhotoNuclearCrossSection();
+  }
+#endif
+  xs->BuildPhysicsTable(*g4PartDef);
+  G4CrossSectionDataStore hadGNucXSDataStore;
+  hadGNucXSDataStore.AddDataSet(xs);
   //
   // === Use the G4HepEmGammaTableBuilder to build all data tables used at
   //     run time: macroscopic cross section tables and target element
@@ -61,7 +87,7 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   AllocateGammaData(&(hepEmData->fTheGammaData));
   // build macroscopic cross section data for Conversion and Compton
   std::cout << "     ---  BuildLambdaTables ... " << std::endl;
-  BuildLambdaTables(modelPP, modelKN, hepEmData);
+  BuildLambdaTables(modelPP, modelKN, &hadGNucXSDataStore, hepEmData);
   // build element selectors
   std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
   BuildElementSelectorTables(modelPP, hepEmData);

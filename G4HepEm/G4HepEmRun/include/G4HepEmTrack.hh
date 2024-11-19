@@ -44,10 +44,12 @@ public:
     fMFPs[0]       = o.fMFPs[0];
     fMFPs[1]       = o.fMFPs[1];
     fMFPs[2]       = o.fMFPs[2];
+    fMFPs[3]       = o.fMFPs[3];
 
     fNumIALeft[0] = o.fNumIALeft[0];
     fNumIALeft[1] = o.fNumIALeft[1];
     fNumIALeft[2] = o.fNumIALeft[2];
+    fNumIALeft[3] = o.fNumIALeft[3];
 
     fSafety       = o.fSafety;
 
@@ -220,10 +222,12 @@ public:
     fMFPs[0]      = -1.0;
     fMFPs[1]      = -1.0;
     fMFPs[2]      = -1.0;
+    fMFPs[3]      = -1.0;
 
     fNumIALeft[0] = -1.0;
     fNumIALeft[1] = -1.0;
     fNumIALeft[2] = -1.0;
+    fNumIALeft[3] = -1.0;
 
     fID           =  -1;
     fIDParent     =  -1;
@@ -246,8 +250,8 @@ private:
   double   fCharge;
   double   fEDeposit;
   double   fGStepLength;   // step length along the original direction (straight line)
-  double   fMFPs[3];       // pair, compton, photo-electric in case of photon
-  double   fNumIALeft[3];  // ioni, brem, (e+-e- annihilation) in case of e- (e+)
+  double   fMFPs[4];       // pair, compton, photo-electric, gamma-nuclear in case of photon
+  double   fNumIALeft[4];  // ioni, brem, (e+-e- annihilation) in case of e- (e+)
   double   fSafety;
 
   int      fID;
@@ -255,7 +259,7 @@ private:
 
   int      fMCIndex;
 
-  int      fPIndxWon; // 0-pair, 1-compton, 2-photo-electric for photon
+  int      fPIndxWon; // 0-pair, 1-compton, 2-photo-electric, 3-gamma-nuclear for photon
                       // 0-ioni, 1-brem,  (2-annihilation) for e- (e+)
   bool     fOnBoundary;
 };
