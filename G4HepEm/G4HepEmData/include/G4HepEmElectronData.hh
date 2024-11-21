@@ -242,7 +242,7 @@ struct G4HepEmElectronData {
   double        fENucEILDelta = 0.0;      // = 9.192566533618830;  // 1./[log(emax/emin)/127]
   double*       fENucEnergyGrid = nullptr;    // [fENucEnergyGrid]
 
-  double*       fENucMacXsecData = nullptr;   // [#materials*2*fGNucEnergyGridSize]
+  double*       fENucMacXsecData = nullptr;   // [#materials*2*fENucEnergyGridSize]
 
 
   /**
