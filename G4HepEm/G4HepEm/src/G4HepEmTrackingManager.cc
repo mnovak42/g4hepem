@@ -596,6 +596,10 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
           thePrimaryTrack->AddEnergyDeposit( StackG4Secondaries(particleChangeNuc, aTrack, proc, g4IMC) );
           // done: clear the particle change
           particleChangeNuc->Clear();
+          // update the primary track kinetic energy and direction
+          thePrimaryTrack->SetEKin(aTrack->GetKineticEnergy());
+          const G4ThreeVector& dir = aTrack->GetMomentumDirection();
+          thePrimaryTrack->SetDirection(dir.x(), dir.y(), dir.z());
         }
       }
 
