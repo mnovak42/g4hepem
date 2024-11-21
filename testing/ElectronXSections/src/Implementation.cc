@@ -80,7 +80,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
     tsOutResMXIoni[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinIoni[i], tsInLogEkinIoni[i], true);
     tsOutResMXBrem[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinBrem[i], tsInLogEkinBrem[i], false);
     const int imat = theMatCutData->fMatCutData[tsInImc[i]].fHepEmMatIndex;
-    tsOutResMXBrem[i] = G4HepEmElectronManager::GetMacXSecNuclear (theElectronData, imat, tsInEkinENuc[i], tsInLogEkinENuc[i]);
+    tsOutResMXENuc[i] = G4HepEmElectronManager::GetMacXSecNuclear (theElectronData, imat, tsInEkinENuc[i], tsInLogEkinENuc[i]);
   }
 
 
@@ -105,7 +105,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
     }
     if ( std::abs( 1.0 - tsOutResMXENuc[i]/tsOutResOnDeviceMXENuc[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Electron-nuclear) mismatch: " <<  std::setprecision(16) << tsOutResMXBrem[i] << " != " << tsOutResOnDeviceMXBrem[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinBrem[i] << ") " << std::endl;
+      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Electron-nuclear) mismatch: " <<  std::setprecision(16) << tsOutResMXENuc[i] << " != " << tsOutResOnDeviceMXENuc[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinENuc[i] << ") " << std::endl;
       break;
     }
   }

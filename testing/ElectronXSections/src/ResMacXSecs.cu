@@ -52,19 +52,22 @@ void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsIn
   double*   tsOutResMXENuc_d = nullptr;
 
   int* tsInImat_h = new int[numTestCases];
-  for (int i=0; i<numTestCases: ++i) {
+  for (int i=0; i<numTestCases; ++i) {
     tsInImat_h[i] = hepEmData->fTheMatCutData->fMatCutData[tsInImc_h[i]].fHepEmMatIndex;
   }
   int* tsInImat_d = nullptr;
   //
   gpuErrchk ( cudaMalloc ( &tsInImc_d,         sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInIamt_d,        sizeof( int )    * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &tsInImat_d,        sizeof( int )    * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsInEkinIoni_d,    sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsInLogEkinIoni_d, sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsInEkinBrem_d,    sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsInLogEkinBrem_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &tsInEkinENuc_d,    sizeof( double ) * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &tsInLogEkinENuc_d, sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsOutResMXIoni_d,  sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &tsOutResMXBrem_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &tsOutResMXENuc_d,  sizeof( double ) * numTestCases ) );
   //
   // --- Copy the input data from host to device (test material-cut index, ekin and log-ekin arrays)
   gpuErrchk ( cudaMemcpy ( tsInImc_d,         tsInImc_h,         sizeof( int )    * numTestCases, cudaMemcpyHostToDevice) );
@@ -73,6 +76,8 @@ void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsIn
   gpuErrchk ( cudaMemcpy ( tsInLogEkinIoni_d, tsInLogEkinIoni_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
   gpuErrchk ( cudaMemcpy ( tsInEkinBrem_d,    tsInEkinBrem_h,    sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
   gpuErrchk ( cudaMemcpy ( tsInLogEkinBrem_d, tsInLogEkinBrem_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( cudaMemcpy ( tsInEkinENuc_d,    tsInEkinENuc_h,    sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( cudaMemcpy ( tsInLogEkinENuc_d, tsInLogEkinENuc_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
   //
   // --- Launch the kernels
   int numThreads = 512;
