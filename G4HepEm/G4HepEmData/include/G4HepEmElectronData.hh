@@ -236,10 +236,10 @@ struct G4HepEmElectronData {
 
   //
   // Electron - and positron - nuclear cross sections per material:
-  // --- Grid: 63 bins form 100 MeV - 100 TeV
-  const int     fENucEnergyGridSize = 64;
+  // --- Grid: 127 bins form 100 MeV - 100 TeV
+  const int     fENucEnergyGridSize = 128;
   double        fENucLogMinEkin = 0.0;    // = 4.605170185988092;  // log(100.0)
-  double        fENucEILDelta = 0.0;      // = 4.560092059984145;  // 1./[log(emax/emin)/63]
+  double        fENucEILDelta = 0.0;      // = 9.192566533618830;  // 1./[log(emax/emin)/127]
   double*       fENucEnergyGrid = nullptr;    // [fENucEnergyGrid]
 
   double*       fENucMacXsecData = nullptr;   // [#materials*2*fGNucEnergyGridSize]
