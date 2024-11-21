@@ -12,12 +12,15 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron=tru
 #ifdef G4HepEm_CUDA_BUILD
 
   // Evaluates all test cases on the device for computing the restricted macroscopic
-  // cross section values for ionisation and bremsstrahlung on the device for all test cases.
+  // cross section values for ionisation, bremsstrahlung and electron/positron -
+  // nuclear interactions on the device for all test cases.
   void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h,
                                     double* tsInEkinIoni_h, double* tsInLogEkinIoni_h,
                                     double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
+                                    double* tsInEkinENuc_h, double* tsInLogEkinENuc_h,
                                     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h,
-                                    int numTestCases, bool iselectron );
+                                    double* tsOutResMXENuc_h, int numTestCases, 
+                                    bool iselectron );
 
 #endif // G4HepEm_CUDA_BUILD
 

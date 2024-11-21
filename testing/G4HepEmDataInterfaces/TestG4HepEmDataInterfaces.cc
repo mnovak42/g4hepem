@@ -35,6 +35,11 @@ void G4HepEmElectronDataTester(G4HepEmElectronData* d) {
   EXPECT_EQ(d->fResMacXSecStartIndexPerMatCut, nullptr);
   EXPECT_EQ(d->fResMacXSecData, nullptr);
 
+  // Energy grid has a fixed size, but dynamic allocation
+  EXPECT_EQ(d->fENucEnergyGridSize, 128);
+  EXPECT_EQ(d->fENucEnergyGrid, nullptr);
+  EXPECT_EQ(d->fENucMacXsecData, nullptr);
+
   EXPECT_EQ(d->fElemSelectorIoniNumData, 0);
   EXPECT_EQ(d->fElemSelectorIoniStartIndexPerMatCut, nullptr);
   EXPECT_EQ(d->fElemSelectorIoniData, nullptr);
