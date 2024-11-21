@@ -77,6 +77,16 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fResMacXSecStartIndexPerMatCut,  onHOST->fResMacXSecStartIndexPerMatCut, sizeof( int )    * numHepEmMatCuts, cudaMemcpyHostToDevice ) );
   gpuErrchk ( cudaMemcpy (   elDataHTo_d->fResMacXSecData,                 onHOST->fResMacXSecData,                sizeof( double ) * numResMacXSecs,  cudaMemcpyHostToDevice ) );
   //
+  // === Electron/postron nuclear macroscopic scross section data:
+  //
+  // allocate memory for all the electron/positron nuclear macroscopic cross section data on _d and compy from _h
+  const int numENucGridData = onHOST->fENucEnergyGridSize;
+  const int numENucData     = 2*numENucGridData*numHepEmMats;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fENucEnergyGrid),  sizeof( double ) * numENucGridData ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fENucMacXsecData), sizeof( double ) * numENucData     ) );
+  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fENucEnergyGrid,   onHOST->fENucEnergyGrid,  sizeof( double ) * numENucGridData, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy (   elDataHTo_d->fENucMacXsecData,  onHOST->fENucMacXsecData, sizeof( double ) * numENucData,     cudaMemcpyHostToDevice ) );
+  //
   // === First macroscopic transport scross section data:
   //
   // allocate memory for all the tr1-mxsec data on _d and compy from _h
@@ -141,6 +151,9 @@ void FreeElectronDataOnDevice(struct G4HepEmElectronData** onDEVICE) {
     // Macr. cross sections for ioni/brem
     cudaFree( onHostTo_d->fResMacXSecStartIndexPerMatCut );
     cudaFree( onHostTo_d->fResMacXSecData                );
+    // Macr. scross sections for eletron/positron nuclear and the energy grid
+    cudaFree( onHostTo_d->fENucEnergyGrid  );
+    cudaFree( onHostTo_d->fENucMacXsecData );
     // Tr1-mxsec data
     cudaFree( onHostTo_d->fTr1MacXSecData                );
     // Target element selectors for ioni and brem models
