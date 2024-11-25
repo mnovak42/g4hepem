@@ -408,7 +408,7 @@ void BuildNuclearLambdaTables(G4CrossSectionDataStore* hadENucXSDataStore, struc
     // std::cout << " ===== Material = " << g4Mat->GetName() << std::endl;
     // loop over the kinetic energies and comput the electron-nuclear mxsec
     for (int ie=0; ie<numENucEkin; ++ie) {
-      const double ekin = elData->fENucEnergyGrid[ie];
+      const double ekin = ie==0 ? elData->fENucEnergyGrid[ie]+0.000001 : elData->fENucEnergyGrid[ie];
       dyPart->SetKineticEnergy(ekin);
       double mxsec = std::max(0.0, hadENucXSDataStore->ComputeCrossSection(dyPart, g4Mat));
       theENucMXsec[ie]   = mxsec;
