@@ -39,8 +39,11 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   double* tsInLogEkinIoni = new double[numTestCases];
   double* tsInEkinBrem    = new double[numTestCases];
   double* tsInLogEkinBrem = new double[numTestCases];
+  double* tsInEkinENuc    = new double[numTestCases];
+  double* tsInLogEkinENuc = new double[numTestCases];
   double* tsOutResMXIoni  = new double[numTestCases];
   double* tsOutResMXBrem  = new double[numTestCases];
+  double* tsOutResMXENuc  = new double[numTestCases];
   // the maximum (+2%) primary particle kinetic energy that is covered by the simulation (100 TeV by default)
   const double    maxEKin = 1.02*theElectronData->fELossEnergyGrid[numELossData-1];
   for (int i=0; i<numTestCases; ++i) {
@@ -63,6 +66,12 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
     lEkinDelta         = std::log(maxEKin/minEKin);
     tsInLogEkinBrem[i] = dis(gen)*lEkinDelta+lMinEkin;
     tsInEkinBrem[i]    = std::exp(tsInLogEkinBrem[i]);
+    // == Electron-nuclear:
+    minEKin            = 0.98*theElectronData->fENucEnergyGrid[0];
+    lMinEkin           = std::log(minEKin);
+    lEkinDelta         = std::log(maxEKin/minEKin);
+    tsInLogEkinENuc[i] = dis(gen)*lEkinDelta+lMinEkin;
+    tsInEkinENuc[i]    = std::exp(tsInLogEkinENuc[i]);
   }
   //
   // Use G4HepEmElectronManager to evaluate the restricted macroscopic
@@ -70,6 +79,8 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   for (int i=0; i<numTestCases; ++i) {
     tsOutResMXIoni[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinIoni[i], tsInLogEkinIoni[i], true);
     tsOutResMXBrem[i] = G4HepEmElectronManager::GetRestMacXSec (theElectronData, tsInImc[i], tsInEkinBrem[i], tsInLogEkinBrem[i], false);
+    const int imat = theMatCutData->fMatCutData[tsInImc[i]].fHepEmMatIndex;
+    tsOutResMXENuc[i] = G4HepEmElectronManager::GetMacXSecNuclear (theElectronData, imat, tsInEkinENuc[i], tsInLogEkinENuc[i]);
   }
 
 
@@ -78,7 +89,8 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   // Perform the test case evaluations on the device
   double* tsOutResOnDeviceMXIoni = new double[numTestCases];
   double* tsOutResOnDeviceMXBrem = new double[numTestCases];
-  TestResMacXSecDataOnDevice (hepEmData, tsInImc, tsInEkinIoni, tsInLogEkinIoni, tsInEkinBrem, tsInLogEkinBrem, tsOutResOnDeviceMXIoni, tsOutResOnDeviceMXBrem, numTestCases, iselectron);
+  double* tsOutResOnDeviceMXENuc = new double[numTestCases];
+  TestResMacXSecDataOnDevice (hepEmData, tsInImc, tsInEkinIoni, tsInLogEkinIoni, tsInEkinBrem, tsInLogEkinBrem, tsInEkinENuc, tsInLogEkinENuc, tsOutResOnDeviceMXIoni, tsOutResOnDeviceMXBrem, tsOutResOnDeviceMXENuc, numTestCases, iselectron);
   for (int i=0; i<numTestCases; ++i) {
 //    std::cout << tsInEkinIoni[i] << " "<<tsOutResMXIoni[i] << " " << tsOutResOnDeviceMXIoni[i] << " " <<tsInEkinBrem[i] << " " << tsOutResMXBrem[i] << " " << tsOutResOnDeviceMXBrem[i] << std::endl;
     if ( std::abs( 1.0 - tsOutResMXIoni[i]/tsOutResOnDeviceMXIoni[i] ) > 1.0E-14 ) {
@@ -91,10 +103,16 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
       std::cerr << "\n*** ERROR:\nRestricted Macroscopic Cross Section data: G4HepEm Host vs Device (Brem) mismatch: " <<  std::setprecision(16) << tsOutResMXBrem[i] << " != " << tsOutResOnDeviceMXBrem[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinBrem[i] << ") " << std::endl;
       break;
     }
+    if ( std::abs( 1.0 - tsOutResMXENuc[i]/tsOutResOnDeviceMXENuc[i] ) > 1.0E-14 ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Electron-nuclear) mismatch: " <<  std::setprecision(16) << tsOutResMXENuc[i] << " != " << tsOutResOnDeviceMXENuc[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkinENuc[i] << ") " << std::endl;
+      break;
+    }
   }
   //
   delete [] tsOutResOnDeviceMXIoni;
   delete [] tsOutResOnDeviceMXBrem;
+  delete [] tsOutResOnDeviceMXENuc;
 #endif // G4HepEm_CUDA_BUILD
 
   //
@@ -104,8 +122,11 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   delete [] tsInLogEkinIoni;
   delete [] tsInEkinBrem;
   delete [] tsInLogEkinBrem;
+  delete [] tsInEkinENuc;
+  delete [] tsInLogEkinENuc;
   delete [] tsOutResMXIoni;
   delete [] tsOutResMXBrem;
+  delete [] tsOutResMXENuc;
 
   return isPassed;
 }

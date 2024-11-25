@@ -526,6 +526,15 @@ namespace nlohmann
         j["fResMacXSecData"] =
           make_span(d->fResMacXSecNumData, d->fResMacXSecData);
 
+        j["fENucLogMinEkin"] = d->fENucLogMinEkin;
+        j["fENucEILDelta"]   = d->fENucEILDelta;
+
+        j["fENucEnergyGrid"] =
+          make_span(d->fENucEnergyGridSize, d->fENucEnergyGrid);
+
+        const int nENuc = 2 * (d->fENucEnergyGridSize) * (d->fNumMaterials);
+        j["fENucMacXsecData"]  = make_span(nENuc, d->fENucMacXsecData);
+
         const int nTr1MacXsec = 2 * (d->fELossEnergyGridSize) * (d->fNumMaterials);
         j["fTr1MacXSecData"] =
           make_span(nTr1MacXsec, d->fTr1MacXSecData);
@@ -577,6 +586,18 @@ namespace nlohmann
             j.at("fResMacXSecStartIndexPerMatCut").get<dynamic_array<int>>();
           d->fResMacXSecStartIndexPerMatCut = tmpIndex.data;
           // To validate, tmpIndex.N == d->fNumMatCuts;
+
+          j.at("fENucLogMinEkin").get_to(d->fENucLogMinEkin);
+          j.at("fENucEILDelta").get_to(d->fENucEILDelta);
+
+          // Get the array but ignore the size (fENucEnergyGridSize) as this is a
+          // const (at time of writing)
+          auto tmpENucGrid =
+            j.at("fENucEnergyGrid").get<dynamic_array<double>>();
+          d->fENucEnergyGrid     = tmpENucGrid.data;
+
+          auto tmpENucData = j.at("fENucMacXsecData").get<dynamic_array<double>>();
+          d->fENucMacXsecData    = tmpENucData.data;
 
           auto tmpData = j.at("fResMacXSecData").get<dynamic_array<double>>();
           d->fResMacXSecNumData = tmpData.N;

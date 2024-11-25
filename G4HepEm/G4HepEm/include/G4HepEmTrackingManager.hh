@@ -94,6 +94,11 @@ private:
   // Pointers to the Gamma-nuclear process (if any)
   G4VProcess* fGNucProcess;
 
+  // Pointers to the Electron/Positron-nuclear processes (if any)
+  G4VProcess* fENucProcess;
+  G4VProcess* fPNucProcess;
+
+
   // Pointers to the fast simulation manager processes of the 3 particles if any
   // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
   G4VProcess* fFastSimProcess[3];

@@ -159,7 +159,7 @@ public:
   static void SampleMSC(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmElectronTrack* theElTrack, G4HepEmRandomEngine* rnge);
 
   /** Sample loss fluctuations for the mean energy loss.
-    * 
+    *
     * @param hepEmData pointer to the top level, global, G4HepEmData structure.
     * @param hepEmPars pointer to the global, G4HepEmParameters structure.
     * @param theElTrack pointer to the input and output information of the track.
@@ -247,10 +247,16 @@ public:
   G4HepEmHostDevice
   static double GetRestMacXSec(const struct G4HepEmElectronData* elData, const int imc, const double ekin,
                                const double lekin, bool isioni);
+  G4HepEmHostDevice
+  static double GetMacXSecNuclear(const struct G4HepEmElectronData* elData, const int imat, const double ekin,
+                                  const double lekin);
 
   G4HepEmHostDevice
   static double GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin,
                                           double lekin, bool isioni);
+  G4HepEmHostDevice
+  static double GetMacXSecNuclearForStepping(const struct G4HepEmElectronData* elData, const int imat, const double ekin,
+                                             const double lekin);
 
   G4HepEmHostDevice
   static double GetTransportMFP(const struct G4HepEmElectronData* elData, const int im, const double ekin, const double lekin);

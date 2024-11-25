@@ -22,6 +22,10 @@
 #include "G4eBremsstrahlungRelModel.hh"
 #include "G4UrbanMscModel.hh"
 
+#include "G4VCrossSectionDataSet.hh"
+#include "G4CrossSectionDataStore.hh"
+#include "G4ElectroNuclearCrossSection.hh"
+
 #include "G4HepEmMatCutData.hh"
 #include "G4HepEmMaterialData.hh"
 #include "G4HepEmElementData.hh"
@@ -83,6 +87,14 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   modelUMSC->Initialise(g4PartDef, *theGamCuts); // second argument is not used
 
   //
+  // 5. Electron - and positorn nuclear cross section
+  // --- used on [100 MeV : E_max] (same for e-/e+)
+  G4VCrossSectionDataSet* xs = new G4ElectroNuclearCrossSection;
+  xs->BuildPhysicsTable(*g4PartDef);
+  G4CrossSectionDataStore hadENucXSDataStore;
+  hadENucXSDataStore.AddDataSet(xs);
+
+  //
   // === Use the G4HepEmElectronTableBuilder to build all data tables used at
   //     run time: e-loss, macroscopic cross section tables and target element
   //     selectors for each models.
@@ -98,9 +110,11 @@ void InitElectronData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* h
   // build energy loss data
   std::cout << "     ---  BuildELossTables ..." << std::endl;
   BuildELossTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
-  // build macroscopic cross section data
+  // build macroscopic cross section data (mat-cut dependent ioni and brem)
   std::cout << "     ---  BuildLambdaTables ... " << std::endl;
   BuildLambdaTables(modelMB, modelSB, modelRB, hepEmData, hepEmPars, iselectron);
+  // build macroscopic cross section data (mat dependent electron -, positron - nuclear)
+  BuildNuclearLambdaTables(&hadENucXSDataStore, hepEmData, hepEmPars, iselectron);
   // build macroscopic first transport cross section data (used by Urban msc)
   std::cout << "     ---  BuildTransportXSectionTables ... " << std::endl;
   BuildTransportXSectionTables(modelUMSC, hepEmData, hepEmPars, iselectron);

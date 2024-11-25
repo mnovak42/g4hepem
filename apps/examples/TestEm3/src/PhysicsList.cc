@@ -87,7 +87,7 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList(),
   // Create the G4EmExtraPhysics to add gamma and lepton nuclear interactions
   G4EmExtraPhysics* emExtra = new G4EmExtraPhysics();
   // During the development: deactiavte electron nuclear till we don't have in HepEm
-  emExtra->ElectroNuclear(false);
+  // emExtra->ElectroNuclear(false);
   // Turn off muon nuclear as well (not improtant as no muon production but
   // remove it as we don't have in HepEm)
   emExtra->MuonNuclear(false);

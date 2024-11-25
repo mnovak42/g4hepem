@@ -21,6 +21,8 @@
 #include "G4SeltzerBergerModel.hh"
 #include "G4eBremsstrahlungRelModel.hh"
 
+#include "G4CrossSectionDataStore.hh"
+
 #include "G4ParticleDefinition.hh"
 #include "G4Electron.hh"
 #include "G4Positron.hh"
@@ -358,6 +360,76 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
   delete[] secDerivs;
   delete[] xsecData;
 }
+
+
+void BuildNuclearLambdaTables(G4CrossSectionDataStore* hadENucXSDataStore, struct G4HepEmData* hepEmData,
+                              struct G4HepEmParameters* hepEmParams, bool iselectron) {
+  // get the pointer to the already allocated G4HepEmElectronData from the HepEmData
+  struct G4HepEmElectronData* elData = iselectron
+                                       ? hepEmData->fTheElectronData
+                                       : hepEmData->fThePositronData;
+  //
+  // get the g4 particle-definition
+  G4ParticleDefinition* g4PartDef = G4Positron::Positron();
+  if  (iselectron) {
+    g4PartDef = G4Electron::Electron();
+  }
+  //
+  // generate the energy grid (common for all materials)
+  const double emin = 100.0*CLHEP::MeV;
+  const double emax = 100.0*CLHEP::TeV;
+  int numENucEkin = elData->fENucEnergyGridSize;
+  delete [] elData->fENucEnergyGrid;
+  elData->fENucEnergyGrid = new double[numENucEkin]{};
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numENucEkin, elData->fENucLogMinEkin, elData->fENucEILDelta, elData->fENucEnergyGrid);
+  //
+  // allocate some array for intermediate storage of the nuclear MXsec and its second
+  // derivatives for a given material
+  double* theENucMXsec     = new double[numENucEkin]{};
+  double* theENucMXsecSD   = new double[numENucEkin]{};
+  // allocate the array to store (continuously) all macroscopic xsec
+  const int numMaterials   = elData->fNumMaterials;
+  elData->fENucMacXsecData = new double[2*numENucEkin*numMaterials]{};
+  //
+  // loop over the HepEm materials and for each:
+  // - get the corresponding G4Material
+  // - compute the macroscopic electron-nuclear cross section at each of the
+  //   discrte kinetic energies
+  //
+  // get the HepEm material data
+  const struct G4HepEmMaterialData*  hepEmMatData = hepEmData->fTheMaterialData;
+  // get the correspondibg G4Material table (i.e. global vector of G4Material*)
+  const G4MaterialTable* theG4MaterialTable = G4Material::GetMaterialTable();
+  // a g4 dynamic particle will be needed
+  G4DynamicParticle* dyPart = new G4DynamicParticle(g4PartDef, G4ThreeVector(0,0,1), 0);
+  for (int im=0; im<numMaterials; ++im) {
+    const struct G4HepEmMatData& matData = hepEmMatData->fMaterialData[im];
+    const G4Material* g4Mat = (*theG4MaterialTable)[matData.fG4MatIndex];
+    // std::cout << " ===== Material = " << g4Mat->GetName() << std::endl;
+    // loop over the kinetic energies and comput the electron-nuclear mxsec
+    for (int ie=0; ie<numENucEkin; ++ie) {
+      const double ekin = ie==0 ? elData->fENucEnergyGrid[ie]+0.000001 : elData->fENucEnergyGrid[ie];
+      dyPart->SetKineticEnergy(ekin);
+      double mxsec = std::max(0.0, hadENucXSDataStore->ComputeCrossSection(dyPart, g4Mat));
+      theENucMXsec[ie]   = mxsec;
+      theENucMXsecSD[ie] = 0.0;
+      // std::cout << " E = " << ekin << " [MeV] Sigam-ENuc(E) = " << mxsec << std::endl;
+    }
+    // set up a spline on the electron-nuclear MXsec array for interpolation
+    G4HepEmInitUtils::PrepareSpline(numENucEkin, elData->fENucEnergyGrid, theENucMXsec, theENucMXsecSD);
+    // write the data into its final location
+    int iStart = 2*numENucEkin*im;
+    for (int ie=0; ie<numENucEkin; ++ie) {
+      elData->fENucMacXsecData[iStart++] = theENucMXsec[ie];
+      elData->fENucMacXsecData[iStart++] = theENucMXsecSD[ie];
+    }
+  }
+  // free auxilary arrays
+  delete[] theENucMXsec;
+  delete[] theENucMXsecSD;
+  delete dyPart;
+}
+
 
 void BuildTransportXSectionTables(G4VEmModel* mscModel, struct G4HepEmData* hepEmData,
                                   struct G4HepEmParameters* /*hepEmParams*/, bool iselectron) {

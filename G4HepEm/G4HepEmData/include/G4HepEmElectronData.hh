@@ -234,6 +234,17 @@ struct G4HepEmElectronData {
   double*    fResMacXSecData = nullptr; // [fResMacXSecNumData]
 /// @} */ // end: restricted macroscopic cross section
 
+  //
+  // Electron - and positron - nuclear cross sections per material:
+  // --- Grid: 127 bins form 100 MeV - 100 TeV
+  const int     fENucEnergyGridSize = 128;
+  double        fENucLogMinEkin = 0.0;    // = 4.605170185988092;  // log(100.0)
+  double        fENucEILDelta = 0.0;      // = 9.192566533618830;  // 1./[log(emax/emin)/127]
+  double*       fENucEnergyGrid = nullptr;    // [fENucEnergyGrid]
+
+  double*       fENucMacXsecData = nullptr;   // [#materials*2*fENucEnergyGridSize]
+
+
   /**
    * @name Macroscopic first transport corss section related data members:
    * These members are used to store all macroscopic first transport cross section related data

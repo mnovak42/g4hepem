@@ -411,6 +411,22 @@ bool operator==(const G4HepEmElectronData& lhs, const G4HepEmElectronData& rhs)
     return false;
   }
 
+  if(std::tie(lhs.fENucLogMinEkin, lhs.fENucEILDelta) !=
+     std::tie(lhs.fENucLogMinEkin, lhs.fENucEILDelta))
+  {
+    return false;
+  }
+  if(!compare_arrays(lhs.fENucEnergyGridSize, lhs.fENucEnergyGrid,
+                     rhs.fENucEnergyGridSize, rhs.fENucEnergyGrid))
+  {
+    return false;
+  }
+  if(!compare_arrays(lhs.fENucEnergyGridSize, lhs.fENucMacXsecData,
+                     rhs.fENucEnergyGridSize, rhs.fENucMacXsecData))
+  {
+    return false;
+  }
+
   if(!compare_arrays(lhs.fNumMatCuts, lhs.fElemSelectorIoniStartIndexPerMatCut,
                      rhs.fNumMatCuts, rhs.fElemSelectorIoniStartIndexPerMatCut))
   {

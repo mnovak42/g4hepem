@@ -68,6 +68,13 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fElectronNoProcessVector.push_back(
       new G4HepEmNoProcess("msc", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fMultipleScattering));
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("electronNuclear", G4ProcessType::fHadronic,
+                           G4HadronicProcessType::fHadronInelastic));
+  fElectronNoProcessVector.push_back(
+      new G4HepEmNoProcess("positronNuclear", G4ProcessType::fHadronic,
+                           G4HadronicProcessType::fHadronInelastic));
+
   fGammaNoProcessVector.push_back(
       new G4HepEmNoProcess("conv", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fGammaConversion));
@@ -77,15 +84,18 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fGammaNoProcessVector.push_back(
       new G4HepEmNoProcess("phot", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fPhotoElectricEffect));
-   fGammaNoProcessVector.push_back(
-       new G4HepEmNoProcess("photonNuclear", G4ProcessType::fHadronic,
-                            G4HadronicProcessType::fHadronInelastic));
+  fGammaNoProcessVector.push_back(
+      new G4HepEmNoProcess("photonNuclear", G4ProcessType::fHadronic,
+                           G4HadronicProcessType::fHadronInelastic));
 
   fTransportNoProcess = new G4HepEmNoProcess(
       "Transportation", G4ProcessType::fTransportation, TRANSPORTATION);
 
   // Init the gamma-nuclear process
   fGNucProcess = nullptr;
+  // Init the electron/positron-nuclear processes
+  fENucProcess = nullptr;
+  fPNucProcess = nullptr;
 
   // Init the fast sim mamanger process ptrs of the 3 particles
   fFastSimProcess[0] = nullptr;
@@ -116,6 +126,8 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
   if (&part == G4Electron::Definition()) {
     int particleID = 0;
     fRunManager->Initialize(fRandomEngine, particleID);
+    // Find the electron-nuclear process if has been attached
+    InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for e- (if has been attached)
     InitFastSimRelated(particleID);
     // Find the ATLAS specific trans. rad. (XTR) process (if has been attached)
@@ -123,6 +135,8 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
   } else if (&part == G4Positron::Definition()) {
     int particleID = 1;
     fRunManager->Initialize(fRandomEngine, particleID);
+    // Find the positron-nuclear process if has been attached
+    InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for e+ (if has been attached)
     InitFastSimRelated(particleID);
   } else if (&part == G4Gamma::Definition()) {
@@ -260,6 +274,13 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   if (fFastSimProc != nullptr) {
     fFastSimProc->StartTracking(aTrack);
   }
+
+  // Invoke the electron/positron-nuclear process start tracking interace (if any)
+  G4VProcess* theNucProcess = isElectron ? fENucProcess : fPNucProcess;
+  if (theNucProcess != nullptr) {
+    theNucProcess->StartTracking(aTrack);
+  }
+
   // === StartTracking ===
 
   while(aTrack->GetTrackStatus() == fAlive)
@@ -335,7 +356,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     thePrimaryTrack->SetSafety(preSafety);
 
     // Sample the `number-of-interaction-left`
-    for (int ip=0; ip<3; ++ip) {
+    for (int ip=0; ip<4; ++ip) {
       if (thePrimaryTrack->GetNumIALeft(ip)<=0.) {
         thePrimaryTrack->SetNumIALeft(-G4HepEmLog(rnge->flat()), ip);
       }
@@ -532,22 +553,54 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       }
     } else if (aTrack->GetTrackStatus() != fStopAndKill) {
       // === 4. Discrete part of the interaction (if any)
-      G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
-      const double *pdir = thePrimaryTrack->GetDirection();
-      postStepPoint.SetMomentumDirection(
-          G4ThreeVector(pdir[0], pdir[1], pdir[2]));
-
-      // Get the final process defining the step - might still be MSC!
       const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
       if (thePrimaryTrack->GetOnBoundary()) {
+        // no disrete interaction in this case
         proc = fTransportNoProcess;
-      } else if (iDProc == -1) {
-        // ionization
-        proc = fElectronNoProcessVector[0];
-      } else if (iDProc == -2) {
-        proc = fElectronNoProcessVector[3];
+      } else if (iDProc != 3) {
+        // interactions handled by the HepEm physics: ioni, brem or annihilation (for e+)
+        G4HepEmElectronManager::PerformDiscrete(theHepEmData, theHepEmPars, theTLData);
+        const double *pdir = thePrimaryTrack->GetDirection();
+        postStepPoint.SetMomentumDirection( G4ThreeVector(pdir[0], pdir[1], pdir[2]) );
+        // Get the final process defining the step - might still be MSC!
+        if (iDProc == -1) {
+          // ionization
+          proc = fElectronNoProcessVector[0];
+        } else if (iDProc == -2) {
+          proc = fElectronNoProcessVector[3];
+        } else {
+          proc = fElectronNoProcessVector[iDProc];
+        }
       } else {
-        proc = fElectronNoProcessVector[iDProc];
+        // Electron/positron-nuclear: --> use Geant4 for the interaction:
+        proc = isElectron ? fElectronNoProcessVector[4] : fElectronNoProcessVector[5];
+        thePrimaryTrack->SetNumIALeft(-1.0, iDProc);
+        // check if delta interaction happens
+        // Invoke the electron/positron-nuclear interaction using the Geant4 process
+        G4VParticleChange* particleChangeNuc = nullptr;
+        if (theNucProcess != nullptr && !G4HepEmElectronManager::CheckDelta(theHepEmData, thePrimaryTrack, theTLData->GetRNGEngine()->flat())) {
+          // call to set some fields of the process like material, energy etc.. used in its DoIt
+          G4ForceCondition forceCondition;
+          theNucProcess->PostStepGetPhysicalInteractionLength(*aTrack, 0.0, &forceCondition);
+          //
+          postStepPoint.SetStepStatus(fPostStepDoItProc);
+          particleChangeNuc = theNucProcess->PostStepDoIt(*aTrack, step);
+          // update the track and stack according to the result of the interaction
+          particleChangeNuc->UpdateStepForPostStep(&step);
+          step.UpdateTrack();
+          aTrack->SetTrackStatus(particleChangeNuc->GetTrackStatus());
+          // need to add secondaries to the secondary vector of the current track
+          // NOTE: as we use Geant4, we should care only those changes that are
+          //   not included in the above update step and track, i.e. the energy
+          //   deposited due to applying the cut when stacking the secondaries
+          thePrimaryTrack->AddEnergyDeposit( StackG4Secondaries(particleChangeNuc, aTrack, proc, g4IMC) );
+          // done: clear the particle change
+          particleChangeNuc->Clear();
+          // update the primary track kinetic energy and direction
+          thePrimaryTrack->SetEKin(aTrack->GetKineticEnergy());
+          const G4ThreeVector& dir = aTrack->GetMomentumDirection();
+          thePrimaryTrack->SetDirection(dir.x(), dir.y(), dir.z());
+        }
       }
 
       // ATLAS XTR RELATED:
@@ -567,6 +620,7 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
           thePrimaryTrack->SetEKin(static_cast<G4ParticleChange*>(particleChangeXTR)->GetEnergy());
         }
       }
+      // === End discrete part of the interaction (if any)
 
     } else {
       // Else the particle left the world.
@@ -1125,17 +1179,38 @@ double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleCha
 
 // Try to get the nuclear process pointer from the process manager of the particle
 void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
-  if (particleID == 2) {
-    G4ParticleDefinition* partDef = G4Gamma::Definition();
-    const G4ProcessVector* processVector = partDef->GetProcessManager()->GetProcessList();
-    for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-      if( (*processVector)[ip]->GetProcessName()=="photonNuclear") {
-        fGNucProcess = (*processVector)[ip];
-        // make sure the process is initialised (element selectors needs to be built)
-        fGNucProcess->PreparePhysicsTable(*partDef);
-        fGNucProcess->BuildPhysicsTable(*partDef);
-        break;
-      }
+  G4ParticleDefinition* particleDef = nullptr;
+  std::string nameNuclearProcess = "";
+  G4VProcess** proc = nullptr;
+  switch(particleID) {
+    case 0: particleDef = G4Electron::Definition();
+            nameNuclearProcess = "electronNuclear";
+            proc = &fENucProcess;
+            break;
+    case 1: particleDef = G4Positron::Definition();
+            nameNuclearProcess = "positronNuclear";
+            proc = &fPNucProcess;
+            break;
+    case 2: particleDef = G4Gamma::Definition();
+            nameNuclearProcess = "photonNuclear";
+            proc = &fGNucProcess;
+            break;
+  }
+  if (particleDef == nullptr) {
+    std::cerr << " *** Unknown particle in G4HepEmTrackingManager::InitNuclearProcesses with ID = "
+              << particleID
+              << std::endl;
+    exit(-1);
+  }
+  //
+  const G4ProcessVector* processVector = particleDef->GetProcessManager()->GetProcessList();
+  for (std::size_t ip=0; ip<processVector->entries(); ip++) {
+    if( (*processVector)[ip]->GetProcessName()==nameNuclearProcess) {
+      *proc = (*processVector)[ip];
+      // make sure the process is initialised (element selectors needs to be built)
+      (*proc)->PreparePhysicsTable(*particleDef);
+      (*proc)->BuildPhysicsTable(*particleDef);
+      break;
     }
   }
 }
