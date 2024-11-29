@@ -745,32 +745,27 @@ namespace nlohmann
          * stored in the G4HepEmMaterialData::fMaterialData array. */
         j["fNumMaterials"] = d->fNumMaterials;
 
-        //// === conversion related data. Grid: 146 bins form 2mc^2 - 100 TeV
-        j["fConvLogMinEkin"] = d->fConvLogMinEkin;
-        j["fConvEILDelta"]   = d->fConvEILDelta;
-        j["fConvEnergyGrid"] =
-          make_span(d->fConvEnergyGridSize, d->fConvEnergyGrid);
+        //// === Macroscopic cross section related data:
+        j["fDataPerMat"] = d->fDataPerMat;
+        j["fNumData0"] = d->fNumData0;
+        j["fNumData1"] = d->fNumData1;
 
-        //// === compton related data. 84 bins (7 per decades) from 100 eV - 100
-        /// TeV
-        j["fCompLogMinEkin"] = d->fCompLogMinEkin;
-        j["fCompEILDelta"]   = d->fCompEILDelta;
-        j["fCompEnergyGrid"] =
-          make_span(d->fCompEnergyGridSize, d->fCompEnergyGrid);
+        j["fEMin0"] = d->fEMin0;
+        j["fEMax0"] = d->fEMax0;
+        j["fLogEMin0"] = d->fLogEMin0;
+        j["fEILDelta0"] = d->fEILDelta0;
 
-        //// === compton related data. 84 bins (7 per decades) from 100 eV - 100
-        /// TeV
-        j["fGNucLogMinEkin"] = d->fGNucLogMinEkin;
-        j["fGNucEILDelta"]   = d->fGNucEILDelta;
-        j["fGNucEnergyGrid"] =
-          make_span(d->fGNucEnergyGridSize, d->fGNucEnergyGrid);
+        j["fEMax1"] = d->fEMax1;
+        j["fLogEMin1"] = d->fLogEMin1;
+        j["fEILDelta1"] = d->fEILDelta1;
 
+        j["fEMax2"] = d->fEMax2;
+        j["fLogEMin2"] = d->fLogEMin2;
+        j["fEILDelta2"] = d->fEILDelta2;
 
-        const int macXsecDataSize =
-          d->fNumMaterials * 2 *
-          (d->fConvEnergyGridSize + d->fCompEnergyGridSize + d->fGNucEnergyGridSize);
-        j["fConvCompGNucMacXsecData"] =
-          make_span(macXsecDataSize, d->fConvCompGNucMacXsecData);
+        const int macXsecDataSize = d->fNumMaterials*d->fDataPerMat;
+        j["fMacXsecData"] =make_span(macXsecDataSize, d->fMacXsecData);
+
 
         //// === element selector for conversion (note: KN compton interaction
         /// do not know anything about Z)
@@ -800,36 +795,29 @@ namespace nlohmann
 
         j.at("fNumMaterials").get_to(d->fNumMaterials);
 
-        j.at("fConvLogMinEkin").get_to(d->fConvLogMinEkin);
-        j.at("fConvEILDelta").get_to(d->fConvEILDelta);
-        // Get the array but ignore the size (fConvEnergyGridSize) as this is a
-        // const (at time of writing)
-        auto tmpConvEnergyGrid =
-          j.at("fConvEnergyGrid").get<dynamic_array<double>>();
-        d->fConvEnergyGrid = tmpConvEnergyGrid.data;
 
-        j.at("fCompLogMinEkin").get_to(d->fCompLogMinEkin);
-        j.at("fCompEILDelta").get_to(d->fCompEILDelta);
-        // Get the array but ignore the size (fCompEnergyGridSize) as this is a
-        // const (at time of writing)
-        auto tmpCompEnergyGrid =
-          j.at("fCompEnergyGrid").get<dynamic_array<double>>();
-        d->fCompEnergyGrid = tmpCompEnergyGrid.data;
+        j.at("fDataPerMat").get_to(d->fDataPerMat);
+        j.at("fNumData0").get_to(d->fNumData0);
+        j.at("fNumData1").get_to(d->fNumData1);
 
-        j.at("fGNucLogMinEkin").get_to(d->fGNucLogMinEkin);
-        j.at("fGNucEILDelta").get_to(d->fGNucEILDelta);
-        // Get the array but ignore the size (fGNucEnergyGridSize) as this is a
-        // const (at time of writing)
-        auto tmpGNucEnergyGrid =
-          j.at("fGNucEnergyGrid").get<dynamic_array<double>>();
-        d->fGNucEnergyGrid = tmpGNucEnergyGrid.data;
+        j.at("fEMin0").get_to(d->fEMin0 );
+        j.at("fEMax0").get_to(d->fEMax0);
+        j.at("fLogEMin0").get_to(d->fLogEMin0);
+        j.at("fEILDelta0").get_to(d->fEILDelta0);
+
+        j.at("fEMax1").get_to(d->fEMax1);
+        j.at("fLogEMin1").get_to(d->fLogEMin1);
+        j.at("fEILDelta1").get_to(d->fEILDelta1);
+
+        j.at("fEMax2").get_to(d->fEMax2);
+        j.at("fLogEMin2").get_to(d->fLogEMin2);
+        j.at("fEILDelta2").get_to(d->fEILDelta2);
 
         // We don't store the size of the following array, rather should
-        // validate that it is expected size: d->fNumMaterials * 2 *
-        // (d->fConvEnergyGridSize + d->fCompEnergyGridSize + d->fGNucEnergyGridSize);
-        auto tmpConvCompGNucXsecData =
-          j.at("fConvCompGNucMacXsecData").get<dynamic_array<double>>();
-        d->fConvCompGNucMacXsecData = tmpConvCompGNucXsecData.data;
+        // validate that it is expected size: d->fNumMaterials * d->fDataPerMat
+        auto tmpMacXsecData = j.at("fMacXsecData").get<dynamic_array<double>>();
+        d->fMacXsecData = tmpMacXsecData.data;
+
 
         j.at("fElemSelectorConvLogMinEkin")
           .get_to(d->fElemSelectorConvLogMinEkin);
