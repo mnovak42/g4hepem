@@ -61,14 +61,12 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
   G4HepEmGammaTrack aGammaTrack;
   G4HepEmTrack* aTrack = aGammaTrack.GetTrack();
   for (int i=0; i<numTestCases; ++i) {
-    tsOutMXTot[i] = G4HepEmGammaManager::GetTotalMacXSec (hepEmData, tsInImat[i], tsInEkin[i], tsInLogEkin[i], &aGammaTrack); // total mxces
+    tsOutMXTot[i] = G4HepEmGammaManager::GetTotalMacXSec (theGammaData, theMatData, tsInImat[i], tsInEkin[i], tsInLogEkin[i], &aGammaTrack); // total mxces
     // set all track fields that the sampling below needs
     const double totMFP = (tsOutMXTot[i] > 0) ? 1.0/tsOutMXTot[i] : 1E+20;
     if (tsOutMXTot[i]>0) { // otherwise IMFP would be such that we never call sampling
       aTrack->SetMFP(totMFP, 0);
-      aTrack->SetEKin(tsInEkin[i]);
-      aTrack->SetMCIndex(tsInImat[i]); // this is the material index but valid as mat-cut index as well
-      G4HepEmGammaManager::SampleInteraction(hepEmData, &aGammaTrack, tsInURand[i]); // sample interaction
+      G4HepEmGammaManager::SampleInteraction(theGammaData, &aGammaTrack, tsInEkin[i], tsInLogEkin[i], tsInImat[i], tsInURand[i]); // sample interaction
       tsOutProcID[i] = aGammaTrack.GetTrack()->GetWinnerProcessIndex();
     }
   }
@@ -77,31 +75,24 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
 #ifdef G4HepEm_CUDA_BUILD
   //
   // Perform the test case evaluations on the device
-  double* tsOutOnDeviceMXConv = new double[numTestCases];
-  double* tsOutOnDeviceMXComp = new double[numTestCases];
-  double* tsOutOnDeviceMXGNuc = new double[numTestCases];
-  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkinConv, tsInLogEkinConv, tsInEkinComp, tsInLogEkinComp, tsInEkinGNuc, tsInLogEkinGNuc, tsOutOnDeviceMXConv, tsOutOnDeviceMXComp, tsOutOnDeviceMXGNuc, numTestCases);
+  double* tsOutOnDeviceMXTot  = new double[numTestCases];
+  int*    tsOutOnDeviceProcID = new int[numTestCases];
+  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkin, tsInLogEkin, tsInURand, tsOutOnDeviceMXTot, tsOutOnDeviceProcID, numTestCases);
   for (int i=0; i<numTestCases; ++i) {
-    if ( std::abs( 1.0 - tsOutMXConv[i]/tsOutOnDeviceMXConv[i] ) > 1.0E-14 ) {
+    if ( std::abs( 1.0 - tsOutMXTot[i]/tsOutOnDeviceMXTot[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Conversion) mismatch: " << std::setprecision(16) << tsOutMXConv[i] << " != " << tsOutOnDeviceMXConv[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinConv[i] << ") " << std::endl;
+      std::cerr << "\n*** ERROR:\nTotal Mcroscopic Cross Section data: G4HepEm Host vs Device mismatch: " << std::setprecision(16) << tsOutMXTot[i] << " != " << tsOutOnDeviceMXTot[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl;
       break;
     }
-    if ( std::abs( 1.0 - tsOutMXComp[i]/tsOutOnDeviceMXComp[i] ) > 1.0E-14 ) {
+    if ( tsOutProcID[i] != tsOutOnDeviceProcID[i] ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Compton) mismatch: " <<  std::setprecision(16) << tsOutMXComp[i] << " != " << tsOutOnDeviceMXComp[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinConv[i] << ") " << std::endl;
-      break;
-    }
-    if ( std::abs( 1.0 - tsOutMXGNuc[i]/tsOutOnDeviceMXGNuc[i] ) > 1.0E-14 ) {
-      isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Gamma-nuclear) mismatch: " <<  std::setprecision(16) << tsOutMXGNuc[i] << " != " << tsOutOnDeviceMXGNuc[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinGNuc[i] << ") " << std::endl;
+      std::cerr << "\n*** ERROR:\nSelected process ID: G4HepEm Host vs Device mismatch: " <<  std::setprecision(16) << tsOutProcID[i] << " != " << tsOutOnDeviceProcID[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl;
       break;
     }
   }
   //
-  delete [] tsOutOnDeviceMXConv;
-  delete [] tsOutOnDeviceMXComp;
-  delete [] tsOutOnDeviceMXGNuc;
+  delete [] tsOutOnDeviceMXTot;
+  delete [] tsOutOnDeviceProcID;
 #endif // G4HepEm_CUDA_BUILD
 
   //
