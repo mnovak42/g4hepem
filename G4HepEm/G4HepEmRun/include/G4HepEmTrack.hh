@@ -147,7 +147,7 @@ public:
   G4HepEmHostDevice
   double  GetGStepLength()    const    { return fGStepLength; }
 
-  // Macroscopic cross section
+  // Mean free paths
   G4HepEmHostDevice
   void    SetMFP(double val, int pindx) { fMFPs[pindx] = val; }
   G4HepEmHostDevice

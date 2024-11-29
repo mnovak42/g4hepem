@@ -28,10 +28,8 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
   G4HepEmGammaTrack* theGammaTrack = tlData->GetPrimaryGammaTrack();
   G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
   // Sample the `number-of-interaction-left`
-  for (int ip=0; ip<4; ++ip) {
-    if (theTrack->GetNumIALeft(ip)<=0.) {
-      theTrack->SetNumIALeft(-G4HepEmLog(tlData->GetRNGEngine()->flat()), ip);
-    }
+  if (theTrack->GetNumIALeft(0) <= 0.0) {
+    theTrack->SetNumIALeft(-G4HepEmLog(tlData->GetRNGEngine()->flat()), 0);
   }
   HowFar(hepEmData, hepEmPars, theGammaTrack);
 }
@@ -44,42 +42,21 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
   const int   theMatIndx = hepEmData->fTheMatCutData->fMatCutData[theTrack->GetMCIndex()].fHepEmMatIndex;
   // get the Gamma data from the op level data structure
   const G4HepEmGammaData* theGammaData = hepEmData->fTheGammaData;
-  // === Gamma has only discrete limits due to Conversion, Compton, and the photoelectric effect.
-  double mxSecs[4];
-  // conversion, compton and photoelectric
-  mxSecs[0] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 0);
-  mxSecs[1] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 1);
-  mxSecs[2] = GetMacXSecPE(hepEmData, theMatIndx, theEkin);
-  mxSecs[3] = GetMacXSec(theGammaData, theMatIndx, theEkin, theLEkin, 2);
-  // Remember value of photoelectric effect, needed for selecting the element.
-  theGammaTrack->SetPEmxSec(mxSecs[2]);
-  // compute mfp and see if we need to sample the `number-of-interaction-left`
-  // before we use it to get the current discrete proposed step length
-  int indxWinnerProcess = -1;             // init to nothing
-  double pStepLength    = kALargeValue;   // init to a large value
-  for (int ip=0; ip<4; ++ip) {
-    const double mxsec = mxSecs[ip];
-    const double   mfp = (mxsec>0.) ? 1./mxsec : kALargeValue;
-    // save the mac-xsec for the update of the `number-of-interaction-left`:
-    // the `number-of-intercation-left` should be updated in the along-step-action
-    theTrack->SetMFP(mfp, ip);
-    // sample the proposed step length
-    const double dStepLimit = mfp*theTrack->GetNumIALeft(ip);
-    // std::cout << " ip = " << ip << " mxsec = " << mxsec << " dStepLimit = " << dStepLimit << std::endl;
-    if (dStepLimit<pStepLength) {
-      pStepLength = dStepLimit;
-      indxWinnerProcess = ip;
-    }
-  }
-//  std::cout << "indxWinnerProcess = " << indxWinnerProcess <<  " dStepLimit = " << pStepLength << std::endl;
-  //
-  // the geometrical and physical step lengths are the same for gamma
-  theTrack->SetGStepLength(pStepLength);
-  theTrack->SetWinnerProcessIndex(indxWinnerProcess);
-  //
+
+  // get the total macroscopic cross section and use this to sample the actual step length
+  // (till any of the possible discrete interactions: conversion, compton, photoelectric, gamma-nuclear)
+  const double totMXSec = GetTotalMacXSec(hepEmData, theMatIndx, theEkin, theLEkin, theGammaTrack);
+  const double totalMFP = (totMXSec>0.) ? 1./totMXSec : kALargeValue;
+  // save the mac-xsec for the update of the `number-of-interaction-left`:
+  theTrack->SetMFP(totalMFP, 0);
+  // sample the proposed step length
+  theTrack->SetGStepLength(totalMFP*theTrack->GetNumIALeft(0));
 }
 
 
+// NOTE: `SampleInteraction` needs to be invoked before that will set the winner process ID of the trimary track.
+//        This is not invoked here inside as it might be possible that gamma-nuclear happens in which case the caller
+//        needs to perfrom the interaction.
 void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* tlData) {
   G4HepEmTrack* theTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
   // === 1. The `number-of-interaction-left` needs to be updated based on the actual
@@ -94,10 +71,10 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
   if (theTrack->GetOnBoundary()) {
     return;
   }
+
   // reset number of interaction left for the winner discrete process
   const int iDProc = theTrack->GetWinnerProcessIndex();
   theTrack->SetNumIALeft(-1.0, iDProc);
-//  std::cout<< " --- iDProc = " << iDProc << std::endl;
   //
   // perform the discrete part of the winner interaction
   switch (iDProc) {
@@ -119,41 +96,107 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
 
 void   G4HepEmGammaManager::UpdateNumIALeft(G4HepEmTrack* theTrack) {
   const double pStepLength = theTrack->GetGStepLength();
-  double*    numInterALeft = theTrack->GetNumIALeft();
+  // NOTE: only one `number of interaction length left` is used from now on
+  //       for gamma that is the total, i.e. including all possible interactions,
+  //       and the MFP[0] is the total MFP
   double*       preStepMFP = theTrack->GetMFP();
+  double*    numInterALeft = theTrack->GetNumIALeft();
   numInterALeft[0] -= pStepLength/preStepMFP[0];
-  numInterALeft[1] -= pStepLength/preStepMFP[1];
-  numInterALeft[2] -= pStepLength/preStepMFP[2];
-  numInterALeft[3] -= pStepLength/preStepMFP[3];
 }
 
 
-double  G4HepEmGammaManager::GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin, const double lekin, const int iprocess) {
-  // get number of Conversion and Compton discrete energy grid points
-  const int numConvData = gmData->fConvEnergyGridSize;
-  const int numCompData = gmData->fCompEnergyGridSize;
-  const int numGNucData = gmData->fGNucEnergyGridSize;
-  const int      iStart = imat*2*(numConvData + numCompData + numGNucData);
-  // use the G4HepEmRunUtils GetSplineLog function for interpolation
-  switch (iprocess) {
-    case 0: { // Conversion
-              return ekin > gmData->fConvEnergyGrid[0]
-                     ? G4HepEmMax(0.0, GetSplineLog(numConvData, gmData->fConvEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart]) , ekin, lekin, gmData->fConvLogMinEkin, gmData->fConvEILDelta))
-                     : 0.0;
-            }
-    case 1: { // Compton
-              return G4HepEmMax(0.0, GetSplineLog(numCompData, gmData->fCompEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart+2*numConvData]) , ekin, lekin, gmData->fCompLogMinEkin, gmData->fCompEILDelta));
-            }
-    case 2: { // Gamma-nuclear
-              return ekin > gmData->fGNucEnergyGrid[0]
-                    ? G4HepEmMax(0.0, GetSplineLog(numGNucData, gmData->fGNucEnergyGrid, &(gmData->fConvCompGNucMacXsecData[iStart+2*(numConvData+numCompData)]) , ekin, lekin, gmData->fGNucLogMinEkin, gmData->fGNucEILDelta))
-                    : 0.0;
-            }
+double  G4HepEmGammaManager::GetTotalMacXSec(struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack) {
+  const G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
+  // find the kinetic energy window for the given `ekin` and
 
-    default:
-            return 0.0;
+  if (ekin > gmData->fEMax1) {
+    // window 2: ekin \in [2mc^2,100 TeV]; spline with 4 `y_i` values and their second derivatives at each `E_i`
+    // The total macroscopic ross section is the first `y` value so `iwhich=1`
+    const int ndata  = gmData->fEGridSize2;
+    const int istart = imat*gmData->fDataPerMat + gmData->fNumData0 + gmData->fNumData1; // start of data for this material and this energy window
+    return GetSplineLog4(ndata, &(gmData->fMacXsecData[istart]), ekin, lekin, gmData->fLogEMin2, gmData->fEILDelta2, 1);
   }
+
+  // NOTE: in case of window 0 and 1, the macroscopic cross section for PE is stored in the track that is used:
+  //       - to sample the interaction (Compton or PE if any) at the post step point (in `SampleInteraction` below)
+  //       - if PE interactin happens, then used to sample the target atom in the mnodel
+  //       While in case of window 2 above, the macroscopic corss section for PE is set in the track when sampling
+  //       the interaction and only if PE happens.
+  if (ekin > gmData->fEMax0) {
+    // window 1: ekin in [150 keV, 2mc^2]; linear interpolation with 2 `y_i` values at each `E_i`
+    // The total macroscopic cross sectino is the first `y` value so `iwhich=1`
+    const int ndata  = gmData->fEGridSize1;
+    const int istart = imat*gmData->fDataPerMat + gmData->fNumData0; // start of data for this material and this energy window
+    // might be better to interpolate both in this case and set the PEmxSec here
+    double mx[2]; // [total mac. xsec, PE mac. xsec]
+    GetLinearLog2(ndata, &(gmData->fMacXsecData[istart]), ekin, lekin, gmData->fLogEMin1, gmData->fEILDelta1, mx);
+    theGammaTrack->SetPEmxSec(mx[1]);
+    return mx[0];
+  }
+
+  // window 1: ekin in [100 eV, 150 keV]; linear interpolation with one `y_i` values at each `E_i`
+  //           which is not the total, but only the Compton scattering cross section so interpolate
+  //           that and add the PE cross section (also stores the PE cross section in the track
+  //           that can be used to select the interaction in this case)
+  const int  ndata  = gmData->fEGridSize0;
+  const int  istart = imat*gmData->fDataPerMat; // start of data for this material and this energy window
+  const double comp = GetLinearLog(ndata, &(gmData->fMacXsecData[istart]), ekin, lekin, gmData->fLogEMin0, gmData->fEILDelta0);
+  const double   pe = G4HepEmMax(0.0, GetMacXSecPE(hepEmData, imat, ekin));
+  theGammaTrack->SetPEmxSec(pe);
+  return comp+pe;
 }
+
+
+void G4HepEmGammaManager::SelectInteraction(struct G4HepEmData* hepEmData, G4HepEmTLData* tlData) {
+  G4HepEmGammaTrack* theGammaTrack = tlData->GetPrimaryGammaTrack();
+  // selected interactin ID will be set into the track as the winner process index
+  // and number of interaction length left will be reset to -1.0
+  SampleInteraction(hepEmData, theGammaTrack, tlData->GetRNGEngine()->flat());
+}
+
+
+// Sample the discrete interaction that happens at the post setp point and sets the track filed
+// Also sets the PE macroscopic cross section in the gamma track if PE happens (garbage othewise)
+// pid = 0 --> Conversion
+// pid = 1 --> Compton scattering
+// pid = 2 --> Photoelectric effect
+// pid = 3 --> Gamma nuclear interaction
+void G4HepEmGammaManager::SampleInteraction(struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd) {
+  G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
+  const double  theTMFP  = theTrack->GetMFP(0);       // only the total mean free path is stored (and that at[0])
+  const double   theEkin = theTrack->GetEKin();
+
+  // reset it as interaction will happen so we need to re-sample the number of ia left at the
+  // beginning of the next step
+  theTrack->SetNumIALeft(-1.0, 0);
+
+  G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
+  if (theEkin > gmData->fEMax1) {
+    const double lekin = theTrack->GetLogEKin();
+    const int     imat = hepEmData->fTheMatCutData->fMatCutData[theTrack->GetMCIndex()].fHepEmMatIndex;
+    const int   ndata  = gmData->fEGridSize2;
+    const int   istart = imat*gmData->fDataPerMat + gmData->fNumData0 + gmData->fNumData1; // start of data for this material and this energy window
+
+    double mxSec = 0.0;
+    double cProb = 0.0;
+    int pid = 2; // the real pid is pid-2
+    do {
+      mxSec  = GetSplineLog4(ndata, &(gmData->fMacXsecData[istart]), theEkin, lekin, gmData->fLogEMin2, gmData->fEILDelta2, pid);
+      cProb += mxSec*theTMFP;
+      ++pid;
+    } while (pid<6 && urnd>cProb);
+    theTrack->SetWinnerProcessIndex(pid-3); // -3 because at the end ++pid
+    theGammaTrack->SetPEmxSec(mxSec);
+    return;
+  }
+
+  // Below the 2 electron mass kinetic energy limit:
+  // Only Compton or PE possible and mac. xsec. for PE is already in the track
+  const double mxPE = theGammaTrack->GetPEmxSec();
+  const int pid = (urnd > theTMFP*mxPE) ? 1:2;
+  theTrack->SetWinnerProcessIndex(pid);
+}
+
 
 double G4HepEmGammaManager::GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin) {
   const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[imat];

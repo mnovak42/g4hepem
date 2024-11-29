@@ -39,6 +39,55 @@ struct G4HepEmGammaData {
   // at each material
   double*       fConvCompGNucMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize+fGNucEnergyGridSize)]
 
+//// === Macroscopic cross section related data:
+  // The 100 eV 100 TeV kinetic energy range is divided up to 3 kinetic energy window. At a discrete kinetic
+  // energy point, the following macroscopic cross section data are stored:
+  // - window 0: 100 eV - 150 keV; only 1 data stored at each E_i
+  //   1. the Compton scattering mac. xsec. (as PE is not smooth in this region)
+  //   note: the total mac. xsec. is the sum of 1. above plus the PE mac. xsec. as Conversion and Gamma-Nuclear
+  //         are zero in this energy window
+  // - window 1: 150 keV - 2mc^2; 2 data are stored at at each E_i
+  //    1. the sum of the Compton and PE mac. xsec
+  //    2. and the PE mac. xsec alone
+  //    note: conversion is still zero in this energy window and gamma-nuclear is assumed to be zero (very small)
+  //          so 1. above is the total mac. xsec.
+  // - window 2: 2mc^2 - 100 TeV; 4 data are stored at each E_i
+  //    1. the sum of Conversion, Compton, PE, Gamma-Nuclear (GN) mac. xsec.
+  //    2. the Conversion mac. xsec.
+  //    3. the Compton mac. xsec.
+  //    4. the PE mac. xsec.
+  //    note: 1. above is the total mac. xsec.
+  // NOTE: the total mac. xsec. can be used to determine how far the gamma goes till the next interaction while
+  //       the additional mac. xsec. data are sufficient (togeter with the total) to determine the interaction
+  //       at that point (if any)
+  //
+  // these grid densities provide a relativ error less than 0.5 %
+  const int     fEGridSize0 =   32;
+  const int     fEGridSize1 =   32;
+  const int     fEGridSize2 =  256;
+
+  int           fDataPerMat =   0;    // #data for one material in the fMacXsecData array
+  int           fNumData0   =   0;    // #data for one material related to the first  (0th) ekin window
+  int           fNumData1   =   0;    // #data for one material related to the second (1th) ekinwindow
+
+  double        fEMin0      = 0.0;     // minimum kinetic energy of the first window (100.0*CLHEP::eV)
+  double        fEMax0      = 0.0;     // minimum kinetic energy of the second window (150.0*CLHEP::eV)
+  double        fLogEMin0   = 0.0;     // =  0.021759358706830;  // log(fEMin0)
+  double        fEILDelta0  = 0.0;     // =  13.85950970842557;  // 1./[log(fEMax0/fEMin0)/(fEGridSize0-1)]
+
+  // double        fEMin1  --> fEMax0
+  double        fEMax1      = 0.0;
+  double        fLogEMin1   = 0.0;
+  double        fEILDelta1  = 0.0;
+
+  // double        fEMin2  --> fEMax1
+  double        fEMax2      = 0.0;
+  double        fLogEMin2   = 0.0;
+  double        fEILDelta2  = 0.0;
+
+  double*       fMacXsecData; // [#materials x fDataPerMat]
+
+
 
 //// === element selector for conversion (note: KN compton interaction do not know anything about Z)
   int           fElemSelectorConvEgridSize = 0;

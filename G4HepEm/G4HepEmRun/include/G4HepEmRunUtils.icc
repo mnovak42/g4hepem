@@ -60,6 +60,17 @@ double GetSpline(double x1, double x2, double y1, double y2, double secderiv1, d
   return y1 + b*(y2 - y1) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
+double GetLinear(double x1, double x2, double y1, double y2, double x) {
+  // Unchecked precondition: x1 < x < x2
+  const double dl = x2 - x1;
+  // note: all corner cases of the previous methods are covered and eventually
+  //       gives b=0/1 that results in y=y0\y_{N-1} if e<=x[0]/e>=x[N-1] or
+  //       y=y_i/y_{i+1} if e<x[i]/e>=x[i+1] due to small numerical errors
+  const double  b = G4HepEmMax(0., G4HepEmMin(1., (x - x1)/dl));
+  return y1 + b*(y2 - y1);
+}
+
+
 // use the improved, robust spline interpolation that I put in G4 10.6
 double GetSplineLog(int ndata, double* xdata, double* ydata, double* secderiv, double x, double logx, double logxmin, double invLDBin) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
@@ -75,7 +86,7 @@ double GetSplineLog(int ndata, double* xdata, double* ydata, double x, double lo
   const double xv = G4HepEmMax(xdata[0], G4HepEmMin(xdata[ndata-1], x));
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
   const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
-  const int  idx2 = 2*idx; 
+  const int  idx2 = 2*idx;
   return GetSpline(xdata[idx], xdata[idx+1], ydata[idx2], ydata[idx2+2], ydata[idx2+1], ydata[idx2+3], xv);
 }
 
@@ -107,6 +118,108 @@ double GetSpline(double* data, double x, int idx) {
   const int  idx3 = 3*idx;
   return GetSpline(data[idx3], data[idx3+3], data[idx3+1], data[idx3+4], data[idx3+2], data[idx3+5], x);
 }
+
+
+
+
+double GetLinearLog(int ndata, double* data, double x, double logx, double logxmin, double invLDBin) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[2*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx2_0 = 2*idx;
+  const int  idx2_1 = idx2_0+2;
+  return GetLinear(data[idx2_0], data[idx2_1], data[idx2_0+1], data[idx2_1+1], x);
+}
+
+// interpolates one data out of the 2 specifed by the `iwhich=1,2` parameter
+double GetLinearLog2(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[3*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx3_0 = 3*idx;
+  const int  idx3_1 = idx3_0+3;
+  return GetLinear(data[idx3_0], data[idx3_1], data[idx3_0+iwhich], data[idx3_1+iwhich], x);
+}
+// interpolates all the 2 data at once
+void GetLinearLog2(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, double res[2]) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[3*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx3_0 = 3*idx;
+  const int  idx3_1 = idx3_0+3;
+  //return GetLinear(data[idx3_0], data[idx3_1], data[idx3_0+iwhich], data[idx3_1+iwhich], x);
+  const double dl = data[idx3_1] - data[idx3_0];
+  const double  b = G4HepEmMax(0., G4HepEmMin(1., (x - data[idx3_0])/dl));
+  for (int i=1; i<3; ++i) {
+    const double y1 = data[idx3_0+i];
+    const double y2 = data[idx3_1+i];
+    res[i-1] = G4HepEmMax(0.0, y1 + b*(y2 - y1));
+  }
+}
+/*
+double GetLinearLogN(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich, int shift) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[shift*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int    i0 = shift*idx;
+  const int    i1 = shift*(idx+1);
+  return GetLinear(data[i0], data[i1], data[i0+iwhich], data[i1+iwhich], x);
+}
+*/
+
+
+
+
+// interpolates one out of the 4 data at once, specififed by `iwhich =1,2,3 or 4`
+double GetSplineLog4(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[9*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx9_0 = 9*idx;
+  const int  idx9_1 = idx9_0 + 9;
+  iwhich = (iwhich-1)*2+1;
+  return GetSpline(data[idx9_0], data[idx9_1], data[idx9_0+iwhich], data[idx9_1+iwhich], data[idx9_0+iwhich+1], data[idx9_1+iwhich+1], x);
+}
+// interpolates all the 4 data at once
+void GetSplineLog4(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, double res[4]) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[9*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int  idx9_0 = 9*idx;
+  const int  idx9_1 = idx9_0 + 9;
+  const double   dl = data[idx9_1] - data[idx9_0];
+  const double    b = G4HepEmMax(0., G4HepEmMin(1., (x - data[idx9_0])/dl));
+  for (int i=0; i<4; i++) {
+    const double os = 0.166666666667; // 1./6.
+    const int ii = 2*i+1;
+    const double secderiv1 = data[idx9_0+ii+1];
+    const double secderiv2 = data[idx9_1+ii+1];
+    const double c0 = (2.0 - b)*secderiv1;
+    const double c1 = (1.0 + b)*secderiv2;
+    const double y1 = data[idx9_0+ii];
+    const double y2 = data[idx9_1+ii];
+    res[i] = G4HepEmMax(0.0, y1 + b*(y2 - y1) + (b*(b-1.0))*(c0+c1)*(dl*dl*os));
+  }
+}
+/*
+double GetSplineLogN(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich, int shift) {
+  // make sure that $x \in  [x[0],x[ndata-1]]$
+  const double xv = G4HepEmMax(data[0], G4HepEmMin(data[shift*(ndata-1)], x));
+  // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
+  const int   idx = (int)G4HepEmMax(0., G4HepEmMin((logx-logxmin)*invLDBin, ndata-2.));
+  const int    i0 = shift*idx;
+  const int    i1 = shift*(idx+1);
+  iwhich = (iwhich-1)*2+1;
+  return GetSpline(data[i0], data[i1], data[i0+iwhich], data[i1+iwhich], data[i0+iwhich+1], data[i1+iwhich+1], x);
+}
+*/
+
 
 // this is used to get index for inverse range on host
 // NOTE: it is assumed that x[0] <= x and x < x[step*(num-1)]

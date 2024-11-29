@@ -41,10 +41,15 @@ public:
   G4HepEmHostDevice
   static void UpdateNumIALeft(G4HepEmTrack* theTrack);
 
+  G4HepEmHostDevice
+  static double
+  GetTotalMacXSec(struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack);
+
+  static void SelectInteraction(struct G4HepEmData* hepEmData, G4HepEmTLData* tlData);
 
   G4HepEmHostDevice
-  static double GetMacXSec(const struct G4HepEmGammaData* gmData, const int imat, const double ekin,
-                           const double lekin, const int iprocess);
+  static void
+  SampleInteraction(struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd);
 
   G4HepEmHostDevice
   static double GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin);
