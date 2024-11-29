@@ -16,29 +16,6 @@ struct G4HepEmGammaData {
   /** Number of G4HepEm materials: number of G4HepEmMatData structures stored in the G4HepEmMaterialData::fMaterialData array. */
   int           fNumMaterials = 0;
 
-//// === conversion related data. Grid: 146 bins form 2mc^2 - 100 TeV
-  const int     fConvEnergyGridSize = 147;
-  double        fConvLogMinEkin = 0.0;    // = 0.021759358706830;  // log(2mc^2)
-  double        fConvEILDelta = 0.0;      // = 7.935247775833226;  // 1./[log(emax/emin)/146]
-  double*       fConvEnergyGrid = nullptr;    // [fConvEnergyGrid]
-
-//// === compton related data. 84 bins (7 per decades) from 100 eV - 100 TeV
-  const int     fCompEnergyGridSize = 85;
-  double        fCompLogMinEkin = 0.0;     // = -9.210340371976182; // log(0.0001) i.e. log(100 eV)
-  double        fCompEILDelta = 0.0;       // =  3.040061373322763; // 1./[log(emax/emin)/84]
-  double*       fCompEnergyGrid = nullptr;     // [fCompEnergyGridSize]
-
-//// === gamma nuclear related data. 255 bins form  2mc^2 - 100 TeV
-  const int     fGNucEnergyGridSize = 256;
-  double        fGNucLogMinEkin = 0.0;     // =  0.021759358706830;  // log(2mc^2)
-  double        fGNucEILDelta = 0.0;       // =  13.85950970842557;  // 1./[log(emax/emin)/255]
-  double*       fGNucEnergyGrid = nullptr;     // [fGNucEnergyGridSize]
-
-
-  // the macroscopic cross sections for all materials and for [conversion,compton,gamma-nuclear]
-  // at each material
-  double*       fConvCompGNucMacXsecData = nullptr;   // [#materials*2*(fConvEnergyGridSize+fCompEnergyGridSize+fGNucEnergyGridSize)]
-
 //// === Macroscopic cross section related data:
   // The 100 eV 100 TeV kinetic energy range is divided up to 3 kinetic energy window. At a discrete kinetic
   // energy point, the following macroscopic cross section data are stored:
@@ -85,7 +62,7 @@ struct G4HepEmGammaData {
   double        fLogEMin2   = 0.0;
   double        fEILDelta2  = 0.0;
 
-  double*       fMacXsecData; // [#materials x fDataPerMat]
+  double*       fMacXsecData = nullptr; // [#materials x fDataPerMat]
 
 
 
