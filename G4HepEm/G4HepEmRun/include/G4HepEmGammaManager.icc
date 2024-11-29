@@ -105,7 +105,7 @@ void   G4HepEmGammaManager::UpdateNumIALeft(G4HepEmTrack* theTrack) {
 }
 
 
-double  G4HepEmGammaManager::GetTotalMacXSec(struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack) {
+double  G4HepEmGammaManager::GetTotalMacXSec(const struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack) {
   const G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
   // find the kinetic energy window for the given `ekin` and
 
@@ -147,7 +147,7 @@ double  G4HepEmGammaManager::GetTotalMacXSec(struct G4HepEmData* hepEmData, cons
 }
 
 
-void G4HepEmGammaManager::SelectInteraction(struct G4HepEmData* hepEmData, G4HepEmTLData* tlData) {
+void G4HepEmGammaManager::SelectInteraction(const struct G4HepEmData* hepEmData, G4HepEmTLData* tlData) {
   G4HepEmGammaTrack* theGammaTrack = tlData->GetPrimaryGammaTrack();
   // selected interactin ID will be set into the track as the winner process index
   // and number of interaction length left will be reset to -1.0
@@ -161,7 +161,7 @@ void G4HepEmGammaManager::SelectInteraction(struct G4HepEmData* hepEmData, G4Hep
 // pid = 1 --> Compton scattering
 // pid = 2 --> Photoelectric effect
 // pid = 3 --> Gamma nuclear interaction
-void G4HepEmGammaManager::SampleInteraction(struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd) {
+void G4HepEmGammaManager::SampleInteraction(const struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd) {
   G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
   const double  theTMFP  = theTrack->GetMFP(0);       // only the total mean free path is stored (and that at[0])
   const double   theEkin = theTrack->GetEKin();

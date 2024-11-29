@@ -45,8 +45,8 @@ bool TestGammaElemSelectorData ( const struct G4HepEmData* hepEmData ) {
   for (int i=0; i<numTestCases; ++i) {
     int imat          = (int)(dis(gen)*numMatData);
     tsInImat[i]       = imat;
-    double minEKin    = theGammaData->fConvEnergyGrid[0];
-    double maxEKin    = theGammaData->fConvEnergyGrid[theGammaData->fConvEnergyGridSize-1];
+    double minEKin    = theGammaData->fEMax0;
+    double maxEKin    = theGammaData->fEMax2;
     double lMinEkin   = std::log(minEKin);
     double lEkinDelta = std::log(maxEKin/minEKin);
     tsInLogEkin[i]    = dis(gen)*lEkinDelta+lMinEkin;

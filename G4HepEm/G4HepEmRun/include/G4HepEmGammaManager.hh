@@ -43,13 +43,13 @@ public:
 
   G4HepEmHostDevice
   static double
-  GetTotalMacXSec(struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack);
+  GetTotalMacXSec(const struct G4HepEmData* hepEmData, const int imat, const double ekin, const double lekin, G4HepEmGammaTrack* theGammaTrack);
 
-  static void SelectInteraction(struct G4HepEmData* hepEmData, G4HepEmTLData* tlData);
+  static void SelectInteraction(const struct G4HepEmData* hepEmData, G4HepEmTLData* tlData);
 
   G4HepEmHostDevice
   static void
-  SampleInteraction(struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd);
+  SampleInteraction(const struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd);
 
   G4HepEmHostDevice
   static double GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin);
