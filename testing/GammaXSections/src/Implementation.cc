@@ -54,19 +54,21 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
     tsInEkin[i]    = std::exp(tsInLogEkin[i]);
 
     tsInURand[i] = dis(gen);
-}
+  }
   //
   // Use G4HepEmGammaManager to evaluate the macroscopic cross sections
   // for conversion inot e-e+ pairs and Compton scattering.
   G4HepEmGammaTrack aGammaTrack;
   G4HepEmTrack* aTrack = aGammaTrack.GetTrack();
   for (int i=0; i<numTestCases; ++i) {
-    tsOutMXTot[i] = G4HepEmGammaManager::GetTotalMacXSec (theGammaData, theMatData, tsInImat[i], tsInEkin[i], tsInLogEkin[i], &aGammaTrack); // total mxces
+    aTrack->SetEKin(tsInEkin[i]);
+    aTrack->SetMCIndex(tsInImat[i]); // mat index can be used now as mc index
+    tsOutMXTot[i] = G4HepEmGammaManager::GetTotalMacXSec(hepEmData, &aGammaTrack); // total mxces
     // set all track fields that the sampling below needs
     const double totMFP = (tsOutMXTot[i] > 0) ? 1.0/tsOutMXTot[i] : 1E+20;
     if (tsOutMXTot[i]>0) { // otherwise IMFP would be such that we never call sampling
       aTrack->SetMFP(totMFP, 0);
-      G4HepEmGammaManager::SampleInteraction(theGammaData, &aGammaTrack, tsInEkin[i], tsInLogEkin[i], tsInImat[i], tsInURand[i]); // sample interaction
+      G4HepEmGammaManager::SampleInteraction(hepEmData, &aGammaTrack, tsInURand[i]); // sample interaction
       tsOutProcID[i] = aGammaTrack.GetTrack()->GetWinnerProcessIndex();
     }
   }
