@@ -15,11 +15,9 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData );
   // cross section values for conversion, Compton and gamma-nuclear on the
   // device for all test cases.
   void TestMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImat_h,
-                                 double* tsInEkinConv_h, double* tsInLogEkinConv_h,
-                                 double* tsInEkinComp_h, double* tsInLogEkinComp_h,
-                                 double* tsInEkinGNuc_h, double* tsInLogEkinGNuc_h,
-                                 double* tsOutMXConv_h,  double* tsOutMXComp_h,
-                                 double* tsOutMXGNuc_h, int numTestCases );
+                                 double* tsInEkin_h, double* tsInLogEkinv_h,
+                                 double* tsInURand_h, double* tsOutMXTot_h,
+                                 int* tsOutProcID_h, int numTestCases );
 
 #endif // G4HepEm_CUDA_BUILD
 

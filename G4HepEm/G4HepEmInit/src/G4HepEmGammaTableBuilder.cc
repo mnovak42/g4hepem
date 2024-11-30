@@ -31,35 +31,45 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
                        G4CrossSectionDataStore* hadGNucXSDataStore, struct G4HepEmData* hepEmData) {
   // get the pointer to the already allocated G4HepEmGammaData from the HepEmData
   struct G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
+  // == Generate the energy grids for the 3 kinetic energy window of the total macroscopic cross sections
+  // window: 1
+  double emin = 100.0*CLHEP::eV;
+  double emax = 150.0*CLHEP::keV;
+  gmData->fEMin0 = emin;
+  gmData->fEMax0 = emax;
+  int numEkin0 = gmData->fEGridSize0;
+  double* mxsecEGrid0 = new double[numEkin0];
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numEkin0, gmData->fLogEMin0, gmData->fEILDelta0, mxsecEGrid0);
+  double* mxComp_w0   = new double[numEkin0]; // mxsec for compton (as PE cannot be interpolated here)
   //
-  // == Generate the enegry grid for Conversion
-  double emin = 2.0*CLHEP::electron_mass_c2;
-  double emax = 100.0*CLHEP::TeV;
-  int numConvEkin = gmData->fConvEnergyGridSize;
-  delete [] gmData->fConvEnergyGrid;
-  gmData->fConvEnergyGrid = new double[numConvEkin]{};
-  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numConvEkin, gmData->fConvLogMinEkin, gmData->fConvEILDelta, gmData->fConvEnergyGrid);
-
-  // == Generate the enegry grid for Compton
-  emin = 100.0* CLHEP::eV;
+  // window: 2
+  emin = 150.0*CLHEP::keV;
+  emax =   2.0*CLHEP::electron_mass_c2;
+  gmData->fEMax1 = emax;
+  int numEkin1 = gmData->fEGridSize1;
+  double* mxsecEGrid1 = new double[numEkin1];
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numEkin1, gmData->fLogEMin1, gmData->fEILDelta1, mxsecEGrid1);
+  // allocate some auxiliary arrays to prepare data
+  double* mxTot_w1 = new double[numEkin1]; // sum of Compton and PE mxsec
+  double* mxPE_w1  = new double[numEkin1]; // mxsec PE
+  //
+  // window: 3
+  emin =   2.0*CLHEP::electron_mass_c2;
   emax = 100.0*CLHEP::TeV;
-  int numCompEkin = gmData->fCompEnergyGridSize;
-  delete [] gmData->fCompEnergyGrid;
-  gmData->fCompEnergyGrid = new double[numCompEkin]{};
-  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numCompEkin, gmData->fCompLogMinEkin, gmData->fCompEILDelta, gmData->fCompEnergyGrid);
+  gmData->fEMax2 = emax;
+  int numEkin2 = gmData->fEGridSize2;
+  double* mxsecEGrid2 = new double[numEkin2];
+  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numEkin2, gmData->fLogEMin2, gmData->fEILDelta2, mxsecEGrid2);
+  // allocate some auxiliary arrays to prepare all data needed
+  double* mxTot_w2  = new double[numEkin2]; // Conversion + compton + PE + Gamma-Nuclear mxsec
+  double* sdTot_w2  = new double[numEkin2]; // the second derivative of that
+  double* mxConv_w2 = new double[numEkin2]; // Conversion mxsec
+  double* sdConv_w2 = new double[numEkin2]; // the second derivative of that
+  double* mxComp_w2 = new double[numEkin2]; // Compton  mxsec
+  double* sdComp_w2 = new double[numEkin2]; // the second derivative of that
+  double* mxPE_w2   = new double[numEkin2]; // PE  mxsec
+  double* sdPE_w2   = new double[numEkin2]; // the second derivative of that
 
-  // == Generate the enegry grid for Gamma-nuclear
-  emin =   0.5*CLHEP::MeV;
-  emax = 100.0*CLHEP::TeV;
-  int numGNucEkin = gmData->fGNucEnergyGridSize;
-  delete [] gmData->fGNucEnergyGrid;
-  gmData->fGNucEnergyGrid = new double[numGNucEkin]{};
-  G4HepEmInitUtils::FillLogarithmicGrid(emin, emax, numGNucEkin, gmData->fGNucLogMinEkin, gmData->fGNucEILDelta, gmData->fGNucEnergyGrid);
-
-  //
-  // == Compute the macroscopic cross sections: for Conversion, Compton and
-  //    gamma-nuclear interactions over all materials
-  //
   // get the G4HepEm material-cuts and material data: allocate memory for the
   // max-xsec data
   const struct G4HepEmMatCutData*   hepEmMCData  = hepEmData->fTheMatCutData;
@@ -67,7 +77,10 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   int numHepEmMCCData   = hepEmMCData->fNumMatCutData;
   int numHepEmMatData   = hepEmMatData->fNumMaterialData;
   gmData->fNumMaterials = numHepEmMatData;
-  gmData->fConvCompGNucMacXsecData = new double[numHepEmMatData*2*(numConvEkin + numCompEkin + numGNucEkin)]{};
+  gmData->fNumData0     = 2*numEkin0;
+  gmData->fNumData1     = 3*numEkin1;
+  gmData->fDataPerMat   = 2*numEkin0 + 3*numEkin1 + 9*numEkin2;
+  gmData->fMacXsecData = new double[numHepEmMatData*gmData->fDataPerMat]{};
   std::vector<bool> isThisMatDone  = std::vector<bool>(numHepEmMatData,false);
   //
   // copute the macroscopic cross sections
@@ -75,9 +88,7 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
   G4ParticleDefinition* g4PartDef = G4Gamma::Gamma();
   // we will need to obtain the correspondig G4MaterialCutsCouple object pointers
   G4ProductionCutsTable* theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
-  // a temporary container for the mxsec data and for their second deriv
-  double* macXSec   = new double[std::max(std::max(numConvEkin,numCompEkin), numGNucEkin)]{};
-  double* secDerivs = new double[std::max(std::max(numConvEkin,numCompEkin), numGNucEkin)]{};
+  G4DynamicParticle* dyGamma = new G4DynamicParticle(g4PartDef, G4ThreeVector(0,0,1), 0);
   for (int imc=0; imc<numHepEmMCCData; ++imc) {
     const struct G4HepEmMCCData& mccData = hepEmMCData->fMatCutData[imc];
     int hepEmMatIndx = mccData.fHepEmMatIndex;
@@ -86,60 +97,90 @@ void BuildLambdaTables(G4PairProductionRelModel* ppModel, G4KleinNishinaCompton*
       continue;
     // mac-xsecs needs to be computed for this material
     const G4MaterialCutsCouple* g4MatCut = theCoupleTable->GetMaterialCutsCouple(mccData.fG4MatCutIndex);
-    // == Conversion
-    for (int ie=0; ie<numConvEkin; ++ie) {
-      const double theEKin = gmData->fConvEnergyGrid[ie];
-      macXSec[ie] = std::max(0.0, ppModel->CrossSection(g4MatCut, g4PartDef, theEKin));
+    //
+    // window: 1 calculate the Compton scattering macroscopic ross section
+    for (int ie=0; ie<numEkin0; ++ie) {
+      const double theEKin = mxsecEGrid0[ie];
+      mxComp_w0[ie] = std::max(0.0, knModel->CrossSection(g4MatCut, g4PartDef, theEKin));
     }
-    // prepare for spline by computing the second derivatives
-    G4HepEmInitUtils::PrepareSpline(numConvEkin, gmData->fConvEnergyGrid, macXSec, secDerivs);
-    // fill in into the continuous array: index where data for this material starts from
-    int mxStartIndx = hepEmMatIndx*2*(numConvEkin + numCompEkin + numGNucEkin);
-    int indxCont    = mxStartIndx;
-    for (int i=0; i<numConvEkin; ++i) {
-      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
-      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
+    //
+    // window: 2 calculate the Compton and PE macroscopic ross sections
+    for (int ie=0; ie<numEkin1; ++ie) {
+      const double theEKin = mxsecEGrid1[ie];
+      const double comp = std::max(0.0, knModel->CrossSection(g4MatCut, g4PartDef, theEKin));
+      const double pe   = std::max(0.0, GetMacXSecPE(hepEmData, hepEmMatIndx, theEKin));
+      mxTot_w1[ie] = comp+pe;
+      mxPE_w1[ie]  = pe;
     }
-    // == Compton
-//    std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
-    for (int ie=0; ie<numCompEkin; ++ie) {
-      const double theEKin = gmData->fCompEnergyGrid[ie];
-      macXSec[ie] = std::max(0.0, knModel->CrossSection(g4MatCut, g4PartDef, theEKin));
-//      std::cout << " E = " << theEKin << " [MeV] Sigam-Compton(E) = " << macXSec[ie] << std::endl;
-    }
-    // prepare for spline by computing the second derivatives
-    G4HepEmInitUtils::PrepareSpline(numCompEkin, gmData->fCompEnergyGrid, macXSec, secDerivs);
-    // fill in into the continuous array: the continuous index is used further here
-    for (int i=0; i<numCompEkin; ++i) {
-      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
-      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
-    }
-    // == Gamma-nuclear
-    // std::cout << " ===== Material = " << g4MatCut->GetMaterial()->GetName() << std::endl;
-    G4DynamicParticle* dyGamma = new G4DynamicParticle(g4PartDef, G4ThreeVector(0,0,1), 0);
-    for (int ie=0; ie<numGNucEkin; ++ie) {
-      const double theEKin = gmData->fGNucEnergyGrid[ie];
+    //
+    // window: 3 calculate the Conversion, Compton, PE and Gamma-Nuclear macroscopic cross sections
+    for (int ie=0; ie<numEkin2; ++ie) {
+      const double theEKin = mxsecEGrid2[ie];
+      const double conv = std::max(0.0, ppModel->CrossSection(g4MatCut, g4PartDef, theEKin));
+      const double comp = std::max(0.0, knModel->CrossSection(g4MatCut, g4PartDef, theEKin));
+      const double pe   = std::max(0.0, GetMacXSecPE(hepEmData, hepEmMatIndx, theEKin));
       dyGamma->SetKineticEnergy(theEKin);
-      macXSec[ie] = std::max(0.0, hadGNucXSDataStore->ComputeCrossSection(dyGamma, g4MatCut->GetMaterial()));
-      // std::cout << " E = " << theEKin << " [MeV] Sigam-GNuc(E) = " << macXSec[ie] << std::endl;
+      const double gnuc = std::max(0.0, hadGNucXSDataStore->ComputeCrossSection(dyGamma, g4MatCut->GetMaterial()));
+      mxTot_w2[ie]  = conv+comp+pe+gnuc;
+      mxConv_w2[ie] = conv;
+      mxComp_w2[ie] = comp;
+      mxPE_w2[ie]   = pe;
+      sdTot_w2[ie]  = 0.0;
+      sdConv_w2[ie] = 0.0;
+      sdComp_w2[ie] = 0.0;
+      sdPE_w2[ie]   = 0.0;
     }
-    delete dyGamma;
     // prepare for spline by computing the second derivatives
-    G4HepEmInitUtils::PrepareSpline(numGNucEkin, gmData->fGNucEnergyGrid, macXSec, secDerivs);
-    // fill in into the continuous array: the continuous index is used further here
-    for (int i=0; i<numGNucEkin; ++i) {
-      gmData->fConvCompGNucMacXsecData[indxCont++] = macXSec[i];
-      gmData->fConvCompGNucMacXsecData[indxCont++] = secDerivs[i];
+    G4HepEmInitUtils::PrepareSpline(numEkin2, mxsecEGrid2,  mxTot_w2, sdTot_w2);
+    G4HepEmInitUtils::PrepareSpline(numEkin2, mxsecEGrid2, mxConv_w2, sdConv_w2);
+    G4HepEmInitUtils::PrepareSpline(numEkin2, mxsecEGrid2, mxComp_w2, sdComp_w2);
+    G4HepEmInitUtils::PrepareSpline(numEkin2, mxsecEGrid2,   mxPE_w2, sdPE_w2);
+    // fill in the data for this material into the final location
+    int indxCont = hepEmMatIndx*gmData->fDataPerMat; // data for this material starts here
+    for (int ie=0; ie<numEkin0; ++ie) {
+      const double theEKin = mxsecEGrid0[ie];
+      gmData->fMacXsecData[indxCont++] = theEKin;
+      gmData->fMacXsecData[indxCont++] = mxComp_w0[ie];  // mac. x-sec Compton
     }
-
+    for (int ie=0; ie<numEkin1; ++ie) {
+      const double theEKin = mxsecEGrid1[ie];
+      gmData->fMacXsecData[indxCont++] = theEKin;
+      gmData->fMacXsecData[indxCont++] = mxTot_w1[ie];  // mac. x-sec total: Compton + PE
+      gmData->fMacXsecData[indxCont++] = mxPE_w1[ie];   // mac. x-sec PE
+    }
+    for (int ie=0; ie<numEkin2; ++ie) {
+      const double theEKin = mxsecEGrid2[ie];
+      gmData->fMacXsecData[indxCont++] = theEKin;
+      gmData->fMacXsecData[indxCont++] = mxTot_w2[ie]; // mac. x-sec total: Conv. + Compt. + PE + GN
+      gmData->fMacXsecData[indxCont++] = sdTot_w2[ie]; // second derivative of that
+      gmData->fMacXsecData[indxCont++] = mxConv_w2[ie]; // mac. x-sec Conversion
+      gmData->fMacXsecData[indxCont++] = sdConv_w2[ie]; // second derivative of that
+      gmData->fMacXsecData[indxCont++] = mxComp_w2[ie]; // mac. x-sec Compton
+      gmData->fMacXsecData[indxCont++] = sdComp_w2[ie]; // second derivative of that
+      gmData->fMacXsecData[indxCont++] = mxPE_w2[ie];   // mac. x-sec PE
+      gmData->fMacXsecData[indxCont++] = sdPE_w2[ie];   // second derivative of that
+    }
     //
     // set this material index to be done
     isThisMatDone[hepEmMatIndx] = true;
   }
-  //
-  // free all dynamically allocated auxilary memory
-  delete[] macXSec;
-  delete[] secDerivs;
+  delete dyGamma;
+
+  // free all dynamically allocated auxiliary memory
+  delete[] mxsecEGrid0;
+  delete[] mxsecEGrid1;
+  delete[] mxsecEGrid2;
+  delete[] mxComp_w0;
+  delete[] mxTot_w1;
+  delete[] mxPE_w1;
+  delete[] mxTot_w2;
+  delete[] sdTot_w2;
+  delete[] mxConv_w2;
+  delete[] sdConv_w2;
+  delete[] mxComp_w2;
+  delete[] sdComp_w2;
+  delete[] mxPE_w2;
+  delete[] sdPE_w2;
 }
 
 
@@ -149,8 +190,8 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
   struct G4HepEmGammaData* gmData = hepEmData->fTheGammaData;
   //
   // == Generate the enegry grid for Conversion-element selectors
-  const double emin      = gmData->fConvEnergyGrid[0];
-  const double emax      = gmData->fConvEnergyGrid[gmData->fConvEnergyGridSize-1];
+  const double emin      = gmData->fEMax1;
+  const double emax      = gmData->fEMax2;
   const double invlog106 = 1.0/(6.0*std::log(10.0));
   int numConvEkin = (int)(G4EmParameters::Instance()->NumberOfBinsPerDecade()*std::log(emax/emin)*invlog106);
   gmData->fElemSelectorConvEgridSize = numConvEkin;
@@ -223,4 +264,23 @@ void BuildElementSelectorTables(G4PairProductionRelModel* ppModel, struct G4HepE
       }
     }
   }
+}
+
+
+
+double GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin) {
+  const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[imat];
+  int interval = 0;
+  if (ekin >= matData->fSandiaEnergies[0]) {
+    // Optimization: linear search starting with intervals for higher energies.
+    for (int i = matData->fNumOfSandiaIntervals - 1; i >= 0; i--) {
+      if (ekin >= matData->fSandiaEnergies[i]) {
+        interval = i;
+        break;
+      }
+    }
+  }
+  const double* sandiaCof = &matData->fSandiaCoefficients[4 * interval];
+  const double inv = 1 / ekin;
+  return inv * (sandiaCof[0] + inv * (sandiaCof[1] + inv * (sandiaCof[2] + inv * sandiaCof[3])));
 }

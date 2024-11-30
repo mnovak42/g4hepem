@@ -34,6 +34,7 @@
 #include "G4ComptonScattering.hh"
 #include "G4GammaConversion.hh"
 #include "G4PhotoElectricEffect.hh"
+#include "G4GammaGeneralProcess.hh"
 
 #include "G4eMultipleScattering.hh"
 #include "G4eIonisation.hh"
@@ -47,6 +48,7 @@
 
 #include "G4PhysicsListHelper.hh"
 #include "G4BuilderType.hh"
+#include "G4LossTableManager.hh"
 
 
 PhysListG4Em::PhysListG4Em(const G4String& name)
@@ -82,10 +84,19 @@ void PhysListG4Em::ConstructProcess()
 
   // Add gamma EM processes
   particle = G4Gamma::Gamma();
-
-  ph->RegisterProcess(new G4PhotoElectricEffect, particle);
-  ph->RegisterProcess(new G4ComptonScattering, particle);
-  ph->RegisterProcess(new G4GammaConversion, particle);
+  if (G4EmParameters::Instance()->GeneralProcessActive()) {
+    // Gamma general or Woodcock process depending is the latter was set
+    G4GammaGeneralProcess* sp = new G4GammaGeneralProcess;
+    sp->AddEmProcess(new G4PhotoElectricEffect);
+    sp->AddEmProcess(new G4ComptonScattering);
+    sp->AddEmProcess(new G4GammaConversion);
+    G4LossTableManager::Instance()->SetGammaGeneralProcess(sp);
+    ph->RegisterProcess(sp, particle);
+  } else {
+    ph->RegisterProcess(new G4PhotoElectricEffect, particle);
+    ph->RegisterProcess(new G4ComptonScattering, particle);
+    ph->RegisterProcess(new G4GammaConversion, particle);
+  }
 
   //
   // Add e- EM processes

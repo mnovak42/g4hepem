@@ -8,6 +8,7 @@
 #include "G4HepEmGammaData.hh"
 
 #include "G4HepEmGammaManager.hh"
+#include "G4HepEmGammaTrack.hh"
 
 #include <cmath>
 #include <random>
@@ -28,102 +29,83 @@ bool TestGammaXSectionData ( const struct G4HepEmData* hepEmData ) {
   const G4HepEmGammaData* theGammaData  = hepEmData->fTheGammaData;
   const G4HepEmMaterialData* theMatData = hepEmData->fTheMaterialData;
 
-  const int numConvData = theGammaData->fConvEnergyGridSize;
-  const int numCompData = theGammaData->fCompEnergyGridSize;
-  const int numGNucData = theGammaData->fGNucEnergyGridSize;
   const int numMatData  = theMatData->fNumMaterialData;
   // allocate memory (host) to store the generated test cases:
-  //  - the numTestCases, material index and kinetic energy combinations
+  //  - the numTestCases, material index, kinetic energy combinations and random
+  //    number combinations
   // and the results:
-  //  - the numTestCases, restricted macroscopic cross sction for conversion,
-  //    Compton scattering evaluated at the test cases.
-  int*    tsInImat        = new int[numTestCases];
-  double* tsInEkinConv    = new double[numTestCases];
-  double* tsInLogEkinConv = new double[numTestCases];
-  double* tsInEkinComp    = new double[numTestCases];
-  double* tsInLogEkinComp = new double[numTestCases];
-  double* tsInEkinGNuc    = new double[numTestCases];
-  double* tsInLogEkinGNuc = new double[numTestCases];
-  double* tsOutMXConv     = new double[numTestCases];
-  double* tsOutMXComp     = new double[numTestCases];
-  double* tsOutMXGNuc     = new double[numTestCases];
-  // the maximum (+2%) primary particle kinetic energy that is covered by the
-  // simulation (100 TeV by default). alos use -2% for the low energy limit.
-  const double     maxLEKin = std::log(1.02*theGammaData->fConvEnergyGrid[numConvData-1]);
-  const double minLEKinConv = std::log(theGammaData->fConvEnergyGrid[0]*0.98);
-  const double minLEKinComp = std::log(theGammaData->fCompEnergyGrid[0]*0.98);
-  const double minLEKinGNuc = std::log(theGammaData->fGNucEnergyGrid[0]*0.98);
+  //  - the numTestCases total mac. xsec and the ID of the sampled interactions
+  int*    tsInImat    = new int[numTestCases];
+
+  double* tsInEkin    = new double[numTestCases];
+  double* tsInLogEkin = new double[numTestCases];
+  double* tsInURand   = new double[numTestCases];
+
+  double* tsOutMXTot  = new double[numTestCases];
+  int*    tsOutProcID = new int[numTestCases];
+
   for (int i=0; i<numTestCases; ++i) {
     int imat           = (int)(dis(gen)*numMatData);
     tsInImat[i]        = imat;
-    // -- conversion
-    double lMinEkin    = minLEKinConv;
-    double lEkinDelta  = maxLEKin - minLEKinConv;
-    tsInLogEkinConv[i] = dis(gen)*lEkinDelta+minLEKinConv;
-    tsInEkinConv[i]    = std::exp(tsInLogEkinConv[i]);
-    // -- Compton
-    lMinEkin           = minLEKinComp;
-    lEkinDelta         = maxLEKin - minLEKinComp;
-    tsInLogEkinComp[i] = dis(gen)*lEkinDelta+minLEKinComp;
-    tsInEkinComp[i]    = std::exp(tsInLogEkinComp[i]);
-    // -- gamma-nuclear
-    lMinEkin           = minLEKinGNuc;
-    lEkinDelta         = maxLEKin - minLEKinGNuc;
-    tsInLogEkinGNuc[i] = dis(gen)*lEkinDelta+minLEKinGNuc;
-    tsInEkinGNuc[i]    = std::exp(tsInLogEkinGNuc[i]);
+    // -- total macroscopic cross section (+- 2% below/above the energy grid)
+    double lMinEkin    = theGammaData->fEMin0*0.98;
+    double lEkinDelta  = std::log(1.02*theGammaData->fEMax2) - lMinEkin;
+    tsInLogEkin[i] = dis(gen)*lEkinDelta+lMinEkin;
+    tsInEkin[i]    = std::exp(tsInLogEkin[i]);
+
+    tsInURand[i] = dis(gen);
   }
   //
   // Use G4HepEmGammaManager to evaluate the macroscopic cross sections
   // for conversion inot e-e+ pairs and Compton scattering.
+  G4HepEmGammaTrack aGammaTrack;
+  G4HepEmTrack* aTrack = aGammaTrack.GetTrack();
   for (int i=0; i<numTestCases; ++i) {
-    tsOutMXConv[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinConv[i], tsInLogEkinConv[i], 0); // conversion
-    tsOutMXComp[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinComp[i], tsInLogEkinComp[i], 1); // Compton
-    tsOutMXGNuc[i] = G4HepEmGammaManager::GetMacXSec (theGammaData, tsInImat[i], tsInEkinGNuc[i], tsInLogEkinGNuc[i], 2); // gamma-nuclear
+    aTrack->SetEKin(tsInEkin[i]);
+    aTrack->SetMCIndex(tsInImat[i]); // mat index can be used now as mc index
+    tsOutMXTot[i] = G4HepEmGammaManager::GetTotalMacXSec(hepEmData, &aGammaTrack); // total mxces
+    // set all track fields that the sampling below needs
+    const double totMFP = (tsOutMXTot[i] > 0) ? 1.0/tsOutMXTot[i] : 1E+20;
+    if (tsOutMXTot[i]>0) { // otherwise IMFP would be such that we never call sampling
+      aTrack->SetMFP(totMFP, 0);
+      G4HepEmGammaManager::SampleInteraction(hepEmData, &aGammaTrack, tsInURand[i]); // sample interaction
+      tsOutProcID[i] = aGammaTrack.GetTrack()->GetWinnerProcessIndex();
+    }
   }
 
 
 #ifdef G4HepEm_CUDA_BUILD
   //
   // Perform the test case evaluations on the device
-  double* tsOutOnDeviceMXConv = new double[numTestCases];
-  double* tsOutOnDeviceMXComp = new double[numTestCases];
-  double* tsOutOnDeviceMXGNuc = new double[numTestCases];
-  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkinConv, tsInLogEkinConv, tsInEkinComp, tsInLogEkinComp, tsInEkinGNuc, tsInLogEkinGNuc, tsOutOnDeviceMXConv, tsOutOnDeviceMXComp, tsOutOnDeviceMXGNuc, numTestCases);
+  double* tsOutOnDeviceMXTot  = new double[numTestCases];
+  int*    tsOutOnDeviceProcID = new int[numTestCases];
+  TestMacXSecDataOnDevice (hepEmData, tsInImat, tsInEkin, tsInLogEkin, tsInURand, tsOutOnDeviceMXTot, tsOutOnDeviceProcID, numTestCases);
   for (int i=0; i<numTestCases; ++i) {
-    if ( std::abs( 1.0 - tsOutMXConv[i]/tsOutOnDeviceMXConv[i] ) > 1.0E-14 ) {
+    if ( std::abs( 1.0 - tsOutMXTot[i]/tsOutOnDeviceMXTot[i] ) > 1.0E-14 ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Conversion) mismatch: " << std::setprecision(16) << tsOutMXConv[i] << " != " << tsOutOnDeviceMXConv[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinConv[i] << ") " << std::endl;
+      std::cerr << "\n*** ERROR:\nTotal Mcroscopic Cross Section data: G4HepEm Host vs Device mismatch: " << std::setprecision(16) << tsOutMXTot[i] << " != " << tsOutOnDeviceMXTot[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl;
       break;
     }
-    if ( std::abs( 1.0 - tsOutMXComp[i]/tsOutOnDeviceMXComp[i] ) > 1.0E-14 ) {
+    if ( tsOutProcID[i] != tsOutOnDeviceProcID[i] ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Compton) mismatch: " <<  std::setprecision(16) << tsOutMXComp[i] << " != " << tsOutOnDeviceMXComp[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinConv[i] << ") " << std::endl;
-      break;
-    }
-    if ( std::abs( 1.0 - tsOutMXGNuc[i]/tsOutOnDeviceMXGNuc[i] ) > 1.0E-14 ) {
-      isPassed = false;
-      std::cerr << "\n*** ERROR:\nMacroscopic Cross Section data: G4HepEm Host vs Device (Gamma-nuclear) mismatch: " <<  std::setprecision(16) << tsOutMXGNuc[i] << " != " << tsOutOnDeviceMXGNuc[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkinGNuc[i] << ") " << std::endl;
+      std::cerr << "\n*** ERROR:\nSelected process ID: G4HepEm Host vs Device mismatch: " <<  std::setprecision(16) << tsOutProcID[i] << " != " << tsOutOnDeviceProcID[i] << " ( i = " << i << " imat  = " << tsInImat[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl;
       break;
     }
   }
   //
-  delete [] tsOutOnDeviceMXConv;
-  delete [] tsOutOnDeviceMXComp;
-  delete [] tsOutOnDeviceMXGNuc;
+  delete [] tsOutOnDeviceMXTot;
+  delete [] tsOutOnDeviceProcID;
 #endif // G4HepEm_CUDA_BUILD
 
   //
   // delete allocatd memeory
   delete [] tsInImat;
-  delete [] tsInEkinConv;
-  delete [] tsInLogEkinConv;
-  delete [] tsInEkinComp;
-  delete [] tsInLogEkinComp;
-  delete [] tsInEkinGNuc;
-  delete [] tsInLogEkinGNuc;
-  delete [] tsOutMXConv;
-  delete [] tsOutMXComp;
-  delete [] tsOutMXGNuc;
+  delete [] tsInEkin;
+  delete [] tsInLogEkin;
+  delete [] tsInURand;
+  delete [] tsOutMXTot;
+  delete [] tsOutProcID;
+
 
   return isPassed;
 }

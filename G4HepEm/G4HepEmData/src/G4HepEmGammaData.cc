@@ -15,10 +15,7 @@ G4HepEmGammaData* MakeGammaData() {
 
 void FreeGammaData (struct G4HepEmGammaData** theGammaData)  {
   if (*theGammaData != nullptr) {
-    delete[] (*theGammaData)->fConvEnergyGrid ;
-    delete[] (*theGammaData)->fCompEnergyGrid;
-    delete[] (*theGammaData)->fGNucEnergyGrid;
-    delete[] (*theGammaData)->fConvCompGNucMacXsecData;
+    delete[] (*theGammaData)->fMacXsecData;
     delete[] (*theGammaData)->fElemSelectorConvStartIndexPerMat;
     delete[] (*theGammaData)->fElemSelectorConvEgrid;
     delete[] (*theGammaData)->fElemSelectorConvData;
@@ -45,28 +42,12 @@ void CopyGammaDataToDevice(struct G4HepEmGammaData* onHOST, struct G4HepEmGammaD
   struct G4HepEmGammaData* gmDataHTo_d = new G4HepEmGammaData;
   // Set non-pointer members via a memcpy of the entire structure.
   memcpy(gmDataHTo_d, onHOST, sizeof(G4HepEmGammaData));
-  // get and set number of materials
+  // get and set number of macroscopic cross section data
   int numHepEmMat = onHOST->fNumMaterials;
-  // -- go for the conversion related data
-  int numConvData = onHOST->fConvEnergyGridSize;
-  // allocate memory on _d for the conversion energy grid and copy them form _h
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fConvEnergyGrid), sizeof( double ) * numConvData ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fConvEnergyGrid,  onHOST->fConvEnergyGrid, sizeof( double ) * numConvData, cudaMemcpyHostToDevice ) );
-  // -- go for the Compton related data
-  int numCompData = onHOST->fCompEnergyGridSize;
-  // allocate memory on _d for the Compton energy grid and copy them form _h
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fCompEnergyGrid), sizeof( double ) * numCompData ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fCompEnergyGrid,  onHOST->fCompEnergyGrid, sizeof( double ) * numCompData, cudaMemcpyHostToDevice ) );
-  // -- go for the gamma-nuclear related data
-  int numGNucData = onHOST->fGNucEnergyGridSize;
-  // allocate memory on _d for the gamma-nuclear energy grid and copy them form _h
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fGNucEnergyGrid), sizeof( double ) * numGNucData ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fGNucEnergyGrid,  onHOST->fGNucEnergyGrid, sizeof( double ) * numGNucData, cudaMemcpyHostToDevice ) );
-  // allocate memory on _d for the conversion and Compton macroscopic x-section data and copy them form _h
-  int numConvCompGNucData = numHepEmMat*2*(numConvData+numCompData+numGNucData);
-  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fConvCompGNucMacXsecData), sizeof( double ) * numConvCompGNucData ) );
-  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fConvCompGNucMacXsecData,  onHOST->fConvCompGNucMacXsecData, sizeof( double ) * numConvCompGNucData, cudaMemcpyHostToDevice ) );
-  //
+  int numMacXsecData =  numHepEmMat * onHOST->fDataPerMat;
+  // allocate memory on _d for the macroscopic cross section data and copy them form _h
+  gpuErrchk ( cudaMalloc ( &(gmDataHTo_d->fMacXsecData), sizeof( double ) * numMacXsecData ) );
+  gpuErrchk ( cudaMemcpy (   gmDataHTo_d->fMacXsecData,  onHOST->fMacXsecData, sizeof( double ) * numMacXsecData, cudaMemcpyHostToDevice ) );
   // -- go for the conversion element selector related data
   int numElSelE   = onHOST->fElemSelectorConvEgridSize;
   int numElSelDat = onHOST->fElemSelectorConvNumData;
@@ -97,11 +78,8 @@ void FreeGammaDataOnDevice(struct G4HepEmGammaData** onDEVICE) {
     // side dynamically allocated memories
     struct G4HepEmGammaData* onHostTo_d = new G4HepEmGammaData;
     gpuErrchk ( cudaMemcpy( onHostTo_d, *onDEVICE, sizeof( struct G4HepEmGammaData ), cudaMemcpyDeviceToHost ) );
-    // conversion, Compton and gamma-nuclear macroscopic x-section related data
-    cudaFree( onHostTo_d->fConvEnergyGrid );
-    cudaFree( onHostTo_d->fCompEnergyGrid );
-    cudaFree( onHostTo_d->fGNucEnergyGrid );
-    cudaFree( onHostTo_d->fConvCompGNucMacXsecData );
+    // total, conversion, Compton, PE macroscopic x-section related data
+    cudaFree( onHostTo_d->fMacXsecData );
     // conversion element selector related data
     cudaFree( onHostTo_d->fElemSelectorConvStartIndexPerMat );
     cudaFree( onHostTo_d->fElemSelectorConvEgrid );

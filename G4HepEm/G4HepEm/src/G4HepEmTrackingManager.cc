@@ -921,6 +921,9 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       } else {
         double edep = 0.0;
         // NOTE: gamma-nuclear interaction needs to be done here while others in HepEm
+        //       so we need to select first the interaction then see if we call HepEm
+        //       or Geant4 physics to perform the selected interaction.
+        G4HepEmGammaManager::SelectInteraction(theHepEmData, theTLData);
         const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
         if (iDProc != 3) {
           // Conversion, Compton or photoelectric --> use HepEm for the interaction
