@@ -2,10 +2,12 @@ set(G4HEPEM_headers
   include/G4HepEmNoProcess.hh
   include/G4HepEmProcess.hh
   include/G4HepEmRunManager.hh
+  include/G4HepEmWoodcockHelper.hh
 )
 set(G4HEPEM_sources
   src/G4HepEmProcess.cc
   src/G4HepEmRunManager.cc
+  src/G4HepEmWoodcockHelper.cc
 )
 
 set(G4HEPEM_Geant4_LIBRARIES
