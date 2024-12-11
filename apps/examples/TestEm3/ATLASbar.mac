@@ -40,7 +40,12 @@
 ## -----------------------------------------------------------------------------
 ## Option to apply cuts also beyond ionisation and bremsstrahlung
 ## -----------------------------------------------------------------------------
-##/process/em/UseGeneralProcess true
+/process/em/applyCuts true
+##
+## -----------------------------------------------------------------------------
+## Option to set the production cut value in the "Woodcock_Region" (calorimeter)
+## -----------------------------------------------------------------------------
+/testem/det/setWDCKRegionCut 0.7 mm
 ##
 ## -----------------------------------------------------------------------------
 ## Set secondary production threshold, init. the run and set primary properties
