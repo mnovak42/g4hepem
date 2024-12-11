@@ -54,8 +54,9 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
  fNbLayersCmd(0),
  fNbAbsorCmd(0),
  fAbsorCmd(0),
- fFieldCmd(0)
-{ 
+ fFieldCmd(0),
+ fWDTRegionCutCmd(0)
+{
   fTestemDir = new G4UIdirectory("/testem/");
   fTestemDir->SetGuidance("UI commands specific to this example");
   //
@@ -69,14 +70,14 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
   fSizeYZCmd->SetUnitCategory("Length");
   fSizeYZCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
   fSizeYZCmd->SetToBeBroadcasted(false);
-  //  
+  //
   fNbLayersCmd = new G4UIcmdWithAnInteger("/testem/det/setNbOfLayers",this);
   fNbLayersCmd->SetGuidance("Set number of layers.");
   fNbLayersCmd->SetParameterName("NbLayers",false);
   fNbLayersCmd->SetRange("NbLayers>0");
   fNbLayersCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
   fNbLayersCmd->SetToBeBroadcasted(false);
-  // 
+  //
   fNbAbsorCmd = new G4UIcmdWithAnInteger("/testem/det/setNbOfAbsor",this);
   fNbAbsorCmd->SetGuidance("Set number of Absorbers.");
   fNbAbsorCmd->SetParameterName("NbAbsor",false);
@@ -89,12 +90,12 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
   fFieldCmd->SetUnitCategory("Magnetic flux density");
   fFieldCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
   fFieldCmd->SetToBeBroadcasted(false);
-  // 
+  //
   fAbsorCmd = new G4UIcommand("/testem/det/setAbsor",this);
   fAbsorCmd->SetGuidance("Set the absor nb, the material, the thickness.");
   fAbsorCmd->SetGuidance("  absor number : from 1 to NbOfAbsor");
   fAbsorCmd->SetGuidance("  material name");
-  fAbsorCmd->SetGuidance("  thickness (with unit) : t>0."); 
+  fAbsorCmd->SetGuidance("  thickness (with unit) : t>0.");
   //
   G4UIparameter* AbsNbPrm = new G4UIparameter("AbsorNb",'i',false);
   AbsNbPrm->SetGuidance("absor number : from 1 to NbOfAbsor");
@@ -104,7 +105,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
   G4UIparameter* MatPrm = new G4UIparameter("material",'s',false);
   MatPrm->SetGuidance("material name");
   fAbsorCmd->SetParameter(MatPrm);
-  //    
+  //
   G4UIparameter* ThickPrm = new G4UIparameter("thickness",'d',false);
   ThickPrm->SetGuidance("thickness of absorber");
   ThickPrm->SetParameterRange("thickness>0.");
@@ -117,7 +118,16 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
   fAbsorCmd->SetParameter(unitPrm);
   //
   fAbsorCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
-  fAbsorCmd->SetToBeBroadcasted(false);  
+  fAbsorCmd->SetToBeBroadcasted(false);
+
+  fWDTRegionCutCmd = new G4UIcmdWithADoubleAndUnit("/testem/det/setWDCKRegionCut",this);
+  fWDTRegionCutCmd->SetGuidance("Set the cut value used in the Woodcock tracking region (which is the calorimeter)");
+  fWDTRegionCutCmd->SetParameterName("Size",false);
+  fWDTRegionCutCmd->SetRange("Size>0.");
+  fWDTRegionCutCmd->SetUnitCategory("Length");
+  fWDTRegionCutCmd->AvailableForStates(G4State_PreInit);
+  fWDTRegionCutCmd->SetToBeBroadcasted(false);
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -129,8 +139,9 @@ DetectorMessenger::~DetectorMessenger()
   delete fNbAbsorCmd;
   delete fAbsorCmd;
   delete fFieldCmd;
-  delete fDetDir;  
+  delete fDetDir;
   delete fTestemDir;
+  delete fWDTRegionCutCmd;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -148,7 +159,7 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
 
   if( command == fFieldCmd )
    { fDetector->SetMagField(fFieldCmd->GetNew3VectorValue(newValue));}
-   
+
   if (command == fAbsorCmd)
    {
      G4int num; G4double tick;
@@ -160,6 +171,11 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
      fDetector->SetAbsorMaterial (num,material);
      fDetector->SetAbsorThickness(num,tick);
    }
+
+   if( command == fWDTRegionCutCmd ) {
+     fDetector->SetWDTRegionCutValue(fWDTRegionCutCmd->GetNewDoubleValue(newValue));
+   }
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

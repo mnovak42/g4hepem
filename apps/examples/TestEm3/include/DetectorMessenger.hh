@@ -60,17 +60,19 @@ class DetectorMessenger: public G4UImessenger
 
     G4UIdirectory*             fTestemDir;
     G4UIdirectory*             fDetDir;
-    
+
     G4UIcmdWithADoubleAndUnit* fSizeYZCmd;
     G4UIcmdWithAnInteger*      fNbLayersCmd;
     G4UIcmdWithAnInteger*      fNbAbsorCmd;
     G4UIcommand*               fAbsorCmd;
-    //
+
     G4UIcmdWith3VectorAndUnit* fFieldCmd;
+
+    G4UIcmdWithADoubleAndUnit* fWDTRegionCutCmd;
+
 
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
-

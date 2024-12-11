@@ -70,6 +70,8 @@ public:
   void SetCalorSizeYZ(G4double);
   void SetNbOfLayers(G4int);
 
+  void SetWDTRegionCutValue(G4double cut) { fWDTRegionCutValue = cut; }
+
   void SetMagField(const G4ThreeVector &fv) { fMagFieldVector = fv; }
 
   void SetPrimaryGenerator(PrimaryGeneratorAction *pg) { fPrimaryGenerator = pg; }
@@ -103,6 +105,9 @@ private:
 
   G4double fCalorSizeYZ;
   G4double fCalorThickness;
+
+  // cut value for the Woodcock tracking region (i.e. for the calorimeter)
+  G4double fWDTRegionCutValue;
 
   G4Material *fDefaultMaterial;
   G4double fWorldSizeYZ;
