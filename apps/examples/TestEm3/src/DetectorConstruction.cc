@@ -55,6 +55,8 @@
 #include "G4UniformMagField.hh"
 #include "G4FieldManager.hh"
 
+#include "G4ProductionCuts.hh"
+
 #include "PrimaryGeneratorAction.hh"
 
 #include <iomanip>
@@ -72,6 +74,7 @@ DetectorConstruction::DetectorConstruction()
   fAbsorThickness[2] = 5.7 * mm;
   fNbOfLayers        = 50;
   fCalorSizeYZ       = 40. * cm;
+  fWDTRegionCutValue = 0.7 * mm;
   ComputeCalorParameters();
 
   // materials
@@ -368,6 +371,17 @@ G4VPhysicalVolume *DetectorConstruction::ConstructCalorimeter()
   }
   //
   PrintCalorParameters();
+
+  //
+  // Create a Detector region with the calorimeter inside and name = Woodcock_Region
+  G4Region* regionWDCK = new G4Region("Woodcock_Region");
+  regionWDCK->AddRootLogicalVolume(fLogicCalor);
+  // a UI command, to set the cut value in the WDCK region, has also been added
+  G4ProductionCuts* pcut = new G4ProductionCuts;
+  pcut->SetProductionCut(fWDTRegionCutValue, 0);
+  pcut->SetProductionCut(fWDTRegionCutValue, 1);
+  pcut->SetProductionCut(fWDTRegionCutValue, 2);
+  regionWDCK->SetProductionCuts(pcut);
 
   // always return the fPhysical World
   //

@@ -13,6 +13,7 @@ class G4Step;
 class G4VProcess;
 class G4VParticleChange;
 class G4Region;
+class G4HepEmWoodcockHelper;
 
 #include <vector>
 
@@ -41,6 +42,10 @@ public:
   // radiator region (only for ATLAS and only if different than init.ed below)
   void SetXTRProcessName(const std::string& name) { fXTRProcessName = name; }
   void SetXTRRegionName(const std::string& name)  { fXTRRegionName  = name; }
+
+  void AddWoodcockTrackingRegion(const std::string& regionName) {
+    fWDTRegionNames.push_back(regionName);
+  }
 
 
 private:
@@ -111,6 +116,10 @@ private:
   // The names that will be used to find the XTR process and detector region.
   std::string fXTRProcessName = {"XTR"};
   std::string fXTRRegionName  = {"TRT_RADIATOR"};
+
+  // A vector of Woodcock tracking region names (set by user if any) and a helper.
+  std::vector<std::string> fWDTRegionNames;
+  G4HepEmWoodcockHelper*   fWDTHelper;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -1,5 +1,7 @@
 #include "G4HepEmTrackingManager.hh"
+
 #include "TrackingManagerHelper.hh"
+#include "G4HepEmWoodcockHelper.hh"
 
 #include "G4HepEmNoProcess.hh"
 
@@ -108,6 +110,9 @@ G4HepEmTrackingManager::G4HepEmTrackingManager() {
   fXTRRegion  = nullptr;
   fXTRProcess = nullptr;
 
+  // Woodcock tracking helper (will be created only if Woodcock tracking was asked)
+  fWDTHelper = nullptr;
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -118,6 +123,9 @@ G4HepEmTrackingManager::~G4HepEmTrackingManager() {
   delete fRunManager;
   delete fRandomEngine;
   delete fStep;
+  if (fWDTHelper!=nullptr) {
+    delete fWDTHelper;
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -146,6 +154,20 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for gamma (if has been attached)
     InitFastSimRelated(particleID);
+    // Init Woodcock tracking data (if any, keep `fWDTHelper` nulltr otherwise)
+    const int numWDTRegion = fWDTRegionNames.size();
+    if (numWDTRegion > 0) {
+      if (fWDTHelper != nullptr) {
+        delete fWDTHelper;
+      }
+      fWDTHelper = new G4HepEmWoodcockHelper;
+      G4VPhysicalVolume* worldVolume = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume();
+      G4bool hasBeenFound = fWDTHelper->Initialize(fWDTRegionNames, fRunManager->GetHepEmData()->fTheMatCutData, worldVolume);
+      if (!hasBeenFound) {
+        delete fWDTHelper;
+        fWDTHelper = nullptr;
+      }
+    }
   } else {
     std::cerr
         << " **** ERROR in G4HepEmProcess::BuildPhysicsTable: unknown particle "
@@ -820,9 +842,13 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   if (fGNucProcess != nullptr) {
     fGNucProcess->StartTracking(aTrack);
   }
+
+  // Reset some Woodcock tracking related flags.
+  G4bool isWDTOn = false;
   // === StartTracking ===
 
   while (aTrack->GetTrackStatus() == fAlive) {
+
     // Beginning of this step: Prepare data structures.
     aTrack->IncrementCurrentStepNumber();
 
@@ -875,28 +901,121 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       continue;
     }
 
-    // Query step lengths from pyhsics and geometry, decide on limit.
+    // If any Woodcock tracking region was found at initialization and the gamma
+    // is not already under Woodcock tracking, then check:
+    // - this step will be done in one of the Woodcock tracking regions with
+    // - kinetic energy that is higher than the Woodcock tracking minimum energy
+    // Then find in which root volume of the region this step will be done, and:
+    // - obtain the actual physical volume transformation (will be used when
+    //   calculating distance to out of the WDT envelop volume
+    // - set the WDT solid, G4 couple  and its HepEm index of the helper accordingly
+    // NOTE: as long as the actual WWDT envelop volume boundary is not reached,
+    //       all these above data stay the same (so no need to redo this till
+    //       WDT doesn't reach its boundary; when `isWDTOn` is set to `false`)
+    if ( fWDTHelper != nullptr && !isWDTOn ) {
+      isWDTOn = fWDTHelper->FindWDTVolume(lvol->GetRegion()->GetInstanceID(), *aTrack);
+    }
+
+    // Turn WDT off if energy drops below its limit
+    // (NOTE: `isWDTOn` can be `true` only if `fWDTHelper != nulltr`!)
+    isWDTOn = isWDTOn && (aTrack->GetKineticEnergy() > fWDTHelper->GetKineticEnergyLimit());
+
+    // Prepare some HepEmTrack fileds needed both for normal and WDT cases.
     const G4double preStepEkin    = theG4DPart->GetKineticEnergy();
     const G4double preStepLogEkin = theG4DPart->GetLogKineticEnergy();
     thePrimaryTrack->SetEKin(preStepEkin, preStepLogEkin);
     const G4ThreeVector &primDir = theG4DPart->GetMomentumDirection();
     thePrimaryTrack->SetDirection(primDir[0], primDir[1], primDir[2]);
 
-    const int g4IMC    = MCC->GetIndex();
-    const int hepEmIMC = theHepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4IMC];
-    thePrimaryTrack->SetMCIndex(hepEmIMC);
-    bool preStepOnBoundary = preStepPoint.GetStepStatus() == G4StepStatus::fGeomBoundary;
-    thePrimaryTrack->SetOnBoundary(preStepOnBoundary);
+    int g4IMC = MCC->GetIndex();
 
-    G4HepEmGammaManager::HowFar(theHepEmData, theHepEmPars, theTLData);
+    // Init the value of the physical step length and the flag to indicate if
+    // number of interaction length left should be updated in case of boundary
+    // limited step (will be turned off in case WDT step).
+    G4double physicalStep = 0;
+    G4bool updateNumIALeft = true;
 
-    G4double physicalStep = thePrimaryTrack->GetGStepLength();
+    // Init the acumulated WDT step length and the flag that indicates if boundary
+    // has been reached at the end of WDT (interaction otherwise).
+    // NOTE: these stay as initialised if no WDT i.e. when `isWDTOn = false`
+    G4double wdtStepLength = 0.0;
+    G4bool isWDTReachedBoundary = false;
+    if (!isWDTOn) {
+      // Normal, i.e. NOT Woodcock tracking:
+      // Query step lengths from pyhsics
+      const int hepEmIMC = theHepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4IMC];
+      thePrimaryTrack->SetMCIndex(hepEmIMC);
+
+      G4HepEmGammaManager::HowFar(theHepEmData, theHepEmPars, theTLData);
+      physicalStep = thePrimaryTrack->GetGStepLength();
+    } else {
+      // Keep "Woodock" tracking of the gamma till either it gets to a point
+      // where physics interaction happens or gets close to the boundary of the
+      // Woodock tracking volume envelop. All pre-step point information is set
+      // to be the same as the post-step point one (as we might cross multiple
+      // volume boundaries).
+      // (NOTE: `isWDTOn` can be `true` only if `fWDTHelper != nulltr`!)
+      isWDTReachedBoundary = fWDTHelper->KeepTracking(theHepEmData, theGammaTrack, *aTrack);
+      wdtStepLength = thePrimaryTrack->GetGStepLength();
+
+      // Set the logical volume and g4 couple used later ()
+      lvol = aTrack->GetTouchable()->GetVolume()->GetLogicalVolume();
+      MCC  = lvol->GetMaterialCutsCouple();
+      g4IMC = MCC->GetIndex();
+
+      // Update the track to be ready for the zero/small step to either interact
+      // or to get to the volume boundary.
+      step.UpdateTrack();
+
+      // After Woodock tracking: interacts or about to reach the volume boundary
+      // In both cases: reset the number of interaction length left to trigger
+      // resampling in the next call to `HowFar` and prevent its update in this step.
+      updateNumIALeft = false;
+      thePrimaryTrack->SetNumIALeft(-1, 0);
+      if (isWDTReachedBoundary) { // WDT got close to the boundary of the envelop volume
+        physicalStep = 10.0;  // large enough to reach the boundary (>> 1E-3)
+        isWDTOn = false;      // turn it off: triggers finding the WDT branch in the next step
+      } // else: WDT reached an interaction point (so zero additional step)
+    }
+
+    // Query step lengths from geometry, decide on limit.
     G4double geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
+
     bool geometryLimitedStep = geometryStep < physicalStep;
     G4double finalStep = geometryLimitedStep ? geometryStep : physicalStep;
 
-    step.SetStepLength(finalStep);
-    aTrack->SetStepLength(finalStep);
+    // The track and the step always have the total, i.e. WDT plus normal (if any)
+    // step lengths (see below). However, `thePrimaryTrack` has only the normal
+    // one or zero which results in: the number of interaction length left is
+    // updated only by using the normal, i.e. non-WDT related, step length (i.e.
+    // only in non-WDT step and only when boundary limits the step (when
+    // invoking `UpdateNumIALeft`).
+    const G4double normalStepLength = updateNumIALeft ? finalStep : 0.0;
+    thePrimaryTrack->SetGStepLength(normalStepLength);
+
+    // If WDT reached the boundary then expecting a geometry limited step. If
+    // this is not the case then "overshooting" happend: i.e. got logically
+    // outside of the WDT volume (e.g. got within tolerance to boundary).
+    // So just keep continue with a normal step already outside in that case.
+    if (isWDTReachedBoundary && !geometryLimitedStep) {
+      // Update the number of interaction legth left but using only the post
+      // WDT volume step length
+      G4HepEmGammaManager::HowFar(theHepEmData, theHepEmPars, theTLData);
+      physicalStep = thePrimaryTrack->GetGStepLength();
+      geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
+      geometryLimitedStep = geometryStep < physicalStep;
+      finalStep = geometryLimitedStep ? geometryStep : physicalStep;
+
+      // This is a normal step so `finalStep` needs to be used to update the
+      // number of interacion length left (only if boundary limited the step)
+      updateNumIALeft = true;
+      thePrimaryTrack->SetGStepLength(finalStep);
+    }
+
+    // The track and the step always have the total, i.e. WDT plus normal (if any)
+    // step lengths but `thePrimaryTrack` has only the normal one or zero (see above).
+    step.SetStepLength(finalStep+wdtStepLength);
+    aTrack->SetStepLength(finalStep+wdtStepLength);
 
     step.UpdateTrack();
 
@@ -914,15 +1033,18 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       thePrimaryTrack->SetOnBoundary(onBoundary);
       const G4VProcess* proc = nullptr;
       if (onBoundary) {
-        proc = fTransportNoProcess;
+         proc = fTransportNoProcess;
         // Update the number of interaction length left only if on boundary
-        thePrimaryTrack->SetGStepLength(aTrack->GetStepLength());
-        G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
+        // NOTE: in case of WDT steps, `thePrimaryTrack` has zero step length
+        if (updateNumIALeft) {
+          G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
+        }
       } else {
         double edep = 0.0;
-        // NOTE: gamma-nuclear interaction needs to be done here while others in HepEm
-        //       so we need to select first the interaction then see if we call HepEm
-        //       or Geant4 physics to perform the selected interaction.
+        // NOTE: gamma-nuclear interaction needs to be done here while others in
+        // HepEm so we need to select first the interaction then see if we call
+        // HepEm or Geant4 physics to perform the selected interaction.
+        // `SelectInteraction` will also set `theTrack->SetNumIALeft(-1.0, 0);`
         G4HepEmGammaManager::SelectInteraction(theHepEmData, theTLData);
         const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
         if (iDProc != 3) {
@@ -947,17 +1069,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
         } else {
           // Gamma-nuclear: --> use Geant4 for the interaction:
           // NOTE: it's destructive i.e. stopps and kills the gammma when the
-          //    interaction happens so we do not use anymore the primary HepEm
-          //    track thus we should not update the number of interaction length
-          //    left and the others done in G4HepEmGammaManager::Perform before
-          //    the interaction. HOWEVER, the interaction might not happen at
-          //    the end so we do what we need in that case anyway for clarity:
-          // - update the number of interaction length left for all process
-          // - reset the number of interaction lenght left for the winner
-          //   process, i.e. the one that will be invoked (the gamnma nuclear)
-          // - reset the energy deposit to zero
-          G4HepEmGammaManager::UpdateNumIALeft(thePrimaryTrack);
-          thePrimaryTrack->SetNumIALeft(-1.0, iDProc);
+          //    interaction happens.
           thePrimaryTrack->SetEnergyDeposit(0.0);
           // Invoke the gamma-nuclear interaction using the Geant4 process
           G4VParticleChange* particleChangeGNuc = nullptr;
@@ -984,7 +1096,8 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
         // Set process defined setp and add edep to the step
         proc = fGammaNoProcessVector[iDProc];
         step.AddTotalEnergyDeposit(edep);
-      } // END if NOT onBoundary
+        // END if NOT onBoundary
+      }
 
       postStepPoint.SetProcessDefinedStep(proc);
     } // END status is NOT fStopAndKill
@@ -1154,7 +1267,6 @@ double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleCha
     G4Track *secTrack = particleChange->GetSecondary(isec);
     double   secEKin  = secTrack->GetKineticEnergy();
     const G4ParticleDefinition* secPartDef = secTrack->GetParticleDefinition();
-//    std::cout << "applycutS = " << applyCuts << " Ekin = " << secEKin  << " imc = " << aG4IMC << " par = " << secPartDef->GetParticleName()<<std::endl;
 
     if (applyCuts) {
       if (secPartDef == G4Gamma::Definition() && secEKin < (*theCutsGamma)[aG4IMC]) {
@@ -1252,7 +1364,7 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   //       that everything works fine also outside ATLAS Athena
   // NOTE: after the suggested changes in Athena, the region name should be
   //       `TRT_RADIATOR` but till that it's `DefaultRegionForTheWorld`
-  fXTRRegion = G4RegionStore::GetInstance()->GetRegion(fXTRRegionName);
+  fXTRRegion = G4RegionStore::GetInstance()->GetRegion(fXTRRegionName, false);
   // Try to get the pointer to the TRTTransitionRadiation process (same for e-/e+)
   // NOTE: stays `nullptr` if gamma dosen't have process with the name ensuring
   //       that everything works fine also outside ATLAS Athena

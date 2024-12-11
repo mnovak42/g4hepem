@@ -31,6 +31,8 @@ void PhysListHepEmTracking::ConstructProcess()
   // Register custom tracking manager for e-/e+ and gammas.
   auto* trackingManager = new G4HepEmTrackingManager;
 
+  trackingManager->AddWoodcockTrackingRegion("Woodcock_Region");
+
   G4Electron::Definition()->SetTrackingManager(trackingManager);
   G4Positron::Definition()->SetTrackingManager(trackingManager);
   G4Gamma::Definition()->SetTrackingManager(trackingManager);
