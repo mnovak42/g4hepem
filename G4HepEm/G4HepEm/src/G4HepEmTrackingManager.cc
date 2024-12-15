@@ -192,7 +192,7 @@ void G4HepEmTrackingManager::PreparePhysicsTable(
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
+bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   TrackingManagerHelper::ChargedNavigation navigation;
 
   // Prepare for calling the user action.
@@ -307,6 +307,13 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
   while(aTrack->GetTrackStatus() == fAlive)
   {
+#ifdef G4HepEm_EARLY_TRACKING_EXIT
+    // check for user-defined early exit
+    if (CheckEarlyTrackingExit(aTrack, evtMgr, userTrackingAction, secondaries)) {
+      return false; 
+    }
+#endif
+
     // Beginning of this step: Prepare data structures.
     aTrack->IncrementCurrentStepNumber();
 
@@ -734,11 +741,12 @@ void G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   }
 
   evtMgr->StackTracks(&secondaries);
+  return true;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
+bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   TrackingManagerHelper::NeutralNavigation navigation;
 
   // Prepare for calling the user action.
@@ -848,6 +856,12 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   // === StartTracking ===
 
   while (aTrack->GetTrackStatus() == fAlive) {
+#ifdef G4HepEm_EARLY_TRACKING_EXIT
+    // check for user-defined early exit
+    if (CheckEarlyTrackingExit(aTrack, evtMgr, userTrackingAction, secondaries)) {
+      return false; 
+    }
+#endif
 
     // Beginning of this step: Prepare data structures.
     aTrack->IncrementCurrentStepNumber();
@@ -1144,6 +1158,7 @@ void G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   }
 
   evtMgr->StackTracks(&secondaries);
+  return true;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

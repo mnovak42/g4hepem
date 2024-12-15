@@ -1,7 +1,9 @@
 #ifndef G4HepEmTrackingManager_h
 #define G4HepEmTrackingManager_h 1
 
+#include "G4EventManager.hh"
 #include "G4VTrackingManager.hh"
+
 #include "globals.hh"
 
 class G4HepEmRunManager;
@@ -22,13 +24,13 @@ class G4HepEmWoodcockHelper;
 class G4HepEmTrackingManager : public G4VTrackingManager {
 public:
   G4HepEmTrackingManager();
-  ~G4HepEmTrackingManager();
+  virtual ~G4HepEmTrackingManager();
 
   void BuildPhysicsTable(const G4ParticleDefinition &) override;
 
   void PreparePhysicsTable(const G4ParticleDefinition &) override;
 
-  void HandOverOneTrack(G4Track *aTrack) override;
+  virtual void HandOverOneTrack(G4Track *aTrack) override;
 
   void SetMultipleSteps(G4bool val) {
     fMultipleSteps = val;
@@ -47,11 +49,15 @@ public:
     fWDTRegionNames.push_back(regionName);
   }
 
+protected:
+  bool TrackElectron(G4Track *aTrack);
+  bool TrackGamma(G4Track *aTrack);
+
+  // Pointers to the fast simulation manager processes of the 3 particles if any
+  // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
+  G4VProcess *fFastSimProcess[3];
 
 private:
-  void TrackElectron(G4Track *aTrack);
-  void TrackGamma(G4Track *aTrack);
-
   // Stacks secondaries created by HepEm physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack,
@@ -77,6 +83,18 @@ private:
   //       no harm outside Athena.
   void InitXTRRelated();
 
+#ifdef G4HepEm_EARLY_TRACKING_EXIT
+  // Virtual function to check early tracking exit. This function allows user
+  // implementations to intercept the G4HepEm tracking loop based on
+  // user-defined conditions, e.g., when entering a GPU region To be implemented
+  // in derived classes by users, base implementation does nothing and returns
+  // false
+  virtual bool CheckEarlyTrackingExit(G4Track *track, G4EventManager *evtMgr,
+                                      G4UserTrackingAction *userTrackingAction,
+                                      G4TrackVector &secondaries) const {
+    return false;
+  }
+#endif
 
   G4HepEmRunManager *fRunManager;
   G4HepEmRandomEngine *fRandomEngine;
@@ -102,11 +120,6 @@ private:
   // Pointers to the Electron/Positron-nuclear processes (if any)
   G4VProcess* fENucProcess;
   G4VProcess* fPNucProcess;
-
-
-  // Pointers to the fast simulation manager processes of the 3 particles if any
-  // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
-  G4VProcess* fFastSimProcess[3];
 
   // ATLAS XTR RELATED:
   // Fields to store ptrs to the ATLAS XTR (transition radiation) process and

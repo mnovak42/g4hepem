@@ -4,6 +4,13 @@
 cmake_minimum_required(VERSION 3.17...3.18 FATAL_ERROR)
 project(G4HepEm VERSION 0.1.0)
 
+#----------------------------------------------------------------------------
+# Option for enabling early exit
+option(G4HepEm_EARLY_TRACKING_EXIT "Enable user-defined early tracking exit" OFF)
+if(G4HepEm_EARLY_TRACKING_EXIT)
+  message(STATUS "User-defined early tracking exit is enabled")
+endif()
+
 # Local and Core Modules
 include(GNUInstallDirs)
 include(CheckLanguage)
@@ -30,6 +37,10 @@ function(g4hepem_add_library _name)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>)
     target_link_libraries(${_name} PUBLIC ${_g4hepem_LINK})
+
+    if(G4HepEm_EARLY_TRACKING_EXIT)
+      target_compile_definitions(${_name} PUBLIC G4HepEm_EARLY_TRACKING_EXIT)
+    endif()
   endif()
 
   # Build static library, if enabled.
@@ -45,6 +56,10 @@ function(g4hepem_add_library _name)
     foreach(_lib ${_g4hepem_LINK})
       target_link_libraries(${_name}-static PUBLIC ${_lib}-static)
     endforeach()
+
+    if(G4HepEm_EARLY_TRACKING_EXIT)
+      target_compile_definitions(${_name}-static PUBLIC G4HepEm_EARLY_TRACKING_EXIT)
+    endif()
 
     # If only the static library, add alias targets for convenience.
     if(NOT BUILD_SHARED_LIBS)
