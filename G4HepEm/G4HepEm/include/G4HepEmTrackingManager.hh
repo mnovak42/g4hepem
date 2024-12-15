@@ -3,7 +3,6 @@
 
 #include "G4EventManager.hh"
 #include "G4VTrackingManager.hh"
-
 #include "globals.hh"
 
 class G4HepEmRunManager;
