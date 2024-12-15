@@ -29,7 +29,7 @@ public:
 
   void PreparePhysicsTable(const G4ParticleDefinition &) override;
 
-  virtual void HandOverOneTrack(G4Track *aTrack) override;
+  void HandOverOneTrack(G4Track *aTrack) override;
 
   void SetMultipleSteps(G4bool val) {
     fMultipleSteps = val;
