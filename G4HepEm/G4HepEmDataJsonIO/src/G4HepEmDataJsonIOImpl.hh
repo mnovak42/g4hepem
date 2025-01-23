@@ -429,6 +429,7 @@ namespace nlohmann
     static void to_json(json& j, const G4HepEmMCCData& d)
     {
       j["fSecElProdCutE"]  = d.fSecElProdCutE;
+      j["fSecPosProdCutE"] = d.fSecPosProdCutE;
       j["fSecGamProdCutE"] = d.fSecGamProdCutE;
       j["fLogSecGamCutE"]  = d.fLogSecGamCutE;
       j["fHepEmMatIndex"]  = d.fHepEmMatIndex;
@@ -440,6 +441,7 @@ namespace nlohmann
       G4HepEmMCCData d;
 
       j.at("fSecElProdCutE").get_to(d.fSecElProdCutE);
+      j.at("fSecPosProdCutE").get_to(d.fSecPosProdCutE);
       j.at("fSecGamProdCutE").get_to(d.fSecGamProdCutE);
       j.at("fLogSecGamCutE").get_to(d.fLogSecGamCutE);
       j.at("fHepEmMatIndex").get_to(d.fHepEmMatIndex);

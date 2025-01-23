@@ -82,6 +82,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     G4int mcIndx          = matCut->GetIndex();
     G4double gammaCutE    = (*(theCoupleTable->GetEnergyCutsVector(0)))[mcIndx];
     G4double electronCutE = (*(theCoupleTable->GetEnergyCutsVector(1)))[mcIndx];
+    G4double positronCutE = (*(theCoupleTable->GetEnergyCutsVector(2)))[mcIndx];
     const G4Material* mat = matCut->GetMaterial();
     G4int matIndx         = mat->GetIndex();
 
@@ -91,6 +92,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     // NOTE: mccData.fHepEmMatIndex will be set below when it becomes known
     mccData.fG4MatCutIndex  = mcIndx;
     mccData.fSecElProdCutE  = std::max(electronCutE, hepEmPars->fElectronTrackingCut);
+    mccData.fSecPosProdCutE = positronCutE;
     mccData.fSecGamProdCutE = gammaCutE;
     mccData.fLogSecGamCutE  = std::log(gammaCutE);
     ++numUsedG4MatCuts;

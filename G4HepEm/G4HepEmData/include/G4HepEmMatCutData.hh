@@ -41,6 +41,8 @@
 struct G4HepEmMCCData {
   /** Secondary \f$e^-\f$ production threshold energy [MeV]. */
   double  fSecElProdCutE = 0.0;
+  /** Secondary \f$e^+\f$ production threshold energy [MeV]. */
+  double  fSecPosProdCutE = 0.0;
   /** Secondary \f$\gamma\f$ production threshold energy [MeV]. */
   double  fSecGamProdCutE = 0.0;
   /** Logarithm of the above secondary \f$\gamma\f$ production threshold. */
