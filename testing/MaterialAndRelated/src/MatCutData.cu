@@ -21,7 +21,7 @@
 // device side main memory
 //
 __global__
-void TestMatCutDataKernel (struct G4HepEmMatCutData* mcData_d, int* mcIndices_d, double* resSecElCut_d
+void TestMatCutDataKernel (struct G4HepEmMatCutData* mcData_d, int* mcIndices_d, double* resSecElCut_d,
                            double* resSecPosCut_d, double* resSecGamCut_d, int* resMatIndx_d, int numTestCases) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < numTestCases) {
