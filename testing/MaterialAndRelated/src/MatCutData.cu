@@ -21,13 +21,14 @@
 // device side main memory
 //
 __global__
-void TestMatCutDataKernel (struct G4HepEmMatCutData* mcData_d, int* mcIndices_d,
-                           double* resSecElCut_d, double* resSecGamCut_d, int* resMatIndx_d, int numTestCases) {
+void TestMatCutDataKernel (struct G4HepEmMatCutData* mcData_d, int* mcIndices_d, double* resSecElCut_d
+                           double* resSecPosCut_d, double* resSecGamCut_d, int* resMatIndx_d, int numTestCases) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < numTestCases) {
       int imc = mcIndices_d[tid];
       resMatIndx_d[tid]   = mcData_d->fMatCutData[imc].fHepEmMatIndex;
       resSecElCut_d[tid]  = mcData_d->fMatCutData[imc].fSecElProdCutE;
+      resSecPosCut_d[tid] = mcData_d->fMatCutData[imc].fSecPosProdCutE;
       resSecGamCut_d[tid] = mcData_d->fMatCutData[imc].fSecGamProdCutE;
     }
 }
@@ -57,22 +58,25 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   }
   // for the scondary e-, gamma production threshold energies and for the material
   // indices results on the host
-  double*  resSecElCut_h = new double[numTestCases];
-  double* resSecGamCut_h = new double[numTestCases];
-  int*      resMatIndx_h = new    int[numTestCases];
+  double*  resSecElCut_h  = new double[numTestCases];
+  double*  resSecPosCut_h = new double[numTestCases];
+  double* resSecGamCut_h  = new double[numTestCases];
+  int*      resMatIndx_h  = new    int[numTestCases];
   //
   // --- Allocate memory on the device:
   //
   // for the test material indices, the start index of their element composition
   // results, their element composition other results
-  int*       mcIndices_d = nullptr;
-  int*      resMatIndx_d = nullptr;
-  double*  resSecElCut_d = nullptr;
-  double* resSecGamCut_d = nullptr;
+  int*       mcIndices_d  = nullptr;
+  int*      resMatIndx_d  = nullptr;
+  double*  resSecElCut_d  = nullptr;
+  double*  resSecPosCut_d = nullptr;
+  double* resSecGamCut_d  = nullptr;
   //
   gpuErrchk ( cudaMalloc ( &mcIndices_d,    sizeof( int )    * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &resMatIndx_d,   sizeof( int )    * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &resSecElCut_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( cudaMalloc ( &resSecPosCut_d, sizeof( double ) * numTestCases ) );
   gpuErrchk ( cudaMalloc ( &resSecGamCut_d, sizeof( double ) * numTestCases ) );
   //
   // --- Copy the input data from host to device (test material-cut index arrays)
@@ -81,14 +85,15 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   //
   // --- Launch the kernel to evaluate the test cases on the device
   //
-  TestMatCutDataKernel <<< 1, numTestCases >>> (hepEmData->fTheMatCutData_gpu, mcIndices_d,
-                                                resSecElCut_d, resSecGamCut_d, resMatIndx_d, numTestCases);
+  TestMatCutDataKernel <<< 1, numTestCases >>> (hepEmData->fTheMatCutData_gpu, mcIndices_d, resSecElCut_d,
+                                                resSecPosCut_d, resSecGamCut_d, resMatIndx_d, numTestCases);
   //
   // synchronize to make sure that completed on the device
   cudaDeviceSynchronize();
   // copy the results from the device to the host
   gpuErrchk ( cudaMemcpy ( resMatIndx_h,   resMatIndx_d,   sizeof( int )    * numTestCases, cudaMemcpyDeviceToHost ) );
   gpuErrchk ( cudaMemcpy ( resSecElCut_h,  resSecElCut_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( cudaMemcpy ( resSecPosCut_h, resSecPosCut_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
   gpuErrchk ( cudaMemcpy ( resSecGamCut_h, resSecGamCut_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
   //
   // --- Check the results for each test cases by comparing to the corresponding
@@ -104,6 +109,11 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
     if ( mcData.fSecElProdCutE != resSecElCut_h[i] ) {
       isPassed = false;
       std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fSecElProdCutE != "    << mcData.fSecElProdCutE    << " != "  <<  resSecElCut_h[i]  << std::endl;
+      continue;
+    }
+    if ( mcData.fSecPosProdCutE != resSecPosCut_h[i] ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMaterialData: HOST v.s. DEVICE mismatch fSecPosProdCutE != "    << mcData.fSecPosProdCutE    << " != "  <<  resSecPosCut_h[i]  << std::endl;
       continue;
     }
     if ( mcData.fSecGamProdCutE != resSecGamCut_h[i] ) {
@@ -123,10 +133,12 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   delete []   mcIndices_h;
   delete []   resMatIndx_h;
   delete []   resSecElCut_h;
+  delete []   resSecPosCut_h;
   delete []   resSecGamCut_h;
   cudaFree (  mcIndices_d    );
   cudaFree (  resMatIndx_d   );
   cudaFree (  resSecElCut_d  );
+  cudaFree (  resSecPosCut_d  );
   cudaFree (  resSecGamCut_d );
   //
   return isPassed;
