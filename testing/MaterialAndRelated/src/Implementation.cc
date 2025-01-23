@@ -147,11 +147,17 @@ bool TestMatCutData ( const struct G4HepEmData* hepEmData ) {
     const int                hepEmMCIndex = hepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4MatCut->GetIndex()];
     const struct G4HepEmMCCData& heMatCut = hepEmData->fTheMatCutData->fMatCutData[hepEmMCIndex];
     // compare the stored properties:
-    double  g4ElCutE = (*(theCoupleTable->GetEnergyCutsVector(1)))[g4MatCut->GetIndex()];
-    double g4GamCutE = (*(theCoupleTable->GetEnergyCutsVector(0)))[g4MatCut->GetIndex()];
+    double  g4ElCutE  = (*(theCoupleTable->GetEnergyCutsVector(1)))[g4MatCut->GetIndex()];
+    double  g4PosCutE = (*(theCoupleTable->GetEnergyCutsVector(2)))[g4MatCut->GetIndex()];
+    double g4GamCutE  = (*(theCoupleTable->GetEnergyCutsVector(0)))[g4MatCut->GetIndex()];
     if ( heMatCut.fSecElProdCutE != std::max ( elTrackingCutE, g4ElCutE ) ) {
       isPassed = false;
-      std::cerr << "\n*** ERROR:\nMatCutData: G4HepEm-Geant4 mismatch: fSecElProdCutE != "         << heMatCut.fSecElProdCutE        << " != "  << g4ElCutE        << std::endl;
+      std::cerr << "\n*** ERROR:\nMatCutData: G4HepEm-Geant4 mismatch: fSecElProdCutE != "         << heMatCut.fSecElProdCutE        << " != "  << std::max ( elTrackingCutE, g4ElCutE )  << std::endl;
+      continue;
+    }
+    if ( heMatCut.fSecPosProdCutE != g4PosCutE ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nMatCutData: G4HepEm-Geant4 mismatch: fSecPosProdCutE != "         << heMatCut.fSecPosProdCutE        << " != "  << g4PosCutE        << std::endl;
       continue;
     }
     if ( heMatCut.fSecGamProdCutE != g4GamCutE ) {
