@@ -114,9 +114,11 @@ bool operator!=(const G4HepEmElementData& lhs, const G4HepEmElementData& rhs)
 bool operator==(const G4HepEmMCCData& lhs, const G4HepEmMCCData& rhs)
 {
   return std::tie(lhs.fSecElProdCutE, lhs.fSecPosProdCutE, lhs.fSecGamProdCutE,
-                  lhs.fLogSecGamCutE, lhs.fHepEmMatIndex, lhs.fG4MatCutIndex) ==
+                  lhs.fLogSecGamCutE, lhs.fHepEmMatIndex, lhs.fG4MatCutIndex,
+                  lhs.fG4RegionIndex) ==
          std::tie(rhs.fSecElProdCutE, rhs.fSecPosProdCutE, rhs.fSecGamProdCutE,
-                  rhs.fLogSecGamCutE, rhs.fHepEmMatIndex, rhs.fG4MatCutIndex);
+                  rhs.fLogSecGamCutE, rhs.fHepEmMatIndex, rhs.fG4MatCutIndex,
+                  rhs.fG4RegionIndex);
 }
 
 bool operator!=(const G4HepEmMCCData& lhs, const G4HepEmMCCData& rhs)

@@ -16,6 +16,7 @@
 #include "G4Material.hh"
 #include "G4Element.hh"
 #include "G4ElementVector.hh"
+#include "G4RegionStore.hh"
 
 #include <vector>
 #include <iostream>
@@ -95,6 +96,7 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     mccData.fSecPosProdCutE = positronCutE;
     mccData.fSecGamProdCutE = gammaCutE;
     mccData.fLogSecGamCutE  = std::log(gammaCutE);
+    mccData.fG4RegionIndex  = -1; // will be set at the very end
     ++numUsedG4MatCuts;
 
     // check if the corresponding G4HepEm material struct has already been created
@@ -235,6 +237,19 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
       theUsedG4MatIndices[matIndx] = numUsedG4Mat;
       mccData.fHepEmMatIndex = theUsedG4MatIndices[matIndx];
       ++numUsedG4Mat;
+    }
+  }
+  // set the Geant4 detector region index for each material-cuts couple data
+  for (int i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
+    G4Region* region = (*G4RegionStore::GetInstance())[i];
+    const int indxRegion = region->GetInstanceID();
+    std::vector<G4Material*>::const_iterator itrMat = region->GetMaterialIterator();
+    for (int im=0; im<region->GetNumberOfMaterials(); ++im) {
+      G4MaterialCutsCouple* couple = region->FindCouple(*itrMat);
+      int indxMCC = hepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[couple->GetIndex()];
+      hepEmData->fTheMatCutData->fMatCutData[indxMCC].fG4RegionIndex = indxRegion;
+      // std::cout << (*itrMat)->GetName() << " " << indxRegion << std::endl;
+      ++itrMat;
     }
   }
 }

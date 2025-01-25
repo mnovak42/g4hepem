@@ -434,6 +434,7 @@ namespace nlohmann
       j["fLogSecGamCutE"]  = d.fLogSecGamCutE;
       j["fHepEmMatIndex"]  = d.fHepEmMatIndex;
       j["fG4MatCutIndex"]  = d.fG4MatCutIndex;
+      j["fG4RegionIndex"]  = d.fG4RegionIndex;
     }
 
     static G4HepEmMCCData from_json(const json& j)
@@ -446,6 +447,7 @@ namespace nlohmann
       j.at("fLogSecGamCutE").get_to(d.fLogSecGamCutE);
       j.at("fHepEmMatIndex").get_to(d.fHepEmMatIndex);
       j.at("fG4MatCutIndex").get_to(d.fG4MatCutIndex);
+      j.at("fG4RegionIndex").get_to(d.fG4RegionIndex);
 
       return d;
     }

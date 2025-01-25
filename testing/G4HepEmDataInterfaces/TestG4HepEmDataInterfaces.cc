@@ -162,6 +162,7 @@ void G4HepEmMatCutDataTester(G4HepEmMatCutData* d, int expectedG4Cuts, int expec
     // Each G4HepEmMCCData element must be default constructed
     EXPECT_EQ((d->fMatCutData[i]).fHepEmMatIndex, -1);
     EXPECT_EQ((d->fMatCutData[i]).fG4MatCutIndex, -1);
+    EXPECT_EQ((d->fMatCutData[i]).fG4RegionIndex, -1);
   }
 }
 
