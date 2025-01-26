@@ -201,14 +201,11 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
 
 void G4HepEmTrackingManager::PreparePhysicsTable(
     const G4ParticleDefinition &part) {
-  applyCuts = G4EmParameters::Instance()->ApplyCuts();
-
-  if (applyCuts) {
-    auto *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
-    theCutsGamma = theCoupleTable->GetEnergyCutsVector(idxG4GammaCut);
-    theCutsElectron = theCoupleTable->GetEnergyCutsVector(idxG4ElectronCut);
-    theCutsPositron = theCoupleTable->GetEnergyCutsVector(idxG4PositronCut);
-  }
+  // obtain the cut values in energy
+  auto *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
+  theCutsGamma = theCoupleTable->GetEnergyCutsVector(idxG4GammaCut);
+  theCutsElectron = theCoupleTable->GetEnergyCutsVector(idxG4ElectronCut);
+  theCutsPositron = theCoupleTable->GetEnergyCutsVector(idxG4PositronCut);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -405,6 +402,10 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
                    : fSafetyHelper->ComputeSafety(aTrack->GetPosition());
     thePrimaryTrack->SetSafety(preSafety);
 
+    const int indxRegion  = lvol->GetRegion()->GetInstanceID();
+    bool  isApplyCuts = theHepEmPars->fParametersPerRegion[indxRegion].fIsApplyCuts;
+    bool  continueStepping = theHepEmPars->fParametersPerRegion[indxRegion].fIsMultipleStepsInMSCTrans;
+
     // Sample the `number-of-interaction-left`
     for (int ip=0; ip<4; ++ip) {
       if (thePrimaryTrack->GetNumIALeft(ip)<=0.) {
@@ -419,8 +420,6 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     double stepLimitLeft = theElTrack->GetPStepLength();
     double totalTruePathLength = 0, totalEloss = 0;
 //    bool continueStepping = fMultipleSteps, stopped = false;
-    const int indxRegion  = theHepEmData->fTheMatCutData->fMatCutData[hepEmIMC].fG4RegionIndex;
-    bool continueStepping = theHepEmPars->fParametersPerRegion[indxRegion].fIsMultipleStepsInMSCTrans;
     bool stopped = false;
 
     theElTrack->SavePreStepEKin();
@@ -646,7 +645,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
           // NOTE: as we use Geant4, we should care only those changes that are
           //   not included in the above update step and track, i.e. the energy
           //   deposited due to applying the cut when stacking the secondaries
-          thePrimaryTrack->AddEnergyDeposit( StackG4Secondaries(particleChangeNuc, aTrack, proc, g4IMC) );
+          thePrimaryTrack->AddEnergyDeposit( StackG4Secondaries(particleChangeNuc, aTrack, proc, g4IMC, isApplyCuts) );
           // done: clear the particle change
           particleChangeNuc->Clear();
           // update the primary track kinetic energy and direction
@@ -692,7 +691,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     step.UpdateTrack();
 
     // Stack secondaries created by the HepEm physics above
-    edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
+    edep += StackSecondaries(theTLData, aTrack, proc, g4IMC, isApplyCuts);
 
     // ATLAS XTR RELATED:
     // Stack XTR secondaries (if any)
@@ -701,7 +700,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       for (int i = 0; i < numXTRPhotons; i++) {
         G4Track *secTrack = particleChangeXTR->GetSecondary(i);
         const double secEKin = secTrack->GetKineticEnergy();
-        if (applyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
+        if (isApplyCuts && secEKin < (*theCutsGamma)[g4IMC]) {
           edep += secEKin;
           continue;
         }
@@ -1079,6 +1078,9 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
         }
       } else {
         double edep = 0.0;
+        // Get the region index
+        const int indxRegion = lvol->GetRegion()->GetInstanceID();
+        bool  isApplyCuts    = theHepEmPars->fParametersPerRegion[indxRegion].fIsApplyCuts;
         // NOTE: gamma-nuclear interaction needs to be done here while others in
         // HepEm so we need to select first the interaction then see if we call
         // HepEm or Geant4 physics to perform the selected interaction.
@@ -1102,7 +1104,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           step.UpdateTrack();
 
           // Stack secondaries created by the HepEm physics above
-          edep += StackSecondaries(theTLData, aTrack, proc, g4IMC);
+          edep += StackSecondaries(theTLData, aTrack, proc, g4IMC, isApplyCuts);
 
         } else {
           // Gamma-nuclear: --> use Geant4 for the interaction:
@@ -1126,7 +1128,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
             // NOTE: as we use Geant4, we should care only those changes that are
             //   not included in the above update step and track, i.e. the energy
             //   deposited due to applying the cut when stacking the secondaries
-            edep = StackG4Secondaries(particleChangeGNuc, aTrack, fGammaNoProcessVector[iDProc], g4IMC);
+            edep = StackG4Secondaries(particleChangeGNuc, aTrack, fGammaNoProcessVector[iDProc], g4IMC, isApplyCuts);
             // done: clear the particle change
             particleChangeGNuc->Clear();
           }
@@ -1203,7 +1205,7 @@ void G4HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
 
 // Helper that can be used to stack secondary e-/e+ and gamma i.e. everything
 // that HepEm physics can produce
-double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC) {
+double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC, bool isApplyCuts) {
   const int numSecElectron = aTLData->GetNumSecondaryElectronTrack();
   const int numSecGamma    = aTLData->GetNumSecondaryGammaTrack();
   const int numSecondaries = numSecElectron + numSecGamma;
@@ -1227,7 +1229,7 @@ double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track*
     G4HepEmTrack *secTrack = aTLData->GetSecondaryElectronTrack(is)->GetTrack();
     const double  secEKin  = secTrack->GetEKin();
     const bool isElectron  = secTrack->GetCharge() < 0.0;
-    if (applyCuts) {
+    if (isApplyCuts) {
       if (isElectron && secEKin < (*theCutsElectron)[aG4IMC]) {
         edep += secEKin;
         continue;
@@ -1259,7 +1261,7 @@ double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track*
   for (int is = 0; is < numSecGamma; ++is) {
     G4HepEmTrack *secTrack = aTLData->GetSecondaryGammaTrack(is)->GetTrack();
     const double secEKin = secTrack->GetEKin();
-    if (applyCuts && secEKin < (*theCutsGamma)[aG4IMC]) {
+    if (isApplyCuts && secEKin < (*theCutsGamma)[aG4IMC]) {
       edep += secEKin;
       continue;
     }
@@ -1284,7 +1286,7 @@ double G4HepEmTrackingManager::StackSecondaries(G4HepEmTLData* aTLData, G4Track*
 
 // Helper that can be used to stack secondary e-/e+ and gamma i.e. everything
 // that HepEm physics can produce
-double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleChange, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC) {
+double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleChange, G4Track* aG4PrimaryTrack, const G4VProcess* aG4CreatorProcess, int aG4IMC, bool isApplyCuts) {
   const int numSecondaries = particleChange->GetNumberOfSecondaries();
   // return early if there are no secondaries created by the physics interaction
   double edep = 0.0;
@@ -1307,7 +1309,7 @@ double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleCha
     double   secEKin  = secTrack->GetKineticEnergy();
     const G4ParticleDefinition* secPartDef = secTrack->GetParticleDefinition();
 
-    if (applyCuts) {
+    if (isApplyCuts) {
       if (secPartDef == G4Gamma::Definition() && secEKin < (*theCutsGamma)[aG4IMC]) {
         edep += secEKin;
         continue;

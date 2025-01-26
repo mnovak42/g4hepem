@@ -32,13 +32,6 @@ public:
 
   void HandOverOneTrack(G4Track *aTrack) override;
 
-  void SetMultipleSteps(G4bool val) {
-    fMultipleSteps = val;
-  }
-  G4bool MultipleSteps() const {
-    return fMultipleSteps;
-  }
-
   // Allows to set configuration/parameters (even some per region)
   G4HepEmConfig* GetConfig() { return fConfig; }
 
@@ -63,13 +56,15 @@ private:
   // Stacks secondaries created by HepEm physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack,
-                          const G4VProcess* aG4CreatorProcess, int aG4IMC);
+                          const G4VProcess* aG4CreatorProcess, int aG4IMC,
+                          bool isApplyCuts);
 
   // Stacks secondaries created by Geant4 physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackG4Secondaries(G4VParticleChange* particleChange,
                             G4Track* aG4PrimaryTrack,
-                            const G4VProcess* aG4CreatorProcess, int aG4IMC);
+                            const G4VProcess* aG4CreatorProcess, int aG4IMC,
+                            bool isApplyCuts);
 
   void InitNuclearProcesses(int particleID);
 
@@ -107,8 +102,6 @@ private:
   const std::vector<G4double> *theCutsGamma = nullptr;
   const std::vector<G4double> *theCutsElectron = nullptr;
   const std::vector<G4double> *theCutsPositron = nullptr;
-  G4bool applyCuts = false;
-  G4bool fMultipleSteps = true;
 
   // A set of empty processes with the correct names and types just to be able
   // to set them as process limiting the step and creating secondaries as some

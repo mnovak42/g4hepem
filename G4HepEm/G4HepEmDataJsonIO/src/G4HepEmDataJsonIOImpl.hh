@@ -136,6 +136,7 @@ namespace nlohmann
       j["fIsMSCMinimalStepLimit"]     = d.fIsMSCMinimalStepLimit;
       j["fIsELossFluctuation"]        = d.fIsELossFluctuation;
       j["fIsMultipleStepsInMSCTrans"] = d.fIsMultipleStepsInMSCTrans;
+      j["fIsApplyCuts"]               = d.fIsApplyCuts;
     }
 
     static G4HepEmRegionParmeters from_json(const json& j)
@@ -152,6 +153,7 @@ namespace nlohmann
       j.at("fIsMSCMinimalStepLimit").get_to(d.fIsMSCMinimalStepLimit);
       j.at("fIsELossFluctuation").get_to(d.fIsELossFluctuation);
       j.at("fIsMultipleStepsInMSCTrans").get_to(d.fIsMultipleStepsInMSCTrans);
+      j.at("fIsApplyCuts").get_to(d.fIsApplyCuts);
 
       return d;
     }

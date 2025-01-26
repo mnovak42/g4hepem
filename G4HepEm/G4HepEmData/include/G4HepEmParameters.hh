@@ -43,6 +43,9 @@ struct G4HepEmRegionParmeters {
 
   /** Flag to indicate if the combined MSC + Transportation process is allowed for multiple steps. */
   bool   fIsMultipleStepsInMSCTrans = true;
+
+  /** Apply secondary production threshold on all interactions (beyond ioni. and brem.) */
+  bool   fIsApplyCuts = true;
 };
 
 

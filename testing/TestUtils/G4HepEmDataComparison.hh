@@ -48,11 +48,11 @@ bool operator==(const G4HepEmRegionParmeters& lhs, const G4HepEmRegionParmeters&
   return std::tie(lhs.fFinalRange, lhs.fDRoverRange, lhs.fLinELossLimit,
               lhs.fMSCRangeFactor, lhs.fMSCSafetyFactor,
               lhs.fIsMSCMinimalStepLimit, lhs.fIsELossFluctuation,
-              lhs.fIsMultipleStepsInMSCTrans) ==
+              lhs.fIsMultipleStepsInMSCTrans, lhs.fIsApplyCuts) ==
      std::tie(rhs.fFinalRange, rhs.fDRoverRange, rhs.fLinELossLimit,
               rhs.fMSCRangeFactor, rhs.fMSCSafetyFactor,
               rhs.fIsMSCMinimalStepLimit, rhs.fIsELossFluctuation,
-              rhs.fIsMultipleStepsInMSCTrans);
+              rhs.fIsMultipleStepsInMSCTrans, rhs.fIsApplyCuts);
 }
 
 bool operator!=(const G4HepEmRegionParmeters& lhs, const G4HepEmRegionParmeters& rhs)

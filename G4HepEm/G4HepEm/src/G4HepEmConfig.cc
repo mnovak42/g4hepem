@@ -158,6 +158,26 @@ G4bool G4HepEmConfig::GetMultipleStepsInMSCWithTransportation(G4int indxRegion) 
 
 
 
+void G4HepEmConfig::SetApplyCuts(G4bool val, const G4String& nameRegion) {
+  if (nameRegion == "all") {
+    SetApplyCuts(val);
+  } else {
+    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fIsApplyCuts = val;
+  }
+}
+void G4HepEmConfig::SetApplyCuts(G4bool val) {
+  for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
+    fG4HepEmParameters->fParametersPerRegion[i].fIsApplyCuts = val;
+}
+G4bool G4HepEmConfig::GetApplyCuts(const G4String& nameRegion) {
+  return GetApplyCuts(GetRegionIndex(nameRegion));
+}
+G4bool G4HepEmConfig::GetApplyCuts(G4int indxRegion) {
+  CheckRegionIndex(indxRegion);
+  return fG4HepEmParameters->fParametersPerRegion[indxRegion].fIsApplyCuts;
+}
+
+
 G4int G4HepEmConfig::GetRegionIndex(const G4String& nameRegion) {
   G4Region* region = G4RegionStore::GetInstance()->GetRegion(nameRegion, false);
   if (region == nullptr) {
@@ -218,7 +238,7 @@ void G4HepEmConfig::Dump() {
 
  std::vector<G4String> names = {" FinalRange (mm)", " DRoverRange", " Energy loss fluctuation",
         " MSC Range factor",  " MSC Safety factor", " MSC minimal step limit",
-        " Multiple steps in MSC+Trans.", " Woodcock-tracking"};
+        " Multiple steps in MSC+Trans.", " Woodcock-tracking", " Apply cuts"};
  const int numParams  = names.size();
 
  for (int ip=0; ip<numParams; ++ip) {
@@ -256,6 +276,9 @@ void G4HepEmConfig::Dump() {
               break;
        case 7: std::cout << isWDT << " | ";
               break;
+       case 8: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsApplyCuts << " | ";
+              break;
+
      }
    }
    std::cout << std::endl;

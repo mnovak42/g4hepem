@@ -48,5 +48,7 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
     rDat.fIsELossFluctuation = G4EmParameters::Instance()->LossFluctuation();
 
     rDat.fIsMultipleStepsInMSCTrans = true;
+
+    rDat.fIsApplyCuts = G4EmParameters::Instance()->ApplyCuts();
   }
 }

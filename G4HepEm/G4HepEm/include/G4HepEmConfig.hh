@@ -91,6 +91,11 @@ public:
   G4bool GetMultipleStepsInMSCWithTransportation(const G4String& nameRegion);
   G4bool GetMultipleStepsInMSCWithTransportation(int indxRegion);
 
+  // Activating/deactivating applying cuts on other processes beyond ioni. and brem.
+  void   SetApplyCuts(G4bool val, const G4String& nameRegion);
+  void   SetApplyCuts(G4bool val);
+  G4bool GetApplyCuts(const G4String& nameRegion);
+  G4bool GetApplyCuts(int indxRegion);
 
 
   // NOTE: to see if we set its memebr Parameters or it will have its own
