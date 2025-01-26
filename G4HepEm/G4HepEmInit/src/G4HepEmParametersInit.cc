@@ -49,13 +49,4 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
 
     rDat.fIsMultipleStepsInMSCTrans = true;
   }
-
-  hepEmPars->fFinalRange           = 1.0*CLHEP::mm;
-  hepEmPars->fDRoverRange          = 0.2;
-  hepEmPars->fLinELossLimit        = G4EmParameters::Instance()->LinearLossLimit();
-
-  // range factor parameter of the MSC stepping
-  hepEmPars->fMSCRangeFactor       = G4EmParameters::Instance()->MscRangeFactor();
-  hepEmPars->fMSCSafetyFactor      = G4EmParameters::Instance()->MscSafetyFactor();
-
 }

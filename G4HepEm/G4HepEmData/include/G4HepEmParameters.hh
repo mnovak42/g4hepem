@@ -76,23 +76,6 @@ struct G4HepEmParameters {
   G4HepEmRegionParmeters* fParametersPerRegion_gpu = nullptr; //[fNumRegions]
 #endif  // G4HepEm_CUDA_BUILD
 
-
-
-
-  /** The *final range* parameter of the sub-threshold energy loss related step limit function.*/
-  double fFinalRange = 1.0;
-  /** The *rover range* parameter of the sub-threshold energy loss related step limit function.*/
-  double fDRoverRange = 0.2;
-  /** Maximum allowed *linear* energy loss along step due to sub-threshold (continuous) energy losses
-    * given as fraction of the intial kinetic energy. Proper integral is used to compute the mean energy loss
-    * when the energy loss, according to linear approximation, is over this threshold.*/
-  double fLinELossLimit = 0.01;
-
-  // MSC range and safety factor parameters
-  double fMSCRangeFactor  = 0.04;
-  double fMSCSafetyFactor = 0.6;
-
-
 };
 
 /** Function that ...*/

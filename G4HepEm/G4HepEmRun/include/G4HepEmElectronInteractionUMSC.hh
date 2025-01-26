@@ -27,7 +27,7 @@ public:
 
   G4HepEmHostDevice
   static void StepLimit(G4HepEmData* hepEmData, G4HepEmParameters* hepEmPars, G4HepEmMSCTrackData* mscData,
-                        double ekin, int imat, double range, double presafety,
+                        double ekin, int imat, int iregion, double range, double presafety,
                         bool onBoundary, bool iselectron, G4HepEmRandomEngine* rnge);
 
   G4HepEmHostDevice

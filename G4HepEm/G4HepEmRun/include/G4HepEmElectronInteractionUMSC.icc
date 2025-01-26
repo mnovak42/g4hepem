@@ -17,7 +17,7 @@
 // Note, that in all cases, the final physical step length will need to be coverted to geometrical
 // one that is done in the G4HepEmElectronManager.
 void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmParameters* hepEmPars,
-    G4HepEmMSCTrackData* mscData, double ekin, int imat, double range, double presafety,
+    G4HepEmMSCTrackData* mscData, double ekin, int imat, int iregion, double range, double presafety,
     bool onBoundary, bool iselectron, G4HepEmRandomEngine* rnge) {
   // Initial values:
   //  - lengths are already initialised to the current minimum physics step  which is the true, minimum
@@ -25,6 +25,9 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
   //  - the first transport mean free path value, i.e. `mscData.fLambtr1` is also assumed to be up to date
   mscData->fIsNoScatteringInMSC = false;
   mscData->fIsDisplace          = true;
+
+  const double mscRangeFactor  = hepEmPars->fParametersPerRegion[iregion].fMSCRangeFactor;
+  const double mscSafetyFactor = hepEmPars->fParametersPerRegion[iregion].fMSCSafetyFactor;
 
   // stop in case of:
   // - very small steps
@@ -45,8 +48,8 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
     // note: the below is true only because `lambdaLimit = 1.0 [mm]`
     //const double kILambdaLimit   = 1.0; // 1/(kLambdaLimit = 1.0 [mm])
     mscData->fDynamicRangeFactor = lambdaTr1 > 1.0
-                                   ? hepEmPars->fMSCRangeFactor*(0.75 + 0.25*lambdaTr1)
-                                   : hepEmPars->fMSCRangeFactor;
+                                   ? mscRangeFactor*(0.75 + 0.25*lambdaTr1)
+                                   : mscRangeFactor;
     // note: `ekin` below is the kinetic energy in MeV;
     const double stepMin = lambdaTr1*1.0E-3/(2.0E-3 + ekin*(matData.fUMSCStepMinPars[0] + ekin*matData.fUMSCStepMinPars[1]));
 
@@ -72,7 +75,7 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
   // the true step limit
   const double tlimitmin = mscData->fTlimitMin;
   const double tlimit    = range > presafety
-                  ? G4HepEmMax(G4HepEmMax(mscData->fInitialRange*mscData->fDynamicRangeFactor, hepEmPars->fMSCSafetyFactor*presafety), tlimitmin)
+                  ? G4HepEmMax(G4HepEmMax(mscData->fInitialRange*mscData->fDynamicRangeFactor, mscSafetyFactor*presafety), tlimitmin)
                   : G4HepEmMax(range, tlimitmin);
   // randomise the true step limit but only if the step was determined by msc
   if (tlimit < mscData->fTrueStepLength) { // keep mscData->fTrueStepLength otherwise as teh current step-limit --> not msc limited this step
