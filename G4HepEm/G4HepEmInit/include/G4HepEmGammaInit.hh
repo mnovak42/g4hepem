@@ -10,7 +10,7 @@
 struct G4HepEmData;
 struct G4HepEmParameters;
 
-void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars);
+void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, int verbose=0);
 
 
 

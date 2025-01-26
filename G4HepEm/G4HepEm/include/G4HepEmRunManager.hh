@@ -53,7 +53,7 @@ public:
   G4HepEmRunManager (bool ismaster);
  ~G4HepEmRunManager ();
 
-  static G4HepEmRunManager* GetMasterRunManager (); 
+  static G4HepEmRunManager* GetMasterRunManager ();
 
   /**
    * Builds or sets (data) members of run-manager.
@@ -73,7 +73,7 @@ public:
    *   its random engine pointer to the corresponding geant4, thread local random
    *   engine pointer.
    */
-  void Initialize (G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx);
+  void Initialize (G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx, G4HepEmParameters* hepEmPars=nullptr);
 
 
   /**
@@ -92,6 +92,8 @@ public:
   struct G4HepEmParameters* GetHepEmParameters()   const  { return fTheG4HepEmParameters; }
   G4HepEmTLData*            GetTheTLData()         const  { return fTheG4HepEmTLData; }
 
+  void SetVerbose(int verbose) { fVerbose = verbose; }
+
 private:
 
   /**
@@ -103,7 +105,7 @@ private:
    * other words, these are the `global` data structures.
    * This should be invoked by the master thread and only once!
    */
-  void InitializeGlobal ();
+  void InitializeGlobal (G4HepEmParameters* hepEmPars=nullptr);
 
 
 
@@ -121,6 +123,7 @@ private:
    * Collection of configuration parameters used at initialization and run time.
    */
   struct G4HepEmParameters*      fTheG4HepEmParameters;
+  bool   fExternalParameters;
   /*
    * The top level data structure that stores all the data used by all processes
    * (e.g. material or material cuts couple related data, etc.)
@@ -140,6 +143,8 @@ private:
 
   G4HepEmTLData*                 fTheG4HepEmTLData;
 
+  // Verbosity level (only 0/1 at the moment)
+  int fVerbose;
 
 };
 

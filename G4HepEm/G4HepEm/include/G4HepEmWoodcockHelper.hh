@@ -17,6 +17,16 @@ class G4HepEmGammaTrack;
 
 #include <map>
 
+/**
+ * @file    G4HepEmWoodcockHelper.hh
+ * @class   G4HepEmWoodcockHelper
+ * @author  M. Novak
+ * @date    2024
+ *
+ * A helper class to perform Woodcock-tracking of photons in some Geant4 detector
+ * regions (utilised in the G4HepEmTrackinManager).
+ */
+
 class G4HepEmWoodcockHelper {
 public:
     G4HepEmWoodcockHelper();

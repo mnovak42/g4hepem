@@ -17,6 +17,7 @@ set(G4HEPEMDATA_CXX_sources
   src/G4HepEmGammaData.cc
   src/G4HepEmMatCutData.cc
   src/G4HepEmMaterialData.cc
+  src/G4HepEmParameters.cc
   src/G4HepEmSBTableData.cc
 )
 

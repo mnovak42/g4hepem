@@ -1,5 +1,7 @@
 #include "PhysListHepEmTracking.hh"
+
 #include "G4HepEmTrackingManager.hh"
+#include "G4HepEmConfig.hh"
 
 #include "G4EmParameters.hh"
 
@@ -30,8 +32,14 @@ void PhysListHepEmTracking::ConstructProcess()
 {
   // Register custom tracking manager for e-/e+ and gammas.
   auto* trackingManager = new G4HepEmTrackingManager;
-
-  trackingManager->AddWoodcockTrackingRegion("Woodcock_Region");
+  // Configuration of G4HepEm
+  // Several paramaters can be configured per detector region. These are:
+  //  MSC parameters, continuous energy loss step limit function parameters,
+  //  MSC minimal/default step limit, Woodcock tracking of photons, energy loss
+  //  fluctuation, multiple steps in the combined MSC with Transportation
+  // Here we activate only one: Woodcock tracking in the calorimeter region (Woodcock_Region)
+  G4HepEmConfig* config = trackingManager->GetConfig();
+  config->SetWoodcockTrackingRegion("Woodcock_Region");
 
   G4Electron::Definition()->SetTrackingManager(trackingManager);
   G4Positron::Definition()->SetTrackingManager(trackingManager);

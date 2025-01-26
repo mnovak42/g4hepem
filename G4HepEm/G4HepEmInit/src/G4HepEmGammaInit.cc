@@ -34,12 +34,12 @@
 
 #include <iostream>
 
-void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/) {
+void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, int verbose) {
   // clean previous G4HepEmElectronData (if any)
   //
   // create G4Models for gamma
   G4ParticleDefinition* g4PartDef = G4Gamma::Gamma();
-  std::cout << "     ---  InitGammaData ... " << std::endl;
+  if (verbose > 1) std::cout << "     ---  InitGammaData ... " << std::endl;
   // Min/Max energies of the EM model (same as for the loss-tables)
   G4double emModelEMin = G4EmParameters::Instance()->MinKinEnergy();
   G4double emModelEMax = G4EmParameters::Instance()->MaxKinEnergy();
@@ -86,10 +86,10 @@ void InitGammaData(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*he
   // the allocation) but cleans the memory of the hepEmData->fTheGammaData
   AllocateGammaData(&(hepEmData->fTheGammaData));
   // build macroscopic cross section data for Conversion and Compton
-  std::cout << "     ---  BuildLambdaTables ... " << std::endl;
+  if (verbose > 1) std::cout << "     ---  BuildLambdaTables ... " << std::endl;
   BuildLambdaTables(modelPP, modelKN, &hadGNucXSDataStore, hepEmData);
   // build element selectors
-  std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
+  if (verbose > 1) std::cout << "     ---  BuildElementSelectorTables ... " << std::endl;
   BuildElementSelectorTables(modelPP, hepEmData);
   //
   // delete all g4 models

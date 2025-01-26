@@ -34,9 +34,13 @@ G4HepEmRunManager::G4HepEmRunManager(bool ismaster) {
   } else {
     fIsMaster = false;
   }
+  fExternalParameters            = false;
+
   fTheG4HepEmParameters          = nullptr;
   fTheG4HepEmData                = nullptr;
   fTheG4HepEmTLData              = nullptr;
+
+  fVerbose = 1;
 }
 
 
@@ -52,12 +56,12 @@ G4HepEmRunManager* G4HepEmRunManager::GetMasterRunManager() {
 
 // this might be called more than one: as many times as the process is assigned
 // to a particle but no way to ensure that is also called at re-init
-void G4HepEmRunManager::InitializeGlobal() {
+void G4HepEmRunManager::InitializeGlobal(G4HepEmParameters* hepEmPars) {
 //  std::cout << "  ---- InitializeGlobal() is called for fIsMaster = " << fIsMaster << " "
   if (fIsMaster) {// && !fIsMasterGlobalInitialized) {
     //
     // create HepEmParameters structure shared by all workers
-    fTheG4HepEmParameters = new G4HepEmParameters();
+//    fTheG4HepEmParameters = new G4HepEmParameters();
     // create the top level HepEmData structure shared by all workers and init
     fTheG4HepEmData       = new G4HepEmData;
     // set all ptr members of the HepEmData structure to null
@@ -66,7 +70,13 @@ void G4HepEmRunManager::InitializeGlobal() {
     // === Use the G4HepEmParamatersInit::InitHepEmParameters method for the
     //     initialization of all configuartion parameters by extracting information
     //     from the G4EmParameters.
-    InitHepEmParameters(fTheG4HepEmParameters);
+    if (hepEmPars != nullptr) {
+      fTheG4HepEmParameters = hepEmPars;
+      fExternalParameters   = true;
+    } else {
+      fTheG4HepEmParameters = new G4HepEmParameters();
+      InitHepEmParameters(fTheG4HepEmParameters);
+    }
 
     // === Use the G4HepEmMaterialInit::InitMaterialAndCoupleData method for the
     //     initialization of all material and secondary production threshold related
@@ -83,7 +93,7 @@ void G4HepEmRunManager::InitializeGlobal() {
   }
 }
 
-void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx) {
+void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmParticleIndx, G4HepEmParameters* hepEmPars) {
   if (fIsMaster) {
     //
     // Build the global data structures (material-cuts, material, element data and
@@ -92,25 +102,27 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     if (!fTheG4HepEmParameters || fIsInitialisedForParticle[hepEmParticleIndx]) {
       // clear all previously created data structures and create the new global data
       Clear();
-      std::cout << " === G4HepEm global init ... " << std::endl;
-      InitializeGlobal();
+      if (fVerbose > 1) std::cout << " === G4HepEm global init ... " << std::endl;
+      InitializeGlobal(hepEmPars);
     }
     //
     // Build tables: e-loss tables for e/e+, macroscopic cross section and element
     //   selectors that are used/shared by all workers at run time as read-only.
-    std::cout << " === G4HepEm init for particle index = " << hepEmParticleIndx << " ..."<< std::endl;
+    if (fVerbose > 1) {
+      std::cout << " === G4HepEm init for particle index = " << hepEmParticleIndx << " ..."<< std::endl;
+    }
     switch (hepEmParticleIndx) {
       // === e- : use the G4HepEmElementInit::InitElectronData() method for e- initialization.
-      case 0 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, true);
+      case 0 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, true, fVerbose);
                fIsInitialisedForParticle[0] = true;
                break;
       // === e+ : use the G4HepEmElementInit::InitElectronData() method for e+ initialization.
-      case 1 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, false);
+      case 1 : InitElectronData(fTheG4HepEmData, fTheG4HepEmParameters, false, fVerbose);
                fIsInitialisedForParticle[1] = true;
                //fTheG4HepEmPositronManager = new G4HepEmElectronManager;
                break;
       // === Gamma: use the G4HepEmGammaInit::InitGammaData() method for gamma initialization.
-      case 2 : InitGammaData(fTheG4HepEmData, fTheG4HepEmParameters);
+      case 2 : InitGammaData(fTheG4HepEmData, fTheG4HepEmParameters, fVerbose);
                fIsInitialisedForParticle[2] = true;
                break;
       default: std::cerr << " **** ERROR in G4HepEmRunManager::Initialize: unknown particle " << std::endl;
@@ -141,7 +153,7 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
 
 void G4HepEmRunManager::Clear() {
   if (fIsMaster) {
-    if (fTheG4HepEmParameters) {
+    if (fTheG4HepEmParameters && !fExternalParameters) {
       delete fTheG4HepEmParameters;
       fTheG4HepEmParameters = nullptr;
     }

@@ -19,10 +19,12 @@ set(G4HEPEM_Geant4_LIBRARIES
 if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
   set(G4HEPEM_headers ${G4HEPEM_headers}
     include/G4EmTrackingManager.hh
+    include/G4HepEmConfig.hh
     include/G4HepEmTrackingManager.hh
   )
   set(G4HEPEM_sources ${G4HEPEM_sources}
     src/G4EmTrackingManager.cc
+    src/G4HepEmConfig.cc
     src/G4HepEmTrackingManager.cc
   )
 
