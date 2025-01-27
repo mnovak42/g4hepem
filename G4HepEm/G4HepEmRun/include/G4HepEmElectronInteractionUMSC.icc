@@ -26,9 +26,6 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
   mscData->fIsNoScatteringInMSC = false;
   mscData->fIsDisplace          = true;
 
-  const double mscRangeFactor  = hepEmPars->fParametersPerRegion[iregion].fMSCRangeFactor;
-  const double mscSafetyFactor = hepEmPars->fParametersPerRegion[iregion].fMSCSafetyFactor;
-
   // stop in case of:
   // - very small steps
   // - will never leave the current volume boundary (the correction on range accounts fluctuation)
@@ -39,44 +36,79 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
     mscData->fIsDisplace = false;
     return;
   }
-  // set the initial range, dynamic range factor, minimal step and true step values
-  // if just enetring to a new volume or performing the very first step with this
-  // particle (or more exactly, reaching this point first time)
-  if (mscData->fIsFirstStep || onBoundary) {
-    const double lambdaTr1 = mscData->fLambtr1;
-    mscData->fInitialRange = G4HepEmMax(range, lambdaTr1);
-    // note: the below is true only because `lambdaLimit = 1.0 [mm]`
-    //const double kILambdaLimit   = 1.0; // 1/(kLambdaLimit = 1.0 [mm])
-    mscData->fDynamicRangeFactor = lambdaTr1 > 1.0
-                                   ? mscRangeFactor*(0.75 + 0.25*lambdaTr1)
-                                   : mscRangeFactor;
-    // note: `ekin` below is the kinetic energy in MeV;
-    const double stepMin = lambdaTr1*1.0E-3/(2.0E-3 + ekin*(matData.fUMSCStepMinPars[0] + ekin*matData.fUMSCStepMinPars[1]));
+  const double mscRangeFactor  =  hepEmPars->fParametersPerRegion[iregion].fMSCRangeFactor;
+  const double mscSafetyFactor =  hepEmPars->fParametersPerRegion[iregion].fMSCSafetyFactor;
+  const bool   mscIsUseSafety  = !hepEmPars->fParametersPerRegion[iregion].fIsMSCMinimalStepLimit;
 
-    // there is some difference in the algorithm from G4.11.0 that (together with
-    // the differences in the fUMSCPar, fUMSCStepMinPars[0,1] parameter values) gives
-    // 2-3 % lower number of HITS (e.g. lower number of steps) in ATLAS when using
-    // G4.11.0 compred to older G4 versions such as G4.10.6.p03.
-    // We include this to ease validation though this is an improvment of G4 11.0
+  double tlimit = 0.0;
+  if (mscIsUseSafety) {
+      // The `fUseSafety` Urban MSC step limit (i.e. sdandard EM):
+      // ---------------------------------------------------------
+      // set the initial range, dynamic range factor, minimal step and true step values
+      // if just enetring to a new volume or performing the very first step with this
+      // particle (or more exactly, reaching this point first time)
+      if (mscData->fIsFirstStep || onBoundary) {
+        const double lambdaTr1 = mscData->fLambtr1;
+        mscData->fInitialRange = G4HepEmMax(range, lambdaTr1);
+        // note: the below is true only because `lambdaLimit = 1.0 [mm]`
+        //const double kILambdaLimit   = 1.0; // 1/(kLambdaLimit = 1.0 [mm])
+        mscData->fDynamicRangeFactor = lambdaTr1 > 1.0
+                                       ? mscRangeFactor*(0.75 + 0.25*lambdaTr1)
+                                       : mscRangeFactor;
+        // note: `ekin` below is the kinetic energy in MeV;
+        const double stepMin = lambdaTr1*1.0E-3/(2.0E-3 + ekin*(matData.fUMSCStepMinPars[0] + ekin*matData.fUMSCStepMinPars[1]));
+
+        // there is some difference in the algorithm from G4.11.0 that (together with
+        // the differences in the fUMSCPar, fUMSCStepMinPars[0,1] parameter values) gives
+        // 2-3 % lower number of HITS (e.g. lower number of steps) in ATLAS when using
+        // G4.11.0 compred to older G4 versions such as G4.10.6.p03.
+        // We include this to ease validation though this is an improvment of G4 11.0
 #if G4VERSION_NUM < 1070
-    // G4 version before 10.7
-    mscData->fTlimitMin  = G4HepEmMax(0.70*matData.fZeffSqrt*stepMin, kTLimitMinfix);
+        // G4 version before 10.7
+        mscData->fTlimitMin  = G4HepEmMax(0.70*matData.fZeffSqrt*stepMin, kTLimitMinfix);
 #else
-    // this is like in Geant4.11.0
-    const double dum0    = iselectron ? 0.87*matData.fZeff23 : 0.70*matData.fZeffSqrt;
-    // note `tlow` = 5 [keV] ==> 5.0E-3 [MeV] ==> 1/tlow = 200 [1/MeV]
-    const double dum1    = ekin > 5.0E-3 ? dum0*stepMin : dum0*stepMin*0.5*(1.0 + ekin*200.0);
-    mscData->fTlimitMin  = G4HepEmMax(dum1, kTLimitMinfix);
+        // this is like in Geant4.11.0
+        const double dum0    = iselectron ? 0.87*matData.fZeff23 : 0.70*matData.fZeffSqrt;
+        // note `tlow` = 5 [keV] ==> 5.0E-3 [MeV] ==> 1/tlow = 200 [1/MeV]
+        const double dum1    = ekin > 5.0E-3 ? dum0*stepMin : dum0*stepMin*0.5*(1.0 + ekin*200.0);
+        mscData->fTlimitMin  = G4HepEmMax(dum1, kTLimitMinfix);
 #endif
 
-    // reset first step flag (if any)
-    mscData->fIsFirstStep = false;
-  }
-  // the true step limit
-  const double tlimitmin = mscData->fTlimitMin;
-  const double tlimit    = range > presafety
+        // reset first step flag (if any)
+        mscData->fIsFirstStep = false;
+      }
+      // the true step limit
+      const double tlimitmin = mscData->fTlimitMin;
+      tlimit    = range > presafety
                   ? G4HepEmMax(G4HepEmMax(mscData->fInitialRange*mscData->fDynamicRangeFactor, mscSafetyFactor*presafety), tlimitmin)
                   : G4HepEmMax(range, tlimitmin);
+  } else {
+      // The `fMinimal` Urban MSC step limit (i.e. sdandard EM):
+      // ---------------------------------------------------------
+      // NOTE: `tlimit` is updated only when moving to a new volume (see below).
+      //  Its value is stored in `mscData->fInitialRange` instead of introducing a
+      //  new memebr as `fInitialRange` is not used when the step limit is `fMinimal`
+      //
+      // NOTE: `tlimit` stays its initial value till the first boundary which is
+      //  very large (1E+21 mm in our case while 1E+50 in G4UrbanMscModel) so
+      //  no MSC step limit till the very first boundary for sure.
+      if (onBoundary) {
+        const double lambdaTr1 = mscData->fLambtr1;
+        const double tmpTlimit = range > lambdaTr1
+                                 ? mscRangeFactor*range
+                                 : mscRangeFactor*lambdaTr1;
+        // store `tlimit` in `mscData->fInitialRange` instead of introducing
+        // a new member as `fInitialRange` is not used when the step limit is
+        // `fMinimal`; note: tlimitmin = 10*kTLimitMinfix
+        mscData->fInitialRange = G4HepEmMax(tmpTlimit,  10*kTLimitMinfix);
+      }
+      tlimit = mscData->fInitialRange; // initialised to 1E+21 mm at start tracking
+  }
+
+  // NOTE: on `tlimit` and `tlimitmin`
+  // `fUseSafety`: `tlimit` is updated in each step while `tlimitmin` only at first of entering to a new volume
+  // `fMinimal`  : `tlimit` is updated only when enetring to a new volume while `tlimitmin` is constant (10x kTLimitMinfix)
+  const double tlimitmin = mscData->fTlimitMin;
   // randomise the true step limit but only if the step was determined by msc
   if (tlimit < mscData->fTrueStepLength) { // keep mscData->fTrueStepLength otherwise as teh current step-limit --> not msc limited this step
     const double dum0 = tlimit > tlimitmin
@@ -84,6 +116,7 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
                         : tlimitmin;
     mscData->fTrueStepLength = G4HepEmMin(dum0, mscData->fTrueStepLength);
   }
+
   // msc step limit is done!
   //
   // convert the true (physics) step length to geometrical one (i.e. the pojection of the transport vector
