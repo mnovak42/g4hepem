@@ -128,10 +128,10 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
 
 void G4HepEmElectronInteractionUMSC::SampleScattering(G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData,
      double pStepLength, double preStepEkin, double preStepTr1mfp, double postStepEkin, double postStepTr1mfp,
-     int imat, bool isElectron, G4HepEmRandomEngine* rnge) {
+     int imat, bool isElectron, bool isPosCor, G4HepEmRandomEngine* rnge) {
   const struct G4HepEmMatData& matData = hepEmData->fTheMaterialData->fMaterialData[imat];
   const double cost  = SampleCosineTheta(pStepLength, preStepEkin, preStepTr1mfp, postStepEkin, postStepTr1mfp, mscData->fTlimitMin,
-                         matData.fRadiationLength, matData.fZeff, matData.fUMSCTailCoeff, matData.fUMSCThetaCoeff, isElectron, rnge);
+                         matData.fRadiationLength, matData.fZeff, matData.fUMSCTailCoeff, matData.fUMSCThetaCoeff, isElectron, isPosCor, rnge);
   // no scattering so no dispacement in case cost = 1.0
   if (std::abs(cost) >= 1.0) {
     mscData->fIsNoScatteringInMSC = true;
@@ -150,7 +150,7 @@ void G4HepEmElectronInteractionUMSC::SampleScattering(G4HepEmData* hepEmData, G4
 
 double G4HepEmElectronInteractionUMSC::SampleCosineTheta(double pStepLength, double preStepEkin, double preStepTr1mfp,
        double postStepEkin, double postStepTr1mfp, double umscTlimitMin, double radLength, double zeff,
-       const double* umscTailCoeff, const double* umscThetaCoeff, bool isElectron, G4HepEmRandomEngine* rnge) {
+       const double* umscTailCoeff, const double* umscThetaCoeff, bool isElectron, bool isPosCor, G4HepEmRandomEngine* rnge) {
   // NOTE: since I already know the finalEnergy in the electron Manager and that is already set to the track,
   //       I could get the logFinalEnergy from the updated track which could save up one log call
   // compute the 1rst transport mfp at the post-step point energy
@@ -199,8 +199,8 @@ double G4HepEmElectronInteractionUMSC::SampleCosineTheta(double pStepLength, dou
   const double   tsmall    = G4HepEmMin(umscTlimitMin, 1.0);
   const bool stpNotExSmall = pStepLength > tsmall;
   const double theta0      = stpNotExSmall
-                            ? ComputeTheta0(pStepLength/radLength, postStepEkin, preStepEkin, zeff, umscThetaCoeff, isElectron)
-                            : ComputeTheta0(tsmall/radLength,      postStepEkin, preStepEkin, zeff, umscThetaCoeff, isElectron)*std::sqrt(pStepLength/tsmall);
+                            ? ComputeTheta0(pStepLength/radLength, postStepEkin, preStepEkin, zeff, umscThetaCoeff, isElectron, isPosCor)
+                            : ComputeTheta0(tsmall/radLength,      postStepEkin, preStepEkin, zeff, umscThetaCoeff, isElectron, isPosCor)*std::sqrt(pStepLength/tsmall);
   //
   if (theta0 > kPi*0.166666) {
     return SimpleScattering(xmeanth, x2meanth, rnge);
@@ -293,14 +293,15 @@ double G4HepEmElectronInteractionUMSC::SimpleScattering(double xmeanth, double x
 
 
 // totry: all these could probably computed in `float`
-double G4HepEmElectronInteractionUMSC::ComputeTheta0(double stepInRadLength, double postStepEkin, double preStepEkin, double zeff, const double* umscThetaCoeff, bool isElectron) {
+double G4HepEmElectronInteractionUMSC::ComputeTheta0(double stepInRadLength, double postStepEkin, double preStepEkin, double zeff,
+       const double* umscThetaCoeff, bool isElectron, bool isPosCor) {
   // ( Highland formula: Particle Physics Booklet, July 2002, eq. 26.10)
   const double     kHighland = 13.6; // note:: assumed to be in MeV
   const double postInvBetaPc = (postStepEkin + kElectronMassC2)/(postStepEkin*(postStepEkin + 2.*kElectronMassC2));
   const double invBetaPc     = preStepEkin != postStepEkin
                                ? std::sqrt(postInvBetaPc*(preStepEkin + kElectronMassC2)/(preStepEkin*(preStepEkin + 2.*kElectronMassC2)))
                                : postInvBetaPc;
-  const double y = isElectron
+  const double y = (isElectron || !isPosCor)
                    ? stepInRadLength
                    : stepInRadLength * Theta0PositronCorrection(preStepEkin*postStepEkin, zeff);
   return kHighland*std::sqrt(y)*invBetaPc*(umscThetaCoeff[0] + umscThetaCoeff[1]*G4HepEmLog(y));

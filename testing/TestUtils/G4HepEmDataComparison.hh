@@ -72,10 +72,12 @@ bool operator==(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
 
   return std::tie(lhs.fElectronTrackingCut, lhs.fMinLossTableEnergy,
                   lhs.fMaxLossTableEnergy, lhs.fNumLossTableBins,
-                  lhs.fElectronBremModelLim, lhs.fNumRegions) ==
+                  lhs.fElectronBremModelLim, lhs.fIsMSCPositronCor,
+                  lhs.fNumRegions) ==
          std::tie(rhs.fElectronTrackingCut, rhs.fMinLossTableEnergy,
                   rhs.fMaxLossTableEnergy, rhs.fNumLossTableBins,
-                  rhs.fElectronBremModelLim, rhs.fNumRegions);
+                  rhs.fElectronBremModelLim, rhs.fNumRegions,
+                  rhs.fIsMSCPositronCor);
 }
 
 bool operator!=(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)

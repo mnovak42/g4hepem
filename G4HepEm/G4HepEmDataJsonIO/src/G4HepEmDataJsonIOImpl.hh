@@ -179,6 +179,7 @@ namespace nlohmann
         j["fMaxLossTableEnergy"]   = d->fMaxLossTableEnergy;
         j["fNumLossTableBins"]     = d->fNumLossTableBins;
         j["fElectronBremModelLim"] = d->fElectronBremModelLim;
+        j["fIsMSCPositronCor"]     = d->fIsMSCPositronCor;
         j["fNumRegions"]           = d->fNumRegions;
         j["fParametersPerRegion"]  =
           make_span(d->fNumRegions, d->fParametersPerRegion);
@@ -200,6 +201,7 @@ namespace nlohmann
         d->fMaxLossTableEnergy   = j.at("fMaxLossTableEnergy").get<double>();
         d->fNumLossTableBins     = j.at("fNumLossTableBins").get<int>();
         d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
+        d->fIsMSCPositronCor     = j.at("fIsMSCPositronCor").get<bool>();
         d->fNumRegions           = j.at("fNumRegions").get<int>();
 
         d->fParametersPerRegion  = new G4HepEmRegionParmeters[d->fNumRegions];

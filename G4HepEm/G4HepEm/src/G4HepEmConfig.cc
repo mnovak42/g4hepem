@@ -208,17 +208,20 @@ void G4HepEmConfig::Dump() {
            << std::setw(5) << std::right
            << fG4HepEmParameters->fElectronTrackingCut/CLHEP::keV
            << " [keV] " << std::endl;
- std::cout << std::left << std::setw(30) << " Min loss table energies " << " : "
+ std::cout << std::left << std::setw(30) << " Min loss table energy " << " : "
            << std::setw(5) << std::right
            << fG4HepEmParameters->fMinLossTableEnergy/CLHEP::keV
            << " [keV] " << std::endl;
- std::cout << std::left << std::setw(30) << " Max loss table energies " << " : "
+ std::cout << std::left << std::setw(30) << " Max loss table energy " << " : "
            << std::setw(5) << std::right
            << fG4HepEmParameters->fMaxLossTableEnergy/CLHEP::TeV
            << " [TeV] " << std::endl;
  std::cout << std::left << std::setw(30) << " Number of loss table bins " << " : "
            << std::setw(5) << std::right
            << fG4HepEmParameters->fNumLossTableBins << std::endl;
+ std::cout << std::left << std::setw(30) << " Positron corr. in MSC theta0 " << " : "
+           << std::setw(5) << std::right
+           << fG4HepEmParameters->fIsMSCPositronCor << std::endl;
  std::cout << std::left << std::setw(30) << " Linear loss limit " << " : "
            << std::setw(5) << std::right
            << fG4HepEmParameters->fParametersPerRegion[0].fLinELossLimit*100

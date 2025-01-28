@@ -4,6 +4,7 @@
 #include "G4HepEmParameters.hh"
 
 // g4 include
+#include "G4Version.hh"
 #include "G4EmParameters.hh"
 #include "G4RegionStore.hh"
 #include "G4MscStepLimitType.hh"
@@ -24,6 +25,14 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   // e-/e+ related auxilary parameters:
   // energy limit between the 2 models (Seltzer-Berger and RelBrem) used for e-/e+
   hepEmPars->fElectronBremModelLim = 1.0*CLHEP::GeV;
+
+  // flag to indicate if the e+ correction to the MSC theta0 angle should be used
+  // note: em parameter for this available only in Geant4 version >= 11.1
+#if G4VERSION_NUMBER >= 1110
+  hepEmPars->fIsMSCPositronCor = G4EmParameters::Instance()->MscPositronCorrection();
+#else
+  hepEmPars->fIsMSCPositronCor = true;
+#endif
 
   // get the number of detector regions and allocate the per-region data array
   int numRegions = G4RegionStore::GetInstance()->size();

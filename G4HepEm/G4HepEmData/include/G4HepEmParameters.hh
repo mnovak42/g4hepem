@@ -70,6 +70,9 @@ struct G4HepEmParameters {
     * in case of \f$e^-/e^+\f$ primary particles.*/
   double fElectronBremModelLim = 1000; // 1 GeV
 
+  /** Flag to indicate if the e+ correction should be used in the MSC \theta_0 angle. */
+  bool   fIsMSCPositronCor = true;
+
   /** Number of detector regions */
   int fNumRegions = 0;
   /** A `G4HepEmRegionParmeters` array for the individual detector regions. */
