@@ -10,6 +10,7 @@
 
 G4HepEmConfig::G4HepEmConfig() {
   fG4HepEmParameters = new G4HepEmParameters;
+  fWDTEnergyLimit    = 0.2; // 200 keV by default
   InitHepEmParameters(fG4HepEmParameters);
 }
 
@@ -201,90 +202,96 @@ void  G4HepEmConfig::CheckRegionIndex(G4int indxRegion) {
 
 
 void G4HepEmConfig::Dump() {
- std::cout << "\n ==================== G4HepEmConfig ==================== " << std::endl;
- std::cout << " GLOBAL Parameters: " << std::endl;
- std::cout << " --------------------------------------------------------  " << std::endl;
- std::cout << std::left <<std::setw(30) << " Electron tracking cut " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fElectronTrackingCut/CLHEP::keV
-           << " [keV] " << std::endl;
- std::cout << std::left << std::setw(30) << " Min loss table energy " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fMinLossTableEnergy/CLHEP::keV
-           << " [keV] " << std::endl;
- std::cout << std::left << std::setw(30) << " Max loss table energy " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fMaxLossTableEnergy/CLHEP::TeV
-           << " [TeV] " << std::endl;
- std::cout << std::left << std::setw(30) << " Number of loss table bins " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fNumLossTableBins << std::endl;
- std::cout << std::left << std::setw(30) << " Positron corr. in MSC theta0 " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fIsMSCPositronCor << std::endl;
- std::cout << std::left << std::setw(30) << " Linear loss limit " << " : "
-           << std::setw(5) << std::right
-           << fG4HepEmParameters->fParametersPerRegion[0].fLinELossLimit*100
-           << " [%] " << std::endl << std::endl;
- std::cout << " REGION BASED Parameters: " << std::endl;
- std::cout << " --------------------------------------------------------  " << std::endl;
- std::cout << std::left << std::setw(30) << " Parameter for region " << " : ";
- const int numRegions = fG4HepEmParameters->fNumRegions;
- std::vector<int> lengthNameRegions;
- for (int ir=0; ir<numRegions; ++ir) {
-   const G4String& nameRegion = (*G4RegionStore::GetInstance())[ir]->GetName();
-   int len = nameRegion.length();
-   std::cout << std::setw(len) << (*G4RegionStore::GetInstance())[ir]->GetName() << " | ";
-   lengthNameRegions.push_back(len);
- }
- std::cout << std::endl;
+  const int width = 34;
+  std::cout << "\n ======================== G4HepEmConfig ======================= " << std::endl;
+  std::cout << " GLOBAL Parameters: " << std::endl;
+  std::cout << " --------------------------------------------------------------  " << std::endl;
+  std::cout << std::left << std::setw(width) << " Electron tracking cut " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fElectronTrackingCut/CLHEP::keV
+            << " [keV] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Min loss table energy " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fMinLossTableEnergy/CLHEP::keV
+            << " [keV] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Max loss table energy " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fMaxLossTableEnergy/CLHEP::TeV
+            << " [TeV] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Number of loss table bins " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fNumLossTableBins << std::endl;
+  std::cout << std::left << std::setw(width) << " Is positron corr. in MSC theta0 " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fIsMSCPositronCor
+            << " (true/false) "<< std::endl;
+  std::cout << std::left << std::setw(width) << " Woodcock tracking energy limit " << " : "
+            << std::setw(5) << std::right
+            << fWDTEnergyLimit/CLHEP::keV
+            << " [keV] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Linear loss limit " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fParametersPerRegion[0].fLinELossLimit*100
+            << " [%] " << std::endl << std::endl;
+  std::cout << " REGION BASED Parameters: " << std::endl;
+  std::cout << " --------------------------------------------------------------  " << std::endl;
+  std::cout << std::left << std::setw(width) << " Parameter for region " << " : ";
+  const int numRegions = fG4HepEmParameters->fNumRegions;
+  std::vector<int> lengthNameRegions;
+  for (int ir=0; ir<numRegions; ++ir) {
+    const G4String& nameRegion = (*G4RegionStore::GetInstance())[ir]->GetName();
+    int len = nameRegion.length();
+    std::cout << std::setw(len) << (*G4RegionStore::GetInstance())[ir]->GetName() << " | ";
+    lengthNameRegions.push_back(len);
+  }
+  std::cout << std::endl;
 
- std::vector<G4String> names = {" FinalRange (mm)", " DRoverRange", " Energy loss fluctuation",
+  std::vector<G4String> names = {" FinalRange (mm)", " DRoverRange", " Energy loss fluctuation",
         " MSC Range factor",  " MSC Safety factor", " MSC minimal step limit",
         " Multiple steps in MSC+Trans.", " Woodcock-tracking", " Apply cuts"};
- const int numParams  = names.size();
+  const int numParams  = names.size();
 
- for (int ip=0; ip<numParams; ++ip) {
-   for (int ir=0; ir<numRegions; ++ir) {
-     if (ir==0) {
-       std::cout << std::left << std::setw(30) << names[ip] << " : ";
-     }
-     std::cout << std::right << std::setw(lengthNameRegions[ir]);
+  for (int ip=0; ip<numParams; ++ip) {
+    for (int ir=0; ir<numRegions; ++ir) {
+      if (ir==0) {
+        std::cout << std::left << std::setw(width) << names[ip] << " : ";
+      }
+      std::cout << std::right << std::setw(lengthNameRegions[ir]);
 
-     bool isWDT = false;
-     const G4String& regionName =  (*G4RegionStore::GetInstance())[ir]->GetName();
-     if (ip==7) {
-       for (std::vector<std::string>::iterator it=fWDTRegionNames.begin(); it != fWDTRegionNames.end(); ++it) {
-         if (*it==regionName) {
-           isWDT = true;
-           break;
-         }
-       }
-     }
+      bool isWDT = false;
+      const G4String& regionName =  (*G4RegionStore::GetInstance())[ir]->GetName();
+      if (ip==7) {
+        for (std::vector<std::string>::iterator it=fWDTRegionNames.begin(); it != fWDTRegionNames.end(); ++it) {
+          if (*it==regionName) {
+            isWDT = true;
+            break;
+          }
+        }
+      }
 
-     switch (ip) {
-       case 0: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fFinalRange/CLHEP::mm << " | ";
-              break;
-       case 1: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fDRoverRange << " | ";
-              break;
-       case 2: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsELossFluctuation << " | ";
-              break;
-       case 3: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fMSCRangeFactor << " | ";
-              break;
-       case 4: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fMSCSafetyFactor << " | ";
-              break;
-       case 5: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsMSCMinimalStepLimit << " | ";
-              break;
-       case 6: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsMultipleStepsInMSCTrans << " | ";
-              break;
-       case 7: std::cout << isWDT << " | ";
-              break;
-       case 8: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsApplyCuts << " | ";
-              break;
+      switch (ip) {
+        case 0: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fFinalRange/CLHEP::mm << " | ";
+                break;
+        case 1: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fDRoverRange << " | ";
+                break;
+        case 2: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsELossFluctuation << " | ";
+                break;
+        case 3: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fMSCRangeFactor << " | ";
+                break;
+        case 4: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fMSCSafetyFactor << " | ";
+                break;
+        case 5: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsMSCMinimalStepLimit << " | ";
+                break;
+        case 6: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsMultipleStepsInMSCTrans << " | ";
+                break;
+        case 7: std::cout << isWDT << " | ";
+                break;
+        case 8: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsApplyCuts << " | ";
+                break;
 
-     }
-   }
-   std::cout << std::endl;
- }
- std::cout << " ========================================================= " << std::endl << std::endl;
+      }
+    }
+    std::cout << std::endl;
+  }
+  std::cout << " ============================================================== "<< std::endl << std::endl;
 }

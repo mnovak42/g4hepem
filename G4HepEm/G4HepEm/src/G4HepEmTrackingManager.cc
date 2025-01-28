@@ -178,6 +178,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
         delete fWDTHelper;
       }
       fWDTHelper = new G4HepEmWoodcockHelper;
+      fWDTHelper->SetKineticEnergyLimit(fConfig->GetWDTEnergyLimit());
       G4VPhysicalVolume* worldVolume = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume();
       G4bool hasBeenFound = fWDTHelper->Initialize(wdtRegionNames, fRunManager->GetHepEmData()->fTheMatCutData, worldVolume);
       if (!hasBeenFound) {

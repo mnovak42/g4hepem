@@ -51,6 +51,11 @@ public:
     return fWDTRegionNames;
   }
 
+  // Set/get the kinetic energy limit below which Woodcock tracking should be turned off.*/
+  void     SetWDTEnergyLimit(G4double ekin) { fWDTEnergyLimit = ekin; }
+  G4double GetWDTEnergyLimit() { return fWDTEnergyLimit; }
+
+
 
   // Set the `fDRoverRange` and `fFinalRange` parameters of the continuous energy
   // loss step limit function (everywhere or in a given detector region)
@@ -117,6 +122,8 @@ private:
 
   // The list of detector regions that the user requested Woodock-tracking in.
   std::vector<std::string> fWDTRegionNames;
+  // Kinetic energy below which Woodcock tracking is turned off.*/
+  G4double                 fWDTEnergyLimit;
 
 };
 
