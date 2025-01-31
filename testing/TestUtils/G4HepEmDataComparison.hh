@@ -43,16 +43,41 @@ bool compare_arrays(int lhsSize, const T* lhsData, int rhsSize,
 }
 
 // --- G4HepEmParameters
+bool operator==(const G4HepEmRegionParmeters& lhs, const G4HepEmRegionParmeters& rhs)
+{
+  return std::tie(lhs.fFinalRange, lhs.fDRoverRange, lhs.fLinELossLimit,
+              lhs.fMSCRangeFactor, lhs.fMSCSafetyFactor,
+              lhs.fIsMSCMinimalStepLimit, lhs.fIsELossFluctuation,
+              lhs.fIsMultipleStepsInMSCTrans, lhs.fIsApplyCuts) ==
+     std::tie(rhs.fFinalRange, rhs.fDRoverRange, rhs.fLinELossLimit,
+              rhs.fMSCRangeFactor, rhs.fMSCSafetyFactor,
+              rhs.fIsMSCMinimalStepLimit, rhs.fIsELossFluctuation,
+              rhs.fIsMultipleStepsInMSCTrans, rhs.fIsApplyCuts);
+}
+
+bool operator!=(const G4HepEmRegionParmeters& lhs, const G4HepEmRegionParmeters& rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 bool operator==(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
 {
+
+  if(!compare_arrays(lhs.fNumRegions, lhs.fParametersPerRegion,
+                     rhs.fNumRegions, rhs.fParametersPerRegion))
+  {
+    return false;
+  }
+
   return std::tie(lhs.fElectronTrackingCut, lhs.fMinLossTableEnergy,
                   lhs.fMaxLossTableEnergy, lhs.fNumLossTableBins,
-                  lhs.fFinalRange, lhs.fDRoverRange, lhs.fLinELossLimit,
-                  lhs.fElectronBremModelLim) ==
+                  lhs.fElectronBremModelLim, lhs.fIsMSCPositronCor,
+                  lhs.fNumRegions) ==
          std::tie(rhs.fElectronTrackingCut, rhs.fMinLossTableEnergy,
                   rhs.fMaxLossTableEnergy, rhs.fNumLossTableBins,
-                  rhs.fFinalRange, rhs.fDRoverRange, rhs.fLinELossLimit,
-                  rhs.fElectronBremModelLim);
+                  rhs.fElectronBremModelLim, rhs.fNumRegions,
+                  rhs.fIsMSCPositronCor);
 }
 
 bool operator!=(const G4HepEmParameters& lhs, const G4HepEmParameters& rhs)
@@ -114,9 +139,11 @@ bool operator!=(const G4HepEmElementData& lhs, const G4HepEmElementData& rhs)
 bool operator==(const G4HepEmMCCData& lhs, const G4HepEmMCCData& rhs)
 {
   return std::tie(lhs.fSecElProdCutE, lhs.fSecPosProdCutE, lhs.fSecGamProdCutE,
-                  lhs.fLogSecGamCutE, lhs.fHepEmMatIndex, lhs.fG4MatCutIndex) ==
+                  lhs.fLogSecGamCutE, lhs.fHepEmMatIndex, lhs.fG4MatCutIndex,
+                  lhs.fG4RegionIndex) ==
          std::tie(rhs.fSecElProdCutE, rhs.fSecPosProdCutE, rhs.fSecGamProdCutE,
-                  rhs.fLogSecGamCutE, rhs.fHepEmMatIndex, rhs.fG4MatCutIndex);
+                  rhs.fLogSecGamCutE, rhs.fHepEmMatIndex, rhs.fG4MatCutIndex,
+                  rhs.fG4RegionIndex);
 }
 
 bool operator!=(const G4HepEmMCCData& lhs, const G4HepEmMCCData& rhs)

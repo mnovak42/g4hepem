@@ -61,8 +61,9 @@ void G4HepEmElectronManager::HowFarToDiscreteInteraction(struct G4HepEmData* hep
   //
   const double range  = GetRestRange(theElectronData, theIMC, theEkin, theLEkin);
   theElTrack->SetRange(range);
-  const double frange = hepEmPars->fFinalRange;
-  const double drange = hepEmPars->fDRoverRange;
+  const int indxRegion = hepEmData->fTheMatCutData->fMatCutData[theIMC].fG4RegionIndex;
+  const double frange  = hepEmPars->fParametersPerRegion[indxRegion].fFinalRange;
+  const double drange  = hepEmPars->fParametersPerRegion[indxRegion].fDRoverRange;
   pStepLength = (range > frange)
                 ? range*drange + frange*(1.0-drange)*(2.0-frange/range)
                 : range;
@@ -124,8 +125,9 @@ void G4HepEmElectronManager::HowFarToMSC(struct G4HepEmData* hepEmData, struct G
                                                ? hepEmData->fTheElectronData
                                                : hepEmData->fThePositronData;
 
-  const int theImat = (hepEmData->fTheMatCutData->fMatCutData[theIMC]).fHepEmMatIndex;
-
+  const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
+  const int theImat = theMatCutData.fHepEmMatIndex;
+  const int theIreg = theMatCutData.fG4RegionIndex;
   G4HepEmMSCTrackData* mscData = theElTrack->GetMSCTrackData();
   // init some mscData for the case if we skipp calling msc due to very small step
   mscData->fTrueStepLength      = pStepLength;
@@ -139,7 +141,7 @@ void G4HepEmElectronManager::HowFarToMSC(struct G4HepEmData* hepEmData, struct G
     mscData->fIsActive = true;
     // compute the fist transport mean free path
     mscData->fLambtr1  = GetTransportMFP(theElectronData, theImat, theEkin, theLEkin);
-    G4HepEmElectronInteractionUMSC::StepLimit(hepEmData, hepEmPars, mscData, theEkin, theImat, range,
+    G4HepEmElectronInteractionUMSC::StepLimit(hepEmData, hepEmPars, mscData, theEkin, theImat, theIreg, range,
                                               theTrack->GetSafety(), theTrack->GetOnBoundary(), isElectron, rnge);
     // If msc limited the true step length, then the G4HepEmMSCTrackData::fTrueStepLength member of
     // the input electron track is < pStepLengt. Otherwise its = pStepLengt.
@@ -236,7 +238,9 @@ bool G4HepEmElectronManager::ApplyMeanEnergyLoss(struct G4HepEmData* hepEmData, 
   const double theLEkin = theTrack->GetLogEKin();
   double eloss = pStepLength*GetRestDEDX(elData, theIMC, theEkin, theLEkin);
   // 2. use integral if linear energy loss is over the limit fraction
-  if (eloss > theEkin*hepEmPars->fLinELossLimit) {
+  const int indxRegion = hepEmData->fTheMatCutData->fMatCutData[theIMC].fG4RegionIndex;
+  const double parLinELossLimit = hepEmPars->fParametersPerRegion[indxRegion].fLinELossLimit;
+  if (eloss > theEkin*parLinELossLimit) {
     const double postStepRange = theRange - pStepLength;
     eloss = theEkin - GetInvRange(elData, theIMC, postStepRange);
   }
@@ -297,8 +301,9 @@ void G4HepEmElectronManager::SampleMSC(struct G4HepEmData* hepEmData, struct G4H
     const double postStepTr1mfp = GetTransportMFP(elData, theImat, postStepEkin, postStepLEkin);
     // - sample scattering: including net angular deflection and lateral dispacement that will be
     //                      written into mscData::fDirection and mscData::fDisplacement
+    const bool isPosCor = hepEmPars->fIsMSCPositronCor;
     G4HepEmElectronInteractionUMSC::SampleScattering(hepEmData, mscData, pStepLength, preStepEkin, mscData->fLambtr1, postStepEkin, postStepTr1mfp,
-                                    theImat, isElectron, rnge);
+                                    theImat, isElectron, isPosCor, rnge);
     // NOTE: displacement will be applied in the caller where we have access to the required Geant4 functionality
     //       (and if its length is longer than a small minimal length and we are not ended up on boundary)
     //
@@ -329,8 +334,10 @@ bool G4HepEmElectronManager::SampleLossFluctuations(struct G4HepEmData* hepEmDat
   double eloss     = theTrack->GetEnergyDeposit();
   // sample energy loss fluctuations
 #ifndef NOFLUCTUATION
+  const int iregion = hepEmData->fTheMatCutData->fMatCutData[theIMC].fG4RegionIndex;;
+  const int isFluctuation = hepEmPars->fParametersPerRegion[iregion].fIsELossFluctuation;
   const double kFluctParMinEnergy  = 1.E-5; // 10 eV
-  if (eloss > kFluctParMinEnergy) {
+  if (isFluctuation && eloss > kFluctParMinEnergy) {
     const G4HepEmMCCData& theMatCutData = hepEmData->fTheMatCutData->fMatCutData[theIMC];
     const double elCut   = theMatCutData.fSecElProdCutE;
     const int    theImat = theMatCutData.fHepEmMatIndex;

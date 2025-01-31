@@ -51,6 +51,8 @@ struct G4HepEmMCCData {
   int     fHepEmMatIndex = -1;
   /** Index of the corresponding G4MaterialCutsCouple object.*/
   int     fG4MatCutIndex = -1;
+  /** Index of the Geant4 detector region to which this material-cut belongs to. */
+  int     fG4RegionIndex = -1;
 };
 
 // Data for all matrial cuts couple that are used by G4HepEm.

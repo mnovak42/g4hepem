@@ -15,6 +15,7 @@ class G4VProcess;
 class G4VParticleChange;
 class G4Region;
 class G4HepEmWoodcockHelper;
+class G4HepEmConfig;
 
 #include <vector>
 
@@ -22,7 +23,7 @@ class G4HepEmWoodcockHelper;
 
 class G4HepEmTrackingManager : public G4VTrackingManager {
 public:
-  G4HepEmTrackingManager();
+  G4HepEmTrackingManager(G4int verbose=1);
   virtual ~G4HepEmTrackingManager();
 
   void BuildPhysicsTable(const G4ParticleDefinition &) override;
@@ -31,22 +32,17 @@ public:
 
   void HandOverOneTrack(G4Track *aTrack) override;
 
-  void SetMultipleSteps(G4bool val) {
-    fMultipleSteps = val;
-  }
-  G4bool MultipleSteps() const {
-    return fMultipleSteps;
-  }
+  // Allows to set configuration/parameters (even some per region)
+  G4HepEmConfig* GetConfig() { return fConfig; }
+
+  // Control verbosity (0/1) (propagated to the G4HepEmRuManager)
+  void SetVerbose(G4int verbose);
 
   // ATLAS XTR RELATED:
   // Set the names of the ATLAS specific transition radiation process and
   // radiator region (only for ATLAS and only if different than init.ed below)
   void SetXTRProcessName(const std::string& name) { fXTRProcessName = name; }
   void SetXTRRegionName(const std::string& name)  { fXTRRegionName  = name; }
-
-  void AddWoodcockTrackingRegion(const std::string& regionName) {
-    fWDTRegionNames.push_back(regionName);
-  }
 
 protected:
   bool TrackElectron(G4Track *aTrack);
@@ -60,13 +56,15 @@ private:
   // Stacks secondaries created by HepEm physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackSecondaries(G4HepEmTLData* aTLData, G4Track* aG4PrimaryTrack,
-                          const G4VProcess* aG4CreatorProcess, int aG4IMC);
+                          const G4VProcess* aG4CreatorProcess, int aG4IMC,
+                          bool isApplyCuts);
 
   // Stacks secondaries created by Geant4 physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackG4Secondaries(G4VParticleChange* particleChange,
                             G4Track* aG4PrimaryTrack,
-                            const G4VProcess* aG4CreatorProcess, int aG4IMC);
+                            const G4VProcess* aG4CreatorProcess, int aG4IMC,
+                            bool isApplyCuts);
 
   void InitNuclearProcesses(int particleID);
 
@@ -81,6 +79,7 @@ private:
   // NOTE: the fields stays nullptr if no such process/region are found causing
   //       no harm outside Athena.
   void InitXTRRelated();
+
 
 #ifdef G4HepEm_EARLY_TRACKING_EXIT
   // Virtual function to check early tracking exit. This function allows user
@@ -103,8 +102,6 @@ private:
   const std::vector<G4double> *theCutsGamma = nullptr;
   const std::vector<G4double> *theCutsElectron = nullptr;
   const std::vector<G4double> *theCutsPositron = nullptr;
-  G4bool applyCuts = false;
-  G4bool fMultipleSteps = true;
 
   // A set of empty processes with the correct names and types just to be able
   // to set them as process limiting the step and creating secondaries as some
@@ -130,8 +127,13 @@ private:
   std::string fXTRRegionName  = {"TRT_RADIATOR"};
 
   // A vector of Woodcock tracking region names (set by user if any) and a helper.
-  std::vector<std::string> fWDTRegionNames;
   G4HepEmWoodcockHelper*   fWDTHelper;
+
+  // Configuration parameters (allows different parameters/configuration per region.
+  G4HepEmConfig* fConfig;
+
+  // Vebosity level (only 0/1 at the moment)
+  G4int  fVerbose;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

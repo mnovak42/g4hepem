@@ -120,6 +120,45 @@ namespace nlohmann
 // --- G4HepEmParameters
 namespace nlohmann
 {
+
+  template <>
+  struct adl_serializer<G4HepEmRegionParmeters>
+  {
+    static void to_json(json& j, const G4HepEmRegionParmeters& d)
+    {
+      j["fFinalRange"]    = d.fFinalRange;
+      j["fDRoverRange"]   = d.fDRoverRange;
+      j["fLinELossLimit"] = d.fLinELossLimit;
+
+      j["fMSCRangeFactor"]  = d.fMSCRangeFactor;
+      j["fMSCSafetyFactor"] = d.fMSCSafetyFactor;
+
+      j["fIsMSCMinimalStepLimit"]     = d.fIsMSCMinimalStepLimit;
+      j["fIsELossFluctuation"]        = d.fIsELossFluctuation;
+      j["fIsMultipleStepsInMSCTrans"] = d.fIsMultipleStepsInMSCTrans;
+      j["fIsApplyCuts"]               = d.fIsApplyCuts;
+    }
+
+    static G4HepEmRegionParmeters from_json(const json& j)
+    {
+      G4HepEmRegionParmeters d;
+
+      j.at("fFinalRange").get_to(d.fFinalRange);
+      j.at("fDRoverRange").get_to(d.fDRoverRange);
+      j.at("fLinELossLimit").get_to(d.fLinELossLimit);
+
+      j.at("fMSCRangeFactor").get_to(d.fMSCRangeFactor);
+      j.at("fMSCSafetyFactor").get_to(d.fMSCSafetyFactor);
+
+      j.at("fIsMSCMinimalStepLimit").get_to(d.fIsMSCMinimalStepLimit);
+      j.at("fIsELossFluctuation").get_to(d.fIsELossFluctuation);
+      j.at("fIsMultipleStepsInMSCTrans").get_to(d.fIsMultipleStepsInMSCTrans);
+      j.at("fIsApplyCuts").get_to(d.fIsApplyCuts);
+
+      return d;
+    }
+  };
+
   // We *can* have direct to/from_json functions for G4HepEmParameters
   // as it is simple. Use of adl_serializer is *purely* for consistency
   // with other structures!
@@ -139,12 +178,11 @@ namespace nlohmann
         j["fMinLossTableEnergy"]   = d->fMinLossTableEnergy;
         j["fMaxLossTableEnergy"]   = d->fMaxLossTableEnergy;
         j["fNumLossTableBins"]     = d->fNumLossTableBins;
-        j["fFinalRange"]           = d->fFinalRange;
-        j["fDRoverRange"]          = d->fDRoverRange;
-        j["fLinELossLimit"]        = d->fLinELossLimit;
         j["fElectronBremModelLim"] = d->fElectronBremModelLim;
-        j["fMSCRangeFactor"]       = d->fMSCRangeFactor;
-        j["fMSCSafetyFactor"]      = d->fMSCSafetyFactor;
+        j["fIsMSCPositronCor"]     = d->fIsMSCPositronCor;
+        j["fNumRegions"]           = d->fNumRegions;
+        j["fParametersPerRegion"]  =
+          make_span(d->fNumRegions, d->fParametersPerRegion);
       }
     }
 
@@ -162,12 +200,14 @@ namespace nlohmann
         d->fMinLossTableEnergy   = j.at("fMinLossTableEnergy").get<double>();
         d->fMaxLossTableEnergy   = j.at("fMaxLossTableEnergy").get<double>();
         d->fNumLossTableBins     = j.at("fNumLossTableBins").get<int>();
-        d->fFinalRange           = j.at("fFinalRange").get<double>();
-        d->fDRoverRange          = j.at("fDRoverRange").get<double>();
-        d->fLinELossLimit        = j.at("fLinELossLimit").get<double>();
         d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
-        d->fMSCRangeFactor       = j.at("fMSCRangeFactor").get<double>();
-        d->fMSCSafetyFactor      = j.at("fMSCSafetyFactor").get<double>();
+        d->fIsMSCPositronCor     = j.at("fIsMSCPositronCor").get<bool>();
+        d->fNumRegions           = j.at("fNumRegions").get<int>();
+
+        d->fParametersPerRegion  = new G4HepEmRegionParmeters[d->fNumRegions];
+        auto tmpParPerRegion = j.at("fParametersPerRegion");
+        std::copy(tmpParPerRegion.begin(), tmpParPerRegion.end(), d->fParametersPerRegion);
+
         return d;
       }
     }
@@ -434,6 +474,7 @@ namespace nlohmann
       j["fLogSecGamCutE"]  = d.fLogSecGamCutE;
       j["fHepEmMatIndex"]  = d.fHepEmMatIndex;
       j["fG4MatCutIndex"]  = d.fG4MatCutIndex;
+      j["fG4RegionIndex"]  = d.fG4RegionIndex;
     }
 
     static G4HepEmMCCData from_json(const json& j)
@@ -446,6 +487,7 @@ namespace nlohmann
       j.at("fLogSecGamCutE").get_to(d.fLogSecGamCutE);
       j.at("fHepEmMatIndex").get_to(d.fHepEmMatIndex);
       j.at("fG4MatCutIndex").get_to(d.fG4MatCutIndex);
+      j.at("fG4RegionIndex").get_to(d.fG4RegionIndex);
 
       return d;
     }
