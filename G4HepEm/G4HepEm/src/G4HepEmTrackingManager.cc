@@ -36,7 +36,9 @@
 
 #include "G4VProcess.hh"
 #include "G4EmProcessSubType.hh"
+#include "G4GammaGeneralProcess.hh"
 #include "G4HadronicProcessType.hh"
+#include "G4HadronicProcess.hh"
 #include "G4ProcessType.hh"
 #include "G4TransportationProcessType.hh"
 
@@ -1364,6 +1366,14 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
     if( (*processVector)[ip]->GetProcessName()==nameNuclearProcess) {
       *proc = (*processVector)[ip];
+      // make sure the process is initialised (element selectors needs to be built)
+      (*proc)->PreparePhysicsTable(*particleDef);
+      (*proc)->BuildPhysicsTable(*particleDef);
+      break;
+    }
+    // gamm ageneral case
+    if( (*processVector)[ip]->GetProcessSubType()==G4EmProcessSubType::fGammaGeneralProcess) {
+      *proc = static_cast<G4GammaGeneralProcess*>((*processVector)[ip])->GetGammaNuclear();
       // make sure the process is initialised (element selectors needs to be built)
       (*proc)->PreparePhysicsTable(*particleDef);
       (*proc)->BuildPhysicsTable(*particleDef);
