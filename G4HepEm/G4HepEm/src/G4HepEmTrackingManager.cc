@@ -19,6 +19,7 @@
 #include "G4HepEmGammaManager.hh"
 #include "G4HepEmGammaTrack.hh"
 
+#include "G4Version.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4Step.hh"
 #include "G4StepPoint.hh"
@@ -35,8 +36,11 @@
 #include "G4ProductionCutsTable.hh"
 
 #include "G4VProcess.hh"
+#include "G4ProcessTable.hh"
 #include "G4EmProcessSubType.hh"
+#include "G4GammaGeneralProcess.hh"
 #include "G4HadronicProcessType.hh"
+#include "G4HadronicProcess.hh"
 #include "G4ProcessType.hh"
 #include "G4TransportationProcessType.hh"
 
@@ -156,6 +160,10 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     InitFastSimRelated(particleID);
     // Find the ATLAS specific trans. rad. (XTR) process (if has been attached)
     InitXTRRelated();
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
   } else if (&part == G4Positron::Definition()) {
     int particleID = 1;
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
@@ -163,6 +171,10 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for e+ (if has been attached)
     InitFastSimRelated(particleID);
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
   } else if (&part == G4Gamma::Definition()) {
     int particleID = 2;
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
@@ -186,7 +198,11 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
         fWDTHelper = nullptr;
       }
     }
-    //
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
+    // Report the configuration
     if (G4Threading::IsMasterThread() && fVerbose > 0) {
       fConfig->Dump();
     }
@@ -658,8 +674,8 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
       // ATLAS XTR RELATED:
       // Invoke the TRTTransitionRadiation process for e-/e+ fXTRProcess:
-      // But only if the step was done in the Radiator region with energy > 255 MeV (m_EkinMin)
-      if (fXTRProcess != nullptr && fXTRRegion == preStepPoint.GetPhysicalVolume()->GetLogicalVolume()->GetRegion() && thePrimaryTrack->GetEKin() > 255.0) {
+      // But only if the step was done with energy > 255 MeV (m_EkinMin) in the Radiator region (if that region was found)
+      if (fXTRProcess != nullptr && thePrimaryTrack->GetEKin() > 255.0 && (fXTRRegion == nullptr || fXTRRegion == preStepPoint.GetPhysicalVolume()->GetLogicalVolume()->GetRegion())) {
         // the TRTTransitionRadiation process might create photons as secondary
         // and changes the primary e-/e+ energy only but nothing more than that
         // requires: kinetic energy and momentum direction from the track (dynamic part.) and logical volume
@@ -1105,7 +1121,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           step.UpdateTrack();
 
           // Stack secondaries created by the HepEm physics above
-          edep += StackSecondaries(theTLData, aTrack, proc, g4IMC, isApplyCuts);
+          edep += StackSecondaries(theTLData, aTrack, fGammaNoProcessVector[iDProc], g4IMC, isApplyCuts);
 
         } else {
           // Gamma-nuclear: --> use Geant4 for the interaction:
@@ -1369,6 +1385,21 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
       (*proc)->BuildPhysicsTable(*particleDef);
       break;
     }
+    // gamma ageneral case
+    if( (*processVector)[ip]->GetProcessSubType()==G4EmProcessSubType::fGammaGeneralProcess) {
+#if G4VERSION_NUMBER >= 1120
+      // this getter available only in the `G4GammaGeneralProcess` only from g4-11.2.0
+      *proc = static_cast<G4GammaGeneralProcess*>((*processVector)[ip])->GetGammaNuclear();
+#else
+      *proc = G4ProcessTable::GetProcessTable()->FindProcess(nameNuclearProcess, G4Gamma::Definition());
+#endif
+      if ((*proc) != nullptr) {
+        // make sure the process is initialised (element selectors needs to be built)
+        (*proc)->PreparePhysicsTable(*particleDef);
+        (*proc)->BuildPhysicsTable(*particleDef);
+        break;
+      }
+    }
   }
 }
 
@@ -1405,7 +1436,7 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   // NOTE: becomes `nullptr` if there is no detector region with the name ensuring
   //       that everything works fine also outside ATLAS Athena
   // NOTE: after the suggested changes in Athena, the region name should be
-  //       `TRT_RADIATOR` but till that it's `DefaultRegionForTheWorld`
+  //       `TRT_RADIATOR` but till that `nullptr` also works fine (just less effitient)
   fXTRRegion = G4RegionStore::GetInstance()->GetRegion(fXTRRegionName, false);
   // Try to get the pointer to the TRTTransitionRadiation process (same for e-/e+)
   // NOTE: stays `nullptr` if gamma dosen't have process with the name ensuring
@@ -1418,12 +1449,57 @@ void G4HepEmTrackingManager::InitXTRRelated() {
     }
   }
   // Print information if the XTR process was found (enable to check)
-  if (fXTRProcess != nullptr) {
-    std::cout << " G4HepEmTrackingManager: found the ATLAS specific "
-              << fXTRProcess->GetProcessName() << " process";
-    if (fXTRRegion != nullptr) {
-      std::cout << " with the " << fXTRRegion->GetName() << " region.";
+//  if (fXTRProcess != nullptr) {
+//    std::cout << " G4HepEmTrackingManager: found the ATLAS specific "
+//              << fXTRProcess->GetProcessName() << " process";
+//    if (fXTRRegion != nullptr) {
+//      std::cout << " with the " << fXTRRegion->GetName() << " region.";
+//    }
+//    std::cout << std::endl;
+//  }
+}
+
+
+void G4HepEmTrackingManager::ReportExtraProcesses(int particleID) {
+  G4VProcess* pNuclear = nullptr;
+  G4VProcess* pFastSim = nullptr;
+  std::string partName = "";
+  if (particleID == 0) { // e-
+    partName = "e-";
+    pNuclear = fENucProcess;
+    pFastSim = fFastSimProcess[0];
+  } else if (particleID == 1) {
+    partName = "e+";
+    pNuclear = fPNucProcess;
+    pFastSim = fFastSimProcess[1];
+  } else if (particleID == 2) {
+    partName = "gamma";
+    pNuclear = fGNucProcess;
+    pFastSim = fFastSimProcess[2];
+  }
+  std::string strNuclear = "Nuclear interaction process : has not been found. ";
+  if (pNuclear != nullptr) {
+    strNuclear = "Nuclear interaction process : has been found (name = " +
+                 pNuclear->GetProcessName() + " )";
+  }
+  std::string strFastSim = "Fast simulation process : has not been found. ";
+  if (pFastSim != nullptr) {
+    strFastSim = "Fast simulation process : has been found (name = " +
+                 pFastSim->GetProcessName() + " )";
+  }
+
+  std::cout << " --- G4HepEmTrackingManager: extra processes for " << partName << "\n";
+  std::cout << "     " << strNuclear << "\n     " << strFastSim << std::endl;
+  if (particleID == 0 || particleID == 1) { //e-/e+
+    std::string strXTRProc = "The special XTR process : has not been found. ";
+    if (fXTRProcess != nullptr) {
+      strXTRProc = "The special XTR process : has been found ";
+      if (fXTRRegion != nullptr) {
+        strXTRProc += " (with the specific region : " + fXTRRegionName + " ).";
+      } else {
+        strXTRProc += " (without a specific region). ";
+      }
     }
-    std::cout << std::endl;
+    std::cout << "     " << strXTRProc << std::endl;
   }
 }

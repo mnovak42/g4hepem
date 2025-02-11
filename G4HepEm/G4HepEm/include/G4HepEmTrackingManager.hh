@@ -80,6 +80,8 @@ private:
   //       no harm outside Athena.
   void InitXTRRelated();
 
+  // Reports the extra physics configuration, i.e. nuclear and fast sim. processes
+  void ReportExtraProcesses(int particleID);
 
 #ifdef G4HepEm_EARLY_TRACKING_EXIT
   // Virtual function to check early tracking exit. This function allows user
