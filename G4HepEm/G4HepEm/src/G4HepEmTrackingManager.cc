@@ -672,8 +672,8 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
 
       // ATLAS XTR RELATED:
       // Invoke the TRTTransitionRadiation process for e-/e+ fXTRProcess:
-      // But only if the step was done in the Radiator region with energy > 255 MeV (m_EkinMin)
-      if (fXTRProcess != nullptr && fXTRRegion == preStepPoint.GetPhysicalVolume()->GetLogicalVolume()->GetRegion() && thePrimaryTrack->GetEKin() > 255.0) {
+      // But only if the step was done with energy > 255 MeV (m_EkinMin) in the Radiator region (if that region was found)
+      if (fXTRProcess != nullptr && thePrimaryTrack->GetEKin() > 255.0 && (fXTRRegion == nullptr || fXTRRegion == preStepPoint.GetPhysicalVolume()->GetLogicalVolume()->GetRegion())) {
         // the TRTTransitionRadiation process might create photons as secondary
         // and changes the primary e-/e+ energy only but nothing more than that
         // requires: kinetic energy and momentum direction from the track (dynamic part.) and logical volume
@@ -1427,7 +1427,7 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   // NOTE: becomes `nullptr` if there is no detector region with the name ensuring
   //       that everything works fine also outside ATLAS Athena
   // NOTE: after the suggested changes in Athena, the region name should be
-  //       `TRT_RADIATOR` but till that it's `DefaultRegionForTheWorld`
+  //       `TRT_RADIATOR` but till that `nullptr` also works fine (just less effitient)
   fXTRRegion = G4RegionStore::GetInstance()->GetRegion(fXTRRegionName, false);
   // Try to get the pointer to the TRTTransitionRadiation process (same for e-/e+)
   // NOTE: stays `nullptr` if gamma dosen't have process with the name ensuring
@@ -1440,14 +1440,14 @@ void G4HepEmTrackingManager::InitXTRRelated() {
     }
   }
   // Print information if the XTR process was found (enable to check)
-  if (fXTRProcess != nullptr) {
-    std::cout << " G4HepEmTrackingManager: found the ATLAS specific "
-              << fXTRProcess->GetProcessName() << " process";
-    if (fXTRRegion != nullptr) {
-      std::cout << " with the " << fXTRRegion->GetName() << " region.";
-    }
-    std::cout << std::endl;
-  }
+//  if (fXTRProcess != nullptr) {
+//    std::cout << " G4HepEmTrackingManager: found the ATLAS specific "
+//              << fXTRProcess->GetProcessName() << " process";
+//    if (fXTRRegion != nullptr) {
+//      std::cout << " with the " << fXTRRegion->GetName() << " region.";
+//    }
+//    std::cout << std::endl;
+//  }
 }
 
 
