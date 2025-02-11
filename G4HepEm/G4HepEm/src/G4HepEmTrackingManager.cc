@@ -1105,7 +1105,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           step.UpdateTrack();
 
           // Stack secondaries created by the HepEm physics above
-          edep += StackSecondaries(theTLData, aTrack, proc, g4IMC, isApplyCuts);
+          edep += StackSecondaries(theTLData, aTrack, fGammaNoProcessVector[iDProc], g4IMC, isApplyCuts);
 
         } else {
           // Gamma-nuclear: --> use Geant4 for the interaction:
