@@ -328,6 +328,15 @@ void G4HepEmWoodcockHelper::FindWDTMaterial(G4LogicalVolume* lvol, double& maxDe
   int numDaughters = lvol->GetNoDaughters();
   for (int id=0; id<numDaughters; ++id) {
       G4LogicalVolume* lv = lvol->GetDaughter(id)->GetLogicalVolume();
+      // detect sub-region and stop if found: Woodcock tracking can be used only in leaf regions
+      if (lvol->GetRegion() != lv->GetRegion()) {
+        std::cerr << "\n *** G4HepEmWoodcockHelper::FindWDTMaterial \n"
+                  << "     Woodcock tracking cannot be applied in this region: " << lvol->GetRegion()->GetName() << "\n"
+                  << "     A sub-region has been found: " <<  lv->GetRegion()->GetName() << "\n"
+                  << "     Note: Woodcock tracking requires leaf region!\n"
+                  << std::endl;
+        exit(1);
+      }
       FindWDTMaterial(lv, maxDensity, maxDensityMat);
   }
 }
