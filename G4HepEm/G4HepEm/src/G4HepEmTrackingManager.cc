@@ -158,6 +158,10 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     InitFastSimRelated(particleID);
     // Find the ATLAS specific trans. rad. (XTR) process (if has been attached)
     InitXTRRelated();
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
   } else if (&part == G4Positron::Definition()) {
     int particleID = 1;
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
@@ -165,6 +169,10 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     InitNuclearProcesses(particleID);
     // Find the fast simulation manager process for e+ (if has been attached)
     InitFastSimRelated(particleID);
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
   } else if (&part == G4Gamma::Definition()) {
     int particleID = 2;
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
@@ -188,7 +196,11 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
         fWDTHelper = nullptr;
       }
     }
-    //
+    // Report extra process configuration
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      ReportExtraProcesses(particleID);
+    }
+    // Report the configuration
     if (G4Threading::IsMasterThread() && fVerbose > 0) {
       fConfig->Dump();
     }
@@ -1435,5 +1447,50 @@ void G4HepEmTrackingManager::InitXTRRelated() {
       std::cout << " with the " << fXTRRegion->GetName() << " region.";
     }
     std::cout << std::endl;
+  }
+}
+
+
+void G4HepEmTrackingManager::ReportExtraProcesses(int particleID) {
+  G4VProcess* pNuclear = nullptr;
+  G4VProcess* pFastSim = nullptr;
+  std::string partName = "";
+  if (particleID == 0) { // e-
+    partName = "e-";
+    pNuclear = fENucProcess;
+    pFastSim = fFastSimProcess[0];
+  } else if (particleID == 1) {
+    partName = "e+";
+    pNuclear = fPNucProcess;
+    pFastSim = fFastSimProcess[1];
+  } else if (particleID == 2) {
+    partName = "gamma";
+    pNuclear = fGNucProcess;
+    pFastSim = fFastSimProcess[2];
+  }
+  std::string strNuclear = "Nuclear interaction process : has not been found. ";
+  if (pNuclear != nullptr) {
+    strNuclear = "Nuclear interaction process : has been found (name = " +
+                 pNuclear->GetProcessName() + " )";
+  }
+  std::string strFastSim = "Fast simulation process : has not been found. ";
+  if (pFastSim != nullptr) {
+    strFastSim = "Fast simulation process : has been found (name = " +
+                 pFastSim->GetProcessName() + " )";
+  }
+
+  std::cout << " --- G4HepEmTrackingManager: extra processes for " << partName << "\n";
+  std::cout << "     " << strNuclear << "\n     " << strFastSim << std::endl;
+  if (particleID == 0 || particleID == 1) { //e-/e+
+    std::string strXTRProc = "The special XTR process : has not been found. ";
+    if (fXTRProcess != nullptr) {
+      strXTRProc = "The special XTR process : has been found ";
+      if (fXTRRegion != nullptr) {
+        strXTRProc += " (with the specific region : " + fXTRRegionName + " ).";
+      } else {
+        strXTRProc += " (without a specific region). ";
+      }
+    }
+    std::cout << "     " << strXTRProc << std::endl;
   }
 }
