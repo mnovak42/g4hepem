@@ -1,11 +1,9 @@
 set(G4HEPEM_headers
   include/G4HepEmNoProcess.hh
-  include/G4HepEmProcess.hh
   include/G4HepEmRunManager.hh
   include/G4HepEmWoodcockHelper.hh
 )
-set(G4HEPEM_sources
-  src/G4HepEmProcess.cc
+set(G4HEPEM_sources  
   src/G4HepEmRunManager.cc
   src/G4HepEmWoodcockHelper.cc
 )
