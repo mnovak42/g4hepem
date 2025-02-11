@@ -19,6 +19,7 @@
 #include "G4HepEmGammaManager.hh"
 #include "G4HepEmGammaTrack.hh"
 
+#include "G4Version.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4Step.hh"
 #include "G4StepPoint.hh"
@@ -35,6 +36,7 @@
 #include "G4ProductionCutsTable.hh"
 
 #include "G4VProcess.hh"
+#include "G4ProcessTable.hh"
 #include "G4EmProcessSubType.hh"
 #include "G4GammaGeneralProcess.hh"
 #include "G4HadronicProcessType.hh"
@@ -1383,13 +1385,20 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
       (*proc)->BuildPhysicsTable(*particleDef);
       break;
     }
-    // gamm ageneral case
+    // gamma ageneral case
     if( (*processVector)[ip]->GetProcessSubType()==G4EmProcessSubType::fGammaGeneralProcess) {
+#if G4VERSION_NUMBER >= 1120
+      // this getter available only in the `G4GammaGeneralProcess` only from g4-11.2.0
       *proc = static_cast<G4GammaGeneralProcess*>((*processVector)[ip])->GetGammaNuclear();
-      // make sure the process is initialised (element selectors needs to be built)
-      (*proc)->PreparePhysicsTable(*particleDef);
-      (*proc)->BuildPhysicsTable(*particleDef);
-      break;
+#else
+      *proc = G4ProcessTable::GetProcessTable()->FindProcess(nameNuclearProcess, G4Gamma::Definition());
+#endif
+      if ((*proc) != nullptr) {
+        // make sure the process is initialised (element selectors needs to be built)
+        (*proc)->PreparePhysicsTable(*particleDef);
+        (*proc)->BuildPhysicsTable(*particleDef);
+        break;
+      }
     }
   }
 }
