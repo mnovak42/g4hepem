@@ -49,6 +49,12 @@
 #include "G4EmStandardPhysics_option2.hh"
 
 #include "G4EmExtraPhysics.hh"
+#include "G4HadronicProcessStore.hh"
+#if G4VERSION_NUMBER >= 1100
+#include "G4HadronicParameters.hh"
+#endif
+
+#include "G4HadronicParameters.hh"
 
 #include "G4LossTableManager.hh"
 
@@ -78,14 +84,29 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList(),
   SetDefaultCutValue(1*mm);
 
   fMessenger = new PhysicsListMessenger(this);
-  SetVerboseLevel(1);
+  verboseLevel = 0;
 
-  // EM physics: set to HepEm by def.
+#if G4VERSION_NUMBER >= 1100
+  // make the `G4HepEmTrackingManager` the default whenever it's available (g4>=11.0)
+  fEmName = G4String("HepEmTracking");
+  fEmPhysicsList = new PhysListHepEmTracking(fEmName);
+#else
+  // use the process interface but only as a backup solution as not efficient (g4<11.0)
   fEmName        = G4String("HepEm");
   fEmPhysicsList = new PhysListHepEm(fEmName);
+#endif
+
+  fEmPhysicsList->SetVerboseLevel(verboseLevel);
+  G4EmParameters::Instance()->SetVerbose(verboseLevel);
+
+  // Hardonic verbose needs to be set before construction
+#if G4VERSION_NUMBER >= 1100
+  G4HadronicParameters::Instance()->SetVerboseLevel(verboseLevel);
+#endif
+  G4HadronicProcessStore::Instance()->SetVerbose(verboseLevel);
 
   // Create the G4EmExtraPhysics to add gamma and lepton nuclear interactions
-  G4EmExtraPhysics* emExtra = new G4EmExtraPhysics();
+  G4EmExtraPhysics* emExtra = new G4EmExtraPhysics(verboseLevel);
   // During the development: deactiavte electron nuclear till we don't have in HepEm
   // emExtra->ElectroNuclear(false);
   // Turn off muon nuclear as well (not improtant as no muon production but
@@ -136,11 +157,14 @@ void PhysicsList::ConstructProcess()
 {
   // Transportation
   AddTransportation();
+
   // Electromagnetic Physics List
+  fEmPhysicsList->SetVerboseLevel(verboseLevel);
+
   fEmPhysicsList->ConstructProcess();
   // EM extra physics, i.e. gamma end lepton nuclear
+  fEmExtraPhysics->SetVerboseLevel(verboseLevel);
   fEmExtraPhysics->ConstructProcess();
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -205,4 +229,6 @@ void PhysicsList::AddPhysicsList(const G4String& name)
            << " is not defined"
            << G4endl;
   }
+  fEmPhysicsList->SetVerboseLevel(verboseLevel);
+  G4EmParameters::Instance()->SetVerbose(verboseLevel);
 }

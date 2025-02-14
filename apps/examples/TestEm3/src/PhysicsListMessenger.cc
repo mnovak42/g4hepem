@@ -37,13 +37,15 @@
 #include "G4UIdirectory.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWithAString.hh"
+#include "G4UIcmdWithAnInteger.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PhysicsListMessenger::PhysicsListMessenger(PhysicsList* pPhys)
 :G4UImessenger(),fPhysicsList(pPhys),
  fPhysDir(0),
- fListCmd(0)
+ fListCmd(0),
+ fVerboseCmd(0)
 {
   fPhysDir = new G4UIdirectory("/testem/phys/");
   fPhysDir->SetGuidance("physics list commands");
@@ -52,6 +54,15 @@ PhysicsListMessenger::PhysicsListMessenger(PhysicsList* pPhys)
   fListCmd->SetGuidance("Add modular physics list.");
   fListCmd->SetParameterName("PList",false);
   fListCmd->AvailableForStates(G4State_PreInit);
+
+  fVerboseCmd = new G4UIcmdWithAnInteger("/testem/phys/verbose", this);
+  fVerboseCmd->SetGuidance("Set the Verbose level of the PhysicsList");
+  fVerboseCmd->SetGuidance(" 0 : Silent");
+  fVerboseCmd->SetGuidance(" 1 : Config info (default)");
+  fVerboseCmd->SetGuidance(" 2 : Everything");
+  fVerboseCmd->SetParameterName("level", true);
+  fVerboseCmd->SetDefaultValue(0);
+  fVerboseCmd->SetRange("level >=0 && level <=3");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -59,16 +70,18 @@ PhysicsListMessenger::PhysicsListMessenger(PhysicsList* pPhys)
 PhysicsListMessenger::~PhysicsListMessenger()
 {
   delete fListCmd;
+  delete fVerboseCmd;
   delete fPhysDir;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void PhysicsListMessenger::SetNewValue(G4UIcommand* command,
-                                          G4String newValue)
-{
-  if( command == fListCmd )
-   { fPhysicsList->AddPhysicsList(newValue);}
+void PhysicsListMessenger::SetNewValue(G4UIcommand* command, G4String newValue) {
+  if( command == fListCmd ) {
+    fPhysicsList->AddPhysicsList(newValue);
+  } else if( command == fVerboseCmd ) {
+    fPhysicsList->SetVerboseLevel(fVerboseCmd->GetNewIntValue(newValue));
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

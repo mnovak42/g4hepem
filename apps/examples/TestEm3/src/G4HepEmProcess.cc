@@ -18,6 +18,7 @@
 
 #include "G4ProcessType.hh"
 #include "G4EmProcessSubType.hh"
+#include "G4HadronicProcessType.hh"
 
 #include "G4Threading.hh"
 #include "G4Track.hh"
@@ -59,6 +60,8 @@ G4HepEmProcess::G4HepEmProcess()
   fGammaNoProcessVector.push_back(new G4HepEmNoProcess("conv",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fGammaConversion));
   fGammaNoProcessVector.push_back(new G4HepEmNoProcess("compt",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fComptonScattering));
   fGammaNoProcessVector.push_back(new G4HepEmNoProcess("phot",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fPhotoElectricEffect));
+  fGammaNoProcessVector.push_back(new G4HepEmNoProcess("photonNuclear", G4ProcessType::fHadronic, G4HadronicProcessType::fHadronInelastic));
+
 }
 
 G4HepEmProcess::~G4HepEmProcess() {
@@ -68,8 +71,10 @@ G4HepEmProcess::~G4HepEmProcess() {
 
 
 void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
-  G4cout << " G4HepEmProcess::BuildPhysicsTable for Particle = " << partDef.GetParticleName() << G4endl;
-  StreamInfo(G4cout, partDef);
+  if (G4Threading::IsMasterThread() && verboseLevel > 1) {
+    G4cout << " G4HepEmProcess::BuildPhysicsTable for Particle = " << partDef.GetParticleName() << G4endl;
+    StreamInfo(G4cout, partDef);
+  }
 
   // The ptr-s to global data structures created and filled in InitializeGlobal()
   // will be copied to the workers and the TL-data structure will be created.
@@ -174,6 +179,7 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
   // invoke the physics interactions (all i.e. all along- and post-step as well as possible at rest)
   double pStepLength = track.GetStepLength();
   if (isGamma) {
+    G4HepEmGammaManager::SelectInteraction(fTheG4HepEmRunManager->GetHepEmData(), theTLData);
     G4HepEmGammaManager::Perform(fTheG4HepEmRunManager->GetHepEmData(), fTheG4HepEmRunManager->GetHepEmParameters(), theTLData);
     //
     // set dummy G4VProcess pointers to provide (name) information regarding processes limited the step
@@ -183,6 +189,8 @@ G4VParticleChange* G4HepEmProcess::PostStepDoIt( const G4Track& track, const G4S
       case 1: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[1]);
               break;
       case 2: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[2]);
+              break;
+      case 3: theG4PostStepPoint->SetProcessDefinedStep(fGammaNoProcessVector[3]);
               break;
     }
   } else {

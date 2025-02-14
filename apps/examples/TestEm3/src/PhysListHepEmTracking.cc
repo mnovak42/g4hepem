@@ -31,7 +31,7 @@ PhysListHepEmTracking::~PhysListHepEmTracking()
 void PhysListHepEmTracking::ConstructProcess()
 {
   // Register custom tracking manager for e-/e+ and gammas.
-  auto* trackingManager = new G4HepEmTrackingManager;
+  auto* trackingManager = new G4HepEmTrackingManager(verboseLevel);
   // Configuration of G4HepEm
   // Several paramaters can be configured per detector region. These are:
   //  MSC parameters, continuous energy loss step limit function parameters,
@@ -44,4 +44,8 @@ void PhysListHepEmTracking::ConstructProcess()
   G4Electron::Definition()->SetTrackingManager(trackingManager);
   G4Positron::Definition()->SetTrackingManager(trackingManager);
   G4Gamma::Definition()->SetTrackingManager(trackingManager);
+
+  if (G4Threading::IsMasterThread() && verboseLevel > 0) {
+    G4EmParameters::Instance()->Dump();
+  }
 }
