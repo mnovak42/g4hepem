@@ -31,6 +31,7 @@ void PhysListHepEm::ConstructProcess() {
 
   // creae the only one G4HepEm process that will be assigned to e-/e+ and gamma
   G4HepEmProcess* hepEmProcess = new G4HepEmProcess();
+  hepEmProcess->SetVerboseLevel(verboseLevel);
 
   // Add standard EM Processes
   //
@@ -58,4 +59,9 @@ void PhysListHepEm::ConstructProcess() {
 
     }
   }
+
+  if (G4Threading::IsMasterThread() && verboseLevel > 0) {
+    G4EmParameters::Instance()->Dump();
+  }
+
 }

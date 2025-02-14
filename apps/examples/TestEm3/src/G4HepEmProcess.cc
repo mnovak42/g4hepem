@@ -71,8 +71,10 @@ G4HepEmProcess::~G4HepEmProcess() {
 
 
 void G4HepEmProcess::BuildPhysicsTable(const G4ParticleDefinition& partDef) {
-  G4cout << " G4HepEmProcess::BuildPhysicsTable for Particle = " << partDef.GetParticleName() << G4endl;
-  StreamInfo(G4cout, partDef);
+  if (G4Threading::IsMasterThread() && verboseLevel > 1) {
+    G4cout << " G4HepEmProcess::BuildPhysicsTable for Particle = " << partDef.GetParticleName() << G4endl;
+    StreamInfo(G4cout, partDef);
+  }
 
   // The ptr-s to global data structures created and filled in InitializeGlobal()
   // will be copied to the workers and the TL-data structure will be created.
