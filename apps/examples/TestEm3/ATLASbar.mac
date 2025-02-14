@@ -24,13 +24,36 @@
 ##/testem/det/setField 0 0 2.0 tesla
 ##
 ## -----------------------------------------------------------------------------
-## Set the physics list (more exactly, the EM physics constructor):
-##   = 'HepEm'           : the G4HepEm EM physics c.t.r.
-##   =  'G4Em'           : the G4 EM physics c.t.r. that corresponds to G4HepEm
-##   = 'emstandard_opt0' : the original, G4 EM-Opt0 physics c.t.r.
+## Set the physics list (more exactly, the EM physics constructor e-/e+, gamma):
+##
+## NOTE: the full-fledged G4HepEm physics with its special tracking, i.e.
+##   `HepEmTracking` below, is the recommended usage of G4HepEm through its
+##   `G4HepEmTrackingManager`. This provides correct and complete physics
+##    (i.e. including nuclear interactions as well if attached to the particles)
+##    combined with maximal computing performance benefits, it requires at least
+##    Geant4-11.0. The other option is `HepEm`, i.e. connecting only the G4HepEm
+##    physics (through the `G4VProcess` interface), is incomplete (e.g. nuclear
+##    interactions aren't incorporated properly) and not efficient as it doesn't
+##    contain the special tracking component).
+##
+##  1. 'HepEmTracking' : full-fleged `G4HepEmTrackingManager`(G4HepEm physics with its special tracking)
+##  2. 'G4Em'          : native G4 EM physics that corresponds to the G4HepEm physics
+##  3. 'G4 EM-opt0'    : the native G4 EM standard opt0 physics constructor
+##  4. 'HepEm'         : G4HepEm physics using the `G4VProcess` interface (only for )
+##
+## NOTE: nuclear interactions are also added to e-/e+ and gamma through the
+##       `G4EmExtraPhysics` constructor (see the `PhysicsList`).
 ## -----------------------------------------------------------------------------
-/testem/phys/addPhysics   HepEmTracking
-##/testem/phys/addPhysics   G4Em
+/testem/phys/addPhysics HepEmTracking
+##/testem/phys/addPhysics G4Em
+##/testem/phys/addPhysics emstandard_opt0
+## NOTE: `HepEm` is only for development!
+##/testem/phys/addPhysics HepEm
+##
+## -----------------------------------------------------------------------------
+## Set the verbosity of the physics list (parameters, setting, configuration)
+## -----------------------------------------------------------------------------
+/testem/phys/verbose 1
 ##
 ## -----------------------------------------------------------------------------
 ## Use the gamma-general process in Geant4 (similarly to HepEmTracking)
