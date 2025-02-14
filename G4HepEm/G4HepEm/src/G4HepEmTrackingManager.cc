@@ -175,6 +175,10 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     if (G4Threading::IsMasterThread() && fVerbose > 0) {
       ReportExtraProcesses(particleID);
     }
+    // Report the configuration (as e+ is the last among the 3 particles in a normal g4 flow)
+    if (G4Threading::IsMasterThread() && fVerbose > 0) {
+      fConfig->Dump();
+    }
   } else if (&part == G4Gamma::Definition()) {
     int particleID = 2;
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
@@ -201,10 +205,6 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     // Report extra process configuration
     if (G4Threading::IsMasterThread() && fVerbose > 0) {
       ReportExtraProcesses(particleID);
-    }
-    // Report the configuration
-    if (G4Threading::IsMasterThread() && fVerbose > 0) {
-      fConfig->Dump();
     }
   } else {
     std::cerr
