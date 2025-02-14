@@ -50,6 +50,10 @@
 
 #include "G4EmExtraPhysics.hh"
 #include "G4HadronicProcessStore.hh"
+#if G4VERSION_NUMBER >= 1100
+#include "G4HadronicParameters.hh"
+#endif
+
 #include "G4HadronicParameters.hh"
 
 #include "G4LossTableManager.hh"
@@ -96,7 +100,9 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList(),
   G4EmParameters::Instance()->SetVerbose(verboseLevel);
 
   // Hardonic verbose needs to be set before construction
+#if G4VERSION_NUMBER >= 1100
   G4HadronicParameters::Instance()->SetVerboseLevel(verboseLevel);
+#endif
   G4HadronicProcessStore::Instance()->SetVerbose(verboseLevel);
 
   // Create the G4EmExtraPhysics to add gamma and lepton nuclear interactions
@@ -151,9 +157,6 @@ void PhysicsList::ConstructProcess()
 {
   // Transportation
   AddTransportation();
-
-  G4HadronicParameters::Instance()->SetVerboseLevel(verboseLevel);
-  G4HadronicProcessStore::Instance()->SetVerbose(verboseLevel);
 
   // Electromagnetic Physics List
   fEmPhysicsList->SetVerboseLevel(verboseLevel);
