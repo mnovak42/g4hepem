@@ -28,6 +28,7 @@ if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
 
   set(G4HEPEM_Geant4_LIBRARIES ${G4HEPEM_Geant4_LIBRARIES}
     Geant4::G4event
+    Geant4::G4physicslists
     Geant4::G4tracking
   )
 endif()
