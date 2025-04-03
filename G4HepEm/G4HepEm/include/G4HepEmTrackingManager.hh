@@ -46,11 +46,12 @@ public:
   // Returns the pointer to the Geant4 positron-nuclear process (if any)
   G4VProcess* GetPositronNuclearProcess() { return fPNucProcess; }
 
-  // Invokes the G4 Gamma-nuclear process (if any), updates the input step
-  // to the post interaction state, stacks the secondaries to the track vector
-  // of the step and returns the energy deposited in the interaction.
+  // Invokes the G4 electron/positron/gamma-nuclear process (if any and depending
+  // on the `particleID`={0/1/2} --> electron/positron/gamma-nuclear) updates the
+  // input step and track to the post interaction state, stacks the secondaries to
+  // the track vector of the step and returns the energy deposited in the interaction.
   // NOTE: the step is assumed to be the one from the track (need non const. values)
-  double PerformGammaNuclear(G4Track* aG4Track, G4Step* theG4Step, bool isApplyCuts);
+  double PerformNuclear(G4Track* aG4Track, G4Step* theG4Step, int particleID, bool isApplyCuts);
 
 
   // ATLAS XTR RELATED:

@@ -332,12 +332,6 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     fFastSimProc->StartTracking(aTrack);
   }
 
-  // Invoke the electron/positron-nuclear process start tracking interace (if any)
-  G4VProcess* theNucProcess = isElectron ? fENucProcess : fPNucProcess;
-  if (theNucProcess != nullptr) {
-    theNucProcess->StartTracking(aTrack);
-  }
-
   // === StartTracking ===
 
   while(aTrack->GetTrackStatus() == fAlive)
@@ -642,29 +636,17 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         }
       } else {
         // Electron/positron-nuclear: --> use Geant4 for the interaction:
+        // set the process pointer that is used for setting the process that defined this step
         proc = isElectron ? fElectronNoProcessVector[4] : fElectronNoProcessVector[5];
+        // clear the corresponding number of interaction left
         thePrimaryTrack->SetNumIALeft(-1.0, iDProc);
-        // check if delta interaction happens
-        // Invoke the electron/positron-nuclear interaction using the Geant4 process
-        G4VParticleChange* particleChangeNuc = nullptr;
+        // check if there is nuclear interaction process and not delta interaction happens
+        G4VProcess* theNucProcess = isElectron ? fENucProcess : fPNucProcess;
         if (theNucProcess != nullptr && !G4HepEmElectronManager::CheckDelta(theHepEmData, thePrimaryTrack, theTLData->GetRNGEngine()->flat())) {
-          // call to set some fields of the process like material, energy etc.. used in its DoIt
-          G4ForceCondition forceCondition;
-          theNucProcess->PostStepGetPhysicalInteractionLength(*aTrack, 0.0, &forceCondition);
-          //
-          postStepPoint.SetStepStatus(fPostStepDoItProc);
-          particleChangeNuc = theNucProcess->PostStepDoIt(*aTrack, step);
-          // update the track and stack according to the result of the interaction
-          particleChangeNuc->UpdateStepForPostStep(&step);
-          step.UpdateTrack();
-          aTrack->SetTrackStatus(particleChangeNuc->GetTrackStatus());
-          // need to add secondaries to the secondary vector of the current track
-          // NOTE: as we use Geant4, we should care only those changes that are
-          //   not included in the above update step and track, i.e. the energy
-          //   deposited due to applying the cut when stacking the secondaries
-          thePrimaryTrack->AddEnergyDeposit( StackG4Secondaries(particleChangeNuc, aTrack, &step, proc, g4IMC, isApplyCuts) );
-          // done: clear the particle change
-          particleChangeNuc->Clear();
+          // Invoke the electron/positron-nuclear interaction using the Geant4 process
+          // (step is updated and secondaries are stacked to the vector of the step)
+          int particleID = isElectron ? 0 : 1;
+          thePrimaryTrack->AddEnergyDeposit( PerformNuclear(aTrack, &step, particleID, isApplyCuts) );
           // update the primary track kinetic energy and direction
           thePrimaryTrack->SetEKin(aTrack->GetKineticEnergy());
           const G4ThreeVector& dir = aTrack->GetMomentumDirection();
@@ -1124,9 +1106,12 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           // NOTE: it's destructive i.e. stopps and kills the gammma when the
           //    interaction happens.
           thePrimaryTrack->SetEnergyDeposit(0.0);
-          // Invoke the gamma-nuclear interaction using the Geant4 process
-          // (step is updated and secondaries are stacked to the vector of the step)
-          edep += PerformGammaNuclear(aTrack, &step, isApplyCuts);
+          if (fGNucProcess != nullptr) {
+            // Invoke the gamma-nuclear interaction using the Geant4 process
+            // (step is updated and secondaries are stacked to the vector of the step)
+            const int partileID = 2;
+            edep += PerformNuclear(aTrack, &step, partileID, isApplyCuts);
+          }
         }
         // Set process defined setp and add edep to the step
         proc = fGammaNoProcessVector[iDProc];
@@ -1198,21 +1183,33 @@ void G4HepEmTrackingManager::HandOverOneTrack(G4Track *aTrack) {
 }
 
 
-// Invokes the G4 Gamma-nuclear process (if any) and returns the energy deposited
-double G4HepEmTrackingManager::PerformGammaNuclear(G4Track* aG4Track, G4Step* theG4Step, bool isApplyCuts) {
-  if (fGNucProcess == nullptr) {
+double G4HepEmTrackingManager::PerformNuclear(G4Track* aG4Track, G4Step* theG4Step, int particleID, bool isApplyCuts) {
+  G4VProcess* theNuclearProcess = nullptr;
+  // could use the above g4process here but stay consistent
+  G4VProcess* theCreatorProcess = nullptr;
+  if (particleID == 2) {        // gamma
+    theNuclearProcess = fGNucProcess;
+    theCreatorProcess = fGammaNoProcessVector[3];
+  } else if (particleID == 0) { // e-
+    theNuclearProcess = fENucProcess;
+    theCreatorProcess = fElectronNoProcessVector[4];
+  } else if (particleID == 1) { // e+
+    theNuclearProcess = fPNucProcess;
+    theCreatorProcess = fElectronNoProcessVector[5];
+  }
+  if (theNuclearProcess == nullptr) {
     return 0.0;
   }
   double edep = 0.0;
   G4VParticleChange* particleChangeGNuc = nullptr;
   // calling `StartTracking` that sets the particle and dynamic partile fields of the `G4HadronicProcess`
-  fGNucProcess->StartTracking(aG4Track);
+  theNuclearProcess->StartTracking(aG4Track);
   // call to set some fields of the process like material, energy etc...
   G4ForceCondition forceCondition;
-  fGNucProcess->PostStepGetPhysicalInteractionLength(*aG4Track, 0.0, &forceCondition);
+  theNuclearProcess->PostStepGetPhysicalInteractionLength(*aG4Track, 0.0, &forceCondition);
   // perform the interaction
   aG4Track->GetStep()->GetPostStepPoint()->SetStepStatus(fPostStepDoItProc);
-  particleChangeGNuc = fGNucProcess->PostStepDoIt(*aG4Track, *theG4Step);
+  particleChangeGNuc = theNuclearProcess->PostStepDoIt(*aG4Track, *theG4Step);
   // update the track and stack according to the result of the interaction
   particleChangeGNuc->UpdateStepForPostStep(theG4Step);
   theG4Step->UpdateTrack();
@@ -1221,8 +1218,10 @@ double G4HepEmTrackingManager::PerformGammaNuclear(G4Track* aG4Track, G4Step* th
   // NOTE: as we use Geant4, we should care only those changes that are
   //   not included in the above update step and track, i.e. the energy
   //   deposited due to applying the cut when stacking the secondaries
+  //
+  // the g4material-cuts couple index
   const int g4IMC = aG4Track->GetTouchable()->GetVolume()->GetLogicalVolume()->GetMaterialCutsCouple()->GetIndex();
-  edep = StackG4Secondaries(particleChangeGNuc, aG4Track, theG4Step, fGammaNoProcessVector[3], g4IMC, isApplyCuts);
+  edep = StackG4Secondaries(particleChangeGNuc, aG4Track, theG4Step, theCreatorProcess, g4IMC, isApplyCuts);
   // done: clear the particle change
   particleChangeGNuc->Clear();
   // return energy deposited in the interaction (or due to applying the cut)
