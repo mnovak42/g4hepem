@@ -38,6 +38,22 @@ public:
   // Control verbosity (0/1) (propagated to the G4HepEmRuManager)
   void SetVerbose(G4int verbose);
 
+
+  // Returns the pointer to the Geant4 gamma-nuclear process (if any)
+  G4VProcess* GetGammaNuclearProcess() { return fGNucProcess; }
+  // Returns the pointer to the Geant4 electron-nuclear process (if any)
+  G4VProcess* GetElectronNuclearProcess() { return fENucProcess; }
+  // Returns the pointer to the Geant4 positron-nuclear process (if any)
+  G4VProcess* GetPositronNuclearProcess() { return fPNucProcess; }
+
+  // Invokes the G4 electron/positron/gamma-nuclear process (if any and depending
+  // on the `particleID`={0/1/2} --> electron/positron/gamma-nuclear) updates the
+  // input step and track to the post interaction state, stacks the secondaries to
+  // the track vector of the step and returns the energy deposited in the interaction.
+  // NOTE: the step is assumed to be the one from the track (need non const. values)
+  double PerformNuclear(G4Track* aG4Track, G4Step* theG4Step, int particleID, bool isApplyCuts);
+
+
   // ATLAS XTR RELATED:
   // Set the names of the ATLAS specific transition radiation process and
   // radiator region (only for ATLAS and only if different than init.ed below)
@@ -62,7 +78,7 @@ private:
   // Stacks secondaries created by Geant4 physics (if any) and returns with the
   // energy deposit while stacking due to applying secondary production cuts
   double StackG4Secondaries(G4VParticleChange* particleChange,
-                            G4Track* aG4PrimaryTrack,
+                            G4Track* aG4PrimaryTrack, G4Step* theStep,
                             const G4VProcess* aG4CreatorProcess, int aG4IMC,
                             bool isApplyCuts);
 
