@@ -38,6 +38,14 @@ public:
   // Control verbosity (0/1) (propagated to the G4HepEmRuManager)
   void SetVerbose(G4int verbose);
 
+
+  // Returns the pointer to the Geant4 gamma-nuclear process (if any)
+  G4VProcess* GetGammaNuclearProcess() { return fGNucProcess; }
+  // Returns the pointer to the Geant4 electron-nuclear process (if any)
+  G4VProcess* GetElectronNuclearProcess() { return fENucProcess; }
+  // Returns the pointer to the Geant4 positron-nuclear process (if any)
+  G4VProcess* GetPositronNuclearProcess() { return fPNucProcess; }
+
   // Invokes the G4 Gamma-nuclear process (if any), updates the input step
   // to the post interaction state, stacks the secondaries to the track vector
   // of the step and returns the energy deposited in the interaction.
