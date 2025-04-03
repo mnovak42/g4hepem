@@ -887,10 +887,6 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     fFastSimProc->StartTracking(aTrack);
   }
 
-  if (fGNucProcess != nullptr) {
-    fGNucProcess->StartTracking(aTrack);
-  }
-
   // Reset some Woodcock tracking related flags.
   G4bool isWDTOn = false;
   // === StartTracking ===
@@ -1209,10 +1205,12 @@ double G4HepEmTrackingManager::PerformGammaNuclear(G4Track* aG4Track, G4Step* th
   }
   double edep = 0.0;
   G4VParticleChange* particleChangeGNuc = nullptr;
+  // calling `StartTracking` that sets the particle and dynamic partile fields of the `G4HadronicProcess`
+  fGNucProcess->StartTracking(aG4Track);
   // call to set some fields of the process like material, energy etc...
   G4ForceCondition forceCondition;
   fGNucProcess->PostStepGetPhysicalInteractionLength(*aG4Track, 0.0, &forceCondition);
-  // perfrom the interaction 
+  // perform the interaction
   aG4Track->GetStep()->GetPostStepPoint()->SetStepStatus(fPostStepDoItProc);
   particleChangeGNuc = fGNucProcess->PostStepDoIt(*aG4Track, *theG4Step);
   // update the track and stack according to the result of the interaction
