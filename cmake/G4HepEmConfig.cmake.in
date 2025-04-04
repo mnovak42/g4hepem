@@ -7,6 +7,10 @@
 # - Project properties
 set_and_check(G4HepEm_INCLUDE_DIR "@PACKAGE_G4HEPEM_EXPORTED_INCLUDE_DIR@")
 
+# Record whether we support G4VTrackingManager.
+# Note that this implies the re-found Geant4 below is the exact same as we
+# were built with, especially if G4VTrackingManager has been backported to < 11.0
+set(G4HepEm_trackingmanager_FOUND @G4HepEm_HAS_G4VTRACKINGMANAGER@)
 
 # - Project dependencies
 include(CMakeFindDependencyMacro)

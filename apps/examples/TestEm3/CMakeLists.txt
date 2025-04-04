@@ -44,7 +44,7 @@ set(sources
   src/SteppingVerbose.cc
   src/TrackingAction.cc
 )
-if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
+if(G4HepEm_HAS_G4VTRACKINGMANAGER)
   set(sources ${sources}
     src/PhysListG4EmTracking.cc
     src/PhysListHepEmTracking.cc
@@ -55,4 +55,5 @@ endif()
 # Add the executable, and link it to the Geant4 libraries
 #
 add_executable(TestEm3 ${PROJECT_SOURCE_DIR}/TestEm3.cc ${sources})
+target_compile_definitions(TestEm3 PRIVATE $<$<BOOL:${G4HepEm_HAS_G4VTRACKINGMANAGER}>:G4HepEm_HAS_G4VTRACKINGMANAGER>)
 target_link_libraries(TestEm3 ${Geant4_LIBRARIES} ${G4HepEm_LIBRARIES})

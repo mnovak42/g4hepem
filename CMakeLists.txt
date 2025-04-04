@@ -144,6 +144,19 @@ if(G4HepEm_GEANT4_BUILD)
   endif()
 
   set(CMAKE_CXX_STANDARD ${Geant4_CXX_STANDARD}) # use value from Geant4Config.cmake
+
+  # Check if Geant4 is supports G4VTrackingManager
+  # Always available from v11.0, but experiments may backport it to earlier versions
+  # so we do a compile check.
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_LIBRARIES ${Geant4_LIBRARIES})
+  check_cxx_source_compiles("
+    #include \"G4VTrackingManager.hh\"
+    class testtm_ : public G4VTrackingManager {
+    public:
+      void HandOverOneTrack(G4Track*) {}
+    };
+    int main() { testtm_ model; return 0; }" G4HepEm_HAS_G4VTRACKINGMANAGER)
 else()
   # Need workaround for G4VERSION_NUM G4HepEmRun...
   # ... done in that component for now.

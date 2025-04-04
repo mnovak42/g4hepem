@@ -14,7 +14,7 @@ set(G4HEPEM_Geant4_LIBRARIES
   Geant4::G4track
 )
 
-if(Geant4_VERSION VERSION_GREATER_EQUAL 11.0)
+if(G4HepEm_HAS_G4VTRACKINGMANAGER)
   set(G4HEPEM_headers ${G4HEPEM_headers}
     include/G4EmTrackingManager.hh
     include/G4HepEmConfig.hh
