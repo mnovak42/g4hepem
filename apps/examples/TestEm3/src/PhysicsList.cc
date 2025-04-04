@@ -86,8 +86,8 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList(),
   fMessenger = new PhysicsListMessenger(this);
   verboseLevel = 0;
 
-#if G4VERSION_NUMBER >= 1100
-  // make the `G4HepEmTrackingManager` the default whenever it's available (g4>=11.0)
+#if G4HepEm_HAS_G4VTRACKINGMANAGER
+  // make the `G4HepEmTrackingManager` the default whenever it's available
   fEmName = G4String("HepEmTracking");
   fEmPhysicsList = new PhysListHepEmTracking(fEmName);
 #else
