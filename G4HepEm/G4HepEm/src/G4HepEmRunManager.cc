@@ -136,10 +136,10 @@ void G4HepEmRunManager::Initialize(G4HepEmRandomEngine* theRNGEngine, int hepEmP
     //
     // Worker: 1. copy the pointers to members that are shared by all workers
     //            from the master-RM if it has not been done yet.
-    if (!fTheG4HepEmParameters) {
+    //if (!fTheG4HepEmParameters) {
       fTheG4HepEmParameters = G4HepEmRunManager::GetMasterRunManager()->GetHepEmParameters();
       fTheG4HepEmData       = G4HepEmRunManager::GetMasterRunManager()->GetHepEmData();
-    }
+    //}
     // Worker: 2. create a worker local data structure for this worker and set
     //            its RNG engine part if it has not been done yet.
     if  (!fTheG4HepEmTLData) {
