@@ -1386,7 +1386,7 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
   //
   const G4ProcessVector* processVector = particleDef->GetProcessManager()->GetProcessList();
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-    if( (*processVector)[ip]->GetProcessName()==nameNuclearProcess) {
+    if( (*processVector)[ip]->GetProcessName()==G4String(nameNuclearProcess)) {
       *proc = (*processVector)[ip];
       // make sure the process is initialised (element selectors needs to be built)
       (*proc)->PreparePhysicsTable(*particleDef);
@@ -1451,7 +1451,7 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   //       that everything works fine also outside ATLAS Athena
   const G4ProcessVector* processVector = G4Electron::Definition()->GetProcessManager()->GetProcessList();
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-    if( (*processVector)[ip]->GetProcessName()==fXTRProcessName) {
+    if( (*processVector)[ip]->GetProcessName()==G4String(fXTRProcessName)) {
       fXTRProcess = (*processVector)[ip];
       break;
     }
