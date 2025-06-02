@@ -461,6 +461,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         if(aTrack->GetNextVolume() == nullptr)
         {
           aTrack->SetTrackStatus(fStopAndKill);
+          postStepPoint.SetProcessDefinedStep(fTransportNoProcess);
           break;
         }
       }
@@ -1056,6 +1057,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     // Check if the track left the world.
     if (aTrack->GetNextVolume() == nullptr) {
       aTrack->SetTrackStatus(fStopAndKill);
+      postStepPoint.SetProcessDefinedStep(fTransportNoProcess);
     }
 
     // DoIt
