@@ -53,8 +53,13 @@ struct G4HepEmParameters {
   /** \f$e^-/e^+\f$ tracking (kinetic) energy cut in Geant4 internal energy units:
     * \f$e^-/e^+\f$ tracks are stopped when their energy drops below this threshold,
     * their kinetic energy is deposited and annihilation to two \f$\gamma\f$-s interaction
-    * is invoked for in case of \f$e^+\f$.*/
+    * is invoked in case of \f$e^+\f$.*/
   double fElectronTrackingCut = 0.001;
+
+  /** \f$\gamma\f$ tracking (energy) cut in Geant4 internal energy units:
+    * \f$\gamma\f$ tracks are stopped when their energy drops below this threshold,
+    * and their kinetic energy is deposited. */
+  double fGammaTrackingCut = 0.0;
 
   // The configuration of the kinetic energy grid of the energy loss related tables:
   /** Minimum of the kinetic energy grid used to build the sub-(secondary-production)threshold
@@ -71,7 +76,10 @@ struct G4HepEmParameters {
   double fElectronBremModelLim = 1000; // 1 GeV
 
   /** Flag to indicate if the e+ correction should be used in the MSC \theta_0 angle. */
-  bool   fIsMSCPositronCor = true;
+  bool   fIsMSCPositronCor  = true;
+  /** Flag to indicate if displacement should be calculated/applied in MSC. */
+  bool   fIsMSCDisplacement = true;
+
 
   /** Number of detector regions */
   int fNumRegions = 0;

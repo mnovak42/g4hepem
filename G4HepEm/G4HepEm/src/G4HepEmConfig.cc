@@ -210,6 +210,10 @@ void G4HepEmConfig::Dump() {
             << std::setw(5) << std::right
             << fG4HepEmParameters->fElectronTrackingCut/CLHEP::keV
             << " [keV] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Gamma tracking cut " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fGammaTrackingCut/CLHEP::keV
+            << " [keV] " << std::endl;
   std::cout << std::left << std::setw(width) << " Min loss table energy " << " : "
             << std::setw(5) << std::right
             << fG4HepEmParameters->fMinLossTableEnergy/CLHEP::keV
@@ -224,6 +228,10 @@ void G4HepEmConfig::Dump() {
   std::cout << std::left << std::setw(width) << " Is positron corr. in MSC theta0 " << " : "
             << std::setw(5) << std::right
             << fG4HepEmParameters->fIsMSCPositronCor
+            << " (true/false) "<< std::endl;
+  std::cout << std::left << std::setw(width) << " Is displacement in MSC active " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fIsMSCDisplacement
             << " (true/false) "<< std::endl;
   std::cout << std::left << std::setw(width) << " Woodcock tracking energy limit " << " : "
             << std::setw(5) << std::right

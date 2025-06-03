@@ -175,11 +175,13 @@ namespace nlohmann
       else
       {
         j["fElectronTrackingCut"]  = d->fElectronTrackingCut;
+        j["fGammaTrackingCut"]     = d->fGammaTrackingCut;
         j["fMinLossTableEnergy"]   = d->fMinLossTableEnergy;
         j["fMaxLossTableEnergy"]   = d->fMaxLossTableEnergy;
         j["fNumLossTableBins"]     = d->fNumLossTableBins;
         j["fElectronBremModelLim"] = d->fElectronBremModelLim;
         j["fIsMSCPositronCor"]     = d->fIsMSCPositronCor;
+        j["fIsMSCDisplacement"]    = d->fIsMSCDisplacement;
         j["fNumRegions"]           = d->fNumRegions;
         j["fParametersPerRegion"]  =
           make_span(d->fNumRegions, d->fParametersPerRegion);
@@ -197,11 +199,13 @@ namespace nlohmann
         auto* d = new G4HepEmParameters;
 
         d->fElectronTrackingCut  = j.at("fElectronTrackingCut").get<double>();
+        d->fGammaTrackingCut     = j.at("fGammaTrackingCut").get<double>();
         d->fMinLossTableEnergy   = j.at("fMinLossTableEnergy").get<double>();
         d->fMaxLossTableEnergy   = j.at("fMaxLossTableEnergy").get<double>();
         d->fNumLossTableBins     = j.at("fNumLossTableBins").get<int>();
         d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
         d->fIsMSCPositronCor     = j.at("fIsMSCPositronCor").get<bool>();
+        d->fIsMSCDisplacement    = j.at("fIsMSCDisplacement").get<bool>();
         d->fNumRegions           = j.at("fNumRegions").get<int>();
 
         d->fParametersPerRegion  = new G4HepEmRegionParmeters[d->fNumRegions];

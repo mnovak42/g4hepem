@@ -33,7 +33,7 @@ public:
   G4HepEmHostDevice
   static void SampleScattering(G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData, double pStepLength,
                                double preStepEkin, double preStepTr1mfp, double postStepEkin, double postStepTr1mfp,
-                               int imat, bool isElectron, bool isPosCor, G4HepEmRandomEngine* rnge);
+                               int imat, bool isElectron, bool isPosCor, bool isDisplace, G4HepEmRandomEngine* rnge);
 
 
 
