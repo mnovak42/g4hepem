@@ -8,7 +8,7 @@
 #include <string>
 
 
-class G4HepEmParameters;
+struct G4HepEmParameters;
 
 /**
  * @file    G4HepEmConfig.hh

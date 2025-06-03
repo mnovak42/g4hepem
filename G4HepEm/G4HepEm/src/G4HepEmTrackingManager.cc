@@ -217,7 +217,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void G4HepEmTrackingManager::PreparePhysicsTable(
-    const G4ParticleDefinition &part) {
+    const G4ParticleDefinition& /*part*/) {
   // obtain the cut values in energy
   auto *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
   theCutsGamma = theCoupleTable->GetEnergyCutsVector(idxG4GammaCut);
@@ -253,6 +253,10 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       G4VPhysicalVolume* oldTopVolume = touchableHandle->GetVolume();
       G4VPhysicalVolume* newTopVolume =
         linearNavigator->ResetHierarchyAndLocate(pos, dir, *touchableHistory);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       // TODO: WHY?!
       if(newTopVolume != oldTopVolume ||
          oldTopVolume->GetRegularStructureId() == 1)
@@ -263,7 +267,12 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
     else
     {
-      linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      linearNavigator->ResetStackAndState();
+      G4VPhysicalVolume* newTopVolume = linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       touchableHandle = linearNavigator->CreateTouchableHistory();
       aTrack->SetTouchableHandle(touchableHandle);
     }
@@ -461,6 +470,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         if(aTrack->GetNextVolume() == nullptr)
         {
           aTrack->SetTrackStatus(fStopAndKill);
+          postStepPoint.SetProcessDefinedStep(fTransportNoProcess);
           break;
         }
       }
@@ -794,6 +804,10 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       G4VPhysicalVolume* oldTopVolume = touchableHandle->GetVolume();
       G4VPhysicalVolume* newTopVolume =
         linearNavigator->ResetHierarchyAndLocate(pos, dir, *touchableHistory);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       // TODO: WHY?!
       if(newTopVolume != oldTopVolume ||
          oldTopVolume->GetRegularStructureId() == 1)
@@ -804,7 +818,12 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     }
     else
     {
-      linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      linearNavigator->ResetStackAndState();
+      G4VPhysicalVolume* newTopVolume = linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       touchableHandle = linearNavigator->CreateTouchableHistory();
       aTrack->SetTouchableHandle(touchableHandle);
     }
@@ -1056,6 +1075,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     // Check if the track left the world.
     if (aTrack->GetNextVolume() == nullptr) {
       aTrack->SetTrackStatus(fStopAndKill);
+      postStepPoint.SetProcessDefinedStep(fTransportNoProcess);
     }
 
     // DoIt
@@ -1321,10 +1341,10 @@ double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleCha
   }
 
   G4TrackVector& secondaries    = *theStep->GetfSecondary();
-  G4StepPoint&   postStepPoint  = *theStep->GetPostStepPoint();
+  //G4StepPoint&   postStepPoint  = *theStep->GetPostStepPoint();
 
-  const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
-  const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
+  //const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
+  //const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
   const G4TouchableHandle& theG4TouchableHandle       = aG4PrimaryTrack->GetTouchableHandle();
   const double             theG4ParentTrackWeight     = aG4PrimaryTrack->GetWeight();
   const int                theG4ParentTrackID         = aG4PrimaryTrack->GetTrackID();
@@ -1386,7 +1406,7 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
   //
   const G4ProcessVector* processVector = particleDef->GetProcessManager()->GetProcessList();
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-    if( (*processVector)[ip]->GetProcessName()==nameNuclearProcess) {
+    if( (*processVector)[ip]->GetProcessName()==G4String(nameNuclearProcess)) {
       *proc = (*processVector)[ip];
       // make sure the process is initialised (element selectors needs to be built)
       (*proc)->PreparePhysicsTable(*particleDef);
@@ -1451,7 +1471,7 @@ void G4HepEmTrackingManager::InitXTRRelated() {
   //       that everything works fine also outside ATLAS Athena
   const G4ProcessVector* processVector = G4Electron::Definition()->GetProcessManager()->GetProcessList();
   for (std::size_t ip=0; ip<processVector->entries(); ip++) {
-    if( (*processVector)[ip]->GetProcessName()==fXTRProcessName) {
+    if( (*processVector)[ip]->GetProcessName()==G4String(fXTRProcessName)) {
       fXTRProcess = (*processVector)[ip];
       break;
     }

@@ -19,29 +19,15 @@ public:
 
   G4HepEmHostDevice
   G4HepEmMSCTrackData(const G4HepEmMSCTrackData& o) {
-    fLambtr1              = o.fLambtr1;
+    CopyFrom(o);
+  }
 
-    fTrueStepLength       = o.fTrueStepLength;
-    fZPathLength          = o.fZPathLength;
-    fDisplacement[0]      = o.fDisplacement[0];
-    fDisplacement[1]      = o.fDisplacement[1];
-    fDisplacement[2]      = o.fDisplacement[2];
-    fDirection[0]         = o.fDirection[0];
-    fDirection[1]         = o.fDirection[1];
-    fDirection[2]         = o.fDirection[2];
-
-    fInitialRange         = o.fInitialRange;
-    fDynamicRangeFactor   = o.fDynamicRangeFactor;
-    fTlimitMin            = o.fTlimitMin;
-
-    fPar1                 = o.fPar1;
-    fPar2                 = o.fPar2;
-    fPar3                 = o.fPar3;
-
-    fIsNoScatteringInMSC  = o.fIsNoScatteringInMSC;
-    fIsDisplace           = o.fIsDisplace;
-    fIsFirstStep          = o.fIsFirstStep;
-    fIsActive             = o.fIsActive;
+  G4HepEmHostDevice
+  G4HepEmMSCTrackData& operator=(const G4HepEmMSCTrackData& o) {
+    if (this != &o) {
+      CopyFrom(o);
+    }
+    return *this;
   }
 
   G4HepEmHostDevice
@@ -90,6 +76,37 @@ public:
     fIsFirstStep          = true;
     fIsActive             = false;
   }
+
+  // Helper to be used in the copy constructor and assigment
+  G4HepEmHostDevice
+  void CopyFrom(const G4HepEmMSCTrackData& o) {
+    fLambtr1              = o.fLambtr1;
+
+    fTrueStepLength       = o.fTrueStepLength;
+    fZPathLength          = o.fZPathLength;
+    fDisplacement[0]      = o.fDisplacement[0];
+    fDisplacement[1]      = o.fDisplacement[1];
+    fDisplacement[2]      = o.fDisplacement[2];
+    fDirection[0]         = o.fDirection[0];
+    fDirection[1]         = o.fDirection[1];
+    fDirection[2]         = o.fDirection[2];
+
+    fInitialRange         = o.fInitialRange;
+    fDynamicRangeFactor   = o.fDynamicRangeFactor;
+    fTlimitMin            = o.fTlimitMin;
+
+    fPar1                 = o.fPar1;
+    fPar2                 = o.fPar2;
+    fPar3                 = o.fPar3;
+
+    fIsNoScatteringInMSC  = o.fIsNoScatteringInMSC;
+    fIsDisplace           = o.fIsDisplace;
+    fIsFirstStep          = o.fIsFirstStep;
+    fIsActive             = o.fIsActive;
+  }
+
+
+
 
 public:
   double fLambtr1;            // first transport mfp

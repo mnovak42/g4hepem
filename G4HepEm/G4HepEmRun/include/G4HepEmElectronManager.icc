@@ -301,9 +301,10 @@ void G4HepEmElectronManager::SampleMSC(struct G4HepEmData* hepEmData, struct G4H
     const double postStepTr1mfp = GetTransportMFP(elData, theImat, postStepEkin, postStepLEkin);
     // - sample scattering: including net angular deflection and lateral dispacement that will be
     //                      written into mscData::fDirection and mscData::fDisplacement
-    const bool isPosCor = hepEmPars->fIsMSCPositronCor;
+    const bool isPosCor   = hepEmPars->fIsMSCPositronCor;
+    const bool isDisplace = hepEmPars->fIsMSCDisplacement;
     G4HepEmElectronInteractionUMSC::SampleScattering(hepEmData, mscData, pStepLength, preStepEkin, mscData->fLambtr1, postStepEkin, postStepTr1mfp,
-                                    theImat, isElectron, isPosCor, rnge);
+                                    theImat, isElectron, isPosCor, isDisplace, rnge);
     // NOTE: displacement will be applied in the caller where we have access to the required Geant4 functionality
     //       (and if its length is longer than a small minimal length and we are not ended up on boundary)
     //

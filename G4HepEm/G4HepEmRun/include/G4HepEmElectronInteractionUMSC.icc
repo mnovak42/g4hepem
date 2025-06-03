@@ -128,7 +128,7 @@ void G4HepEmElectronInteractionUMSC::StepLimit(G4HepEmData* hepEmData, G4HepEmPa
 
 void G4HepEmElectronInteractionUMSC::SampleScattering(G4HepEmData* hepEmData, G4HepEmMSCTrackData* mscData,
      double pStepLength, double preStepEkin, double preStepTr1mfp, double postStepEkin, double postStepTr1mfp,
-     int imat, bool isElectron, bool isPosCor, G4HepEmRandomEngine* rnge) {
+     int imat, bool isElectron, bool isPosCor, bool isDisplace, G4HepEmRandomEngine* rnge) {
   const struct G4HepEmMatData& matData = hepEmData->fTheMaterialData->fMaterialData[imat];
   const double cost  = SampleCosineTheta(pStepLength, preStepEkin, preStepTr1mfp, postStepEkin, postStepTr1mfp, mscData->fTlimitMin,
                          matData.fRadiationLength, matData.fZeff, matData.fUMSCTailCoeff, matData.fUMSCThetaCoeff, isElectron, isPosCor, rnge);
@@ -142,6 +142,7 @@ void G4HepEmElectronInteractionUMSC::SampleScattering(G4HepEmData* hepEmData, G4
   const double phi = k2Pi*rnge->flat();
   mscData->SetNewDirection(sth*std::cos(phi), sth*std::sin(phi), cost);
   // compute/sample dispacement
+  mscData->fIsDisplace = mscData->fIsDisplace && isDisplace;
   if (mscData->fIsDisplace && pStepLength > mscData->fZPathLength) {
     SampleDisplacement(pStepLength, phi, mscData, rnge);
   }

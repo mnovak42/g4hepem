@@ -44,6 +44,15 @@ set(sources
   src/SteppingVerbose.cc
   src/TrackingAction.cc
 )
+
+#----------------------------------------------------------------------------
+# Also consider the case of an installed G4HepEm (with tracking manager support)
+# beyond the cxx code based check in the main CMake file.
+#
+if (G4HepEm_trackingmanager_FOUND)
+  set(G4HepEm_HAS_G4VTRACKINGMANAGER TRUE)
+endif()
+
 if(G4HepEm_HAS_G4VTRACKINGMANAGER)
   set(sources ${sources}
     src/PhysListG4EmTracking.cc

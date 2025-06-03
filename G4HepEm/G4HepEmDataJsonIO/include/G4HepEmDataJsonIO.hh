@@ -3,9 +3,9 @@
 
 #include <iosfwd>
 
-class G4HepEmParameters;
-class G4HepEmData;
-class G4HepEmState;
+struct G4HepEmParameters;
+struct G4HepEmData;
+struct G4HepEmState;
 
 /**
  * @file    G4HepEmDataJsonIO.hh

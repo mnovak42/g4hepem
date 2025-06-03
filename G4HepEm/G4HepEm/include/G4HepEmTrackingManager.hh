@@ -38,6 +38,18 @@ public:
   // Control verbosity (0/1) (propagated to the G4HepEmRuManager)
   void SetVerbose(G4int verbose);
 
+  // Returns the vector of e-/e+ G4HepEmNoProcess pointers used only to set a
+  // creator and step limiter G4VProcess of the G4Step with an appropriate
+  // name and EM process type.
+  std::vector<G4HepEmNoProcess *>& GetElectronNoProcessVector() {
+    return fElectronNoProcessVector;
+  }
+  // Same as above for gamma.
+  std::vector<G4HepEmNoProcess *>& GetGammaNoProcessVector() {
+    return fElectronNoProcessVector;
+  }
+  // Same as above for transportation.
+  G4HepEmNoProcess* GetTransportNoProcess() { return fTransportNoProcess; }
 
   // Returns the pointer to the Geant4 gamma-nuclear process (if any)
   G4VProcess* GetGammaNuclearProcess() { return fGNucProcess; }
@@ -66,7 +78,7 @@ protected:
 
   // Pointers to the fast simulation manager processes of the 3 particles if any
   // [0] e-; [1] e+; [2] gamma; nullptr: no fast sim manager process attached
-  G4VProcess *fFastSimProcess[3];
+  G4VProcess* fFastSimProcess[3];
 
 private:
   // Stacks secondaries created by HepEm physics (if any) and returns with the
@@ -126,7 +138,7 @@ private:
   // user codes rely on this information.
   std::vector<G4HepEmNoProcess *> fElectronNoProcessVector;
   std::vector<G4HepEmNoProcess *> fGammaNoProcessVector;
-  G4HepEmNoProcess *fTransportNoProcess;
+  G4HepEmNoProcess* fTransportNoProcess;
 
   // Pointers to the Gamma-nuclear process (if any)
   G4VProcess* fGNucProcess;

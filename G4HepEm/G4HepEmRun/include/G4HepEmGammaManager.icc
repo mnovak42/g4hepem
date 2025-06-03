@@ -51,7 +51,7 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
 // NOTE: `SampleInteraction` needs to be invoked before that will set the winner process ID of the trimary track.
 //        This is not invoked here inside as it might be possible that gamma-nuclear happens in which case the caller
 //        needs to perfrom the interaction.
-void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmTLData* tlData) {
+void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmParameters* hepEmPars, G4HepEmTLData* tlData) {
   G4HepEmTrack* theTrack = tlData->GetPrimaryGammaTrack()->GetTrack();
   // === 1. The `number-of-interaction-left` needs to be updated based on the actual
   //        step lenght and the energy deposit needs to be reset to 0.0
@@ -84,6 +84,12 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
     case 3: // NOTE: HepEm do not handle Gamma-nuclear interaction. It is done
             //       in the tracking manager calling the native Geant4 process
             break;
+  }
+  // Check if the final kinetic energy drops below the tracking cut and stop.
+  const double finalEkin = theTrack->GetEKin();
+  if (finalEkin > 0.0 && finalEkin <= hepEmPars->fGammaTrackingCut) {
+    theTrack->SetEKin(0.0);
+    theTrack->AddEnergyDeposit(finalEkin);
   }
 }
 

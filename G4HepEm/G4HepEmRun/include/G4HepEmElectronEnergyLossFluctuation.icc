@@ -8,8 +8,8 @@
 #include "G4HepEmMath.hh"
 
 
-double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double ekin, double tcut, double tmax,
-       double excEner, double stepLength, double meanELoss, G4HepEmRandomEngine* rnge) {
+double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double /*ekin*/, double tcut, double /*tmax*/,
+       double excEner, double /*stepLength*/, double meanELoss, G4HepEmRandomEngine* rnge) {
   const double scaling  = G4HepEmMin(1. + 5.E-4/tcut, 1.5);
   const double meanLoss = meanELoss/scaling;
 

@@ -16,6 +16,7 @@
 void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   // tracking cut for e- in internal Geant4 energy units
   hepEmPars->fElectronTrackingCut = G4EmParameters::Instance()->LowestElectronEnergy();
+  hepEmPars->fGammaTrackingCut    = 0.0;
 
   // energy loss table (i.e. dE/dx) related paramaters
   hepEmPars->fMinLossTableEnergy   = G4EmParameters::Instance()->MinKinEnergy();
@@ -33,6 +34,7 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
 #else
   hepEmPars->fIsMSCPositronCor = true;
 #endif
+  hepEmPars->fIsMSCDisplacement = G4EmParameters::Instance()->LateralDisplacement();
 
   // get the number of detector regions and allocate the per-region data array
   int numRegions = G4RegionStore::GetInstance()->size();
@@ -40,7 +42,7 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   hepEmPars->fParametersPerRegion = new G4HepEmRegionParmeters[numRegions];
 
   // set default values for all regions (might be changed after this init)
-  for (int i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
+  for (std::size_t i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
     G4HepEmRegionParmeters& rDat = hepEmPars->fParametersPerRegion[i];
     // std::cout << " [" << i << "] Regin name = " << (*G4RegionStore::GetInstance())[i]->GetName() << std::endl;
 

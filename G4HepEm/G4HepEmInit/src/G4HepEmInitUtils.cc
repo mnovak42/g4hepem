@@ -5,7 +5,7 @@
 #include <algorithm>
 
 namespace {
-// get spline interpolation of y(x) between (x1, x2) given y_N = y(x_N), y''N(x_N) 
+// get spline interpolation of y(x) between (x1, x2) given y_N = y(x_N), y''N(x_N)
 // NB: named "GetSplineImpl" to avoid seeming ADL lookup errors if it is named "GetSpline"
 //     almost appears that compiler never even considers that name...
 double GetSplineImpl(double x1, double x2, double y1, double y2, double secderiv1, double secderiv2, double x)
@@ -188,7 +188,7 @@ void G4HepEmInitUtils::FillLogarithmicGrid(const double emin, const double emax,
   grid[0] = emin;
   grid[npoints-1] = emax;
 
-  for (size_t i = 1; i < npoints-1; ++i) {
+  for (int i = 1; i < npoints-1; ++i) {
     grid[i] = std::exp(log_min_value + i * delta);
   }
 }
