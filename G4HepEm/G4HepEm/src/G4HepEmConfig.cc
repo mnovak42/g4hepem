@@ -270,7 +270,7 @@ void G4HepEmConfig::Dump() {
       const G4String& regionName =  (*G4RegionStore::GetInstance())[ir]->GetName();
       if (ip==7) {
         for (std::vector<std::string>::iterator it=fWDTRegionNames.begin(); it != fWDTRegionNames.end(); ++it) {
-          if (*it==regionName) {
+          if (G4String(*it)==regionName) {
             isWDT = true;
             break;
           }
