@@ -87,6 +87,10 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
       G4VPhysicalVolume* oldTopVolume = touchableHandle->GetVolume();
       G4VPhysicalVolume* newTopVolume =
         linearNavigator->ResetHierarchyAndLocate(pos, dir, *touchableHistory);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       // TODO: WHY?!
       if(newTopVolume != oldTopVolume ||
          oldTopVolume->GetRegularStructureId() == 1)
@@ -97,7 +101,12 @@ void TrackingManagerHelper::TrackParticle(G4Track* aTrack, G4Step* aStep,
     }
     else
     {
-      linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      linearNavigator->ResetStackAndState();
+      G4VPhysicalVolume* newTopVolume = linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       touchableHandle = linearNavigator->CreateTouchableHistory();
       aTrack->SetTouchableHandle(touchableHandle);
     }

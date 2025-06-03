@@ -253,6 +253,10 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
       G4VPhysicalVolume* oldTopVolume = touchableHandle->GetVolume();
       G4VPhysicalVolume* newTopVolume =
         linearNavigator->ResetHierarchyAndLocate(pos, dir, *touchableHistory);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       // TODO: WHY?!
       if(newTopVolume != oldTopVolume ||
          oldTopVolume->GetRegularStructureId() == 1)
@@ -263,7 +267,12 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
     else
     {
-      linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      linearNavigator->ResetStackAndState();
+      G4VPhysicalVolume* newTopVolume = linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       touchableHandle = linearNavigator->CreateTouchableHistory();
       aTrack->SetTouchableHandle(touchableHandle);
     }
@@ -795,6 +804,10 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       G4VPhysicalVolume* oldTopVolume = touchableHandle->GetVolume();
       G4VPhysicalVolume* newTopVolume =
         linearNavigator->ResetHierarchyAndLocate(pos, dir, *touchableHistory);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       // TODO: WHY?!
       if(newTopVolume != oldTopVolume ||
          oldTopVolume->GetRegularStructureId() == 1)
@@ -805,7 +818,12 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     }
     else
     {
-      linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      linearNavigator->ResetStackAndState();
+      G4VPhysicalVolume* newTopVolume = linearNavigator->LocateGlobalPointAndSetup(pos, &dir, false, false);
+      // Check if the track is going out or outside of the world volume then kill.
+      if (newTopVolume == nullptr) {
+        aTrack->SetTrackStatus(fStopAndKill);
+      }
       touchableHandle = linearNavigator->CreateTouchableHistory();
       aTrack->SetTouchableHandle(touchableHandle);
     }
