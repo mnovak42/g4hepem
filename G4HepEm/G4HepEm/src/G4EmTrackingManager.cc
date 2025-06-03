@@ -213,8 +213,8 @@ void G4EmTrackingManager::TrackElectron(G4Track *aTrack) {
       step.GetPostStepPoint()->SetStepStatus(fPostStepDoItProc);
 
       auto &electron = fMgr.electron;
-      G4VProcess *process;
-      G4VParticleChange *particleChange;
+      G4VProcess *process = nullptr;
+      G4VParticleChange *particleChange = nullptr;
 
       switch (fSelected) {
       case 0:
@@ -363,8 +363,8 @@ void G4EmTrackingManager::TrackPositron(G4Track *aTrack) {
       step.GetPostStepPoint()->SetStepStatus(fPostStepDoItProc);
 
       auto &positron = fMgr.positron;
-      G4VProcess *process;
-      G4VParticleChange *particleChange;
+      G4VProcess *process = nullptr;
+      G4VParticleChange *particleChange = nullptr;
 
       switch (fSelected) {
       case 0:
@@ -504,8 +504,8 @@ void G4EmTrackingManager::TrackGamma(G4Track *aTrack) {
       step.GetPostStepPoint()->SetStepStatus(fPostStepDoItProc);
 
       auto &gamma = fMgr.gamma;
-      G4VProcess *process;
-      G4VParticleChange *particleChange;
+      G4VProcess *process = nullptr;
+      G4VParticleChange *particleChange = nullptr;
 
       switch (fSelected) {
       case 0:

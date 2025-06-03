@@ -317,9 +317,11 @@ G4double TrackingManagerHelper::ChargedNavigation::MakeStep(
   if(auto* fieldMgr =
        fFieldPropagator->FindAndSetFieldManager(track.GetVolume()))
   {
+    (void)fieldMgr; // mark as used to suppress unsued variable warning
     fieldMgr->ConfigureForTrack(&track);
     if(const G4Field* ptrField = fieldMgr->GetDetectorField())
     {
+      (void)ptrField; // mark as used to suppress unsued variable warning
       fieldExertsForce = true;
     }
   }

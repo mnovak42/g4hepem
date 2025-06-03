@@ -42,7 +42,7 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   hepEmPars->fParametersPerRegion = new G4HepEmRegionParmeters[numRegions];
 
   // set default values for all regions (might be changed after this init)
-  for (int i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
+  for (std::size_t i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
     G4HepEmRegionParmeters& rDat = hepEmPars->fParametersPerRegion[i];
     // std::cout << " [" << i << "] Regin name = " << (*G4RegionStore::GetInstance())[i]->GetName() << std::endl;
 

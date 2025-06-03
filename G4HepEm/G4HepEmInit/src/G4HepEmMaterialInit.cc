@@ -240,11 +240,11 @@ void InitMaterialAndCoupleData(struct G4HepEmData* hepEmData, struct G4HepEmPara
     }
   }
   // set the Geant4 detector region index for each material-cuts couple data
-  for (int i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
+  for (std::size_t i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
     G4Region* region = (*G4RegionStore::GetInstance())[i];
     const int indxRegion = region->GetInstanceID();
     std::vector<G4Material*>::const_iterator itrMat = region->GetMaterialIterator();
-    for (int im=0; im<region->GetNumberOfMaterials(); ++im) {
+    for (std::size_t im=0; im<region->GetNumberOfMaterials(); ++im) {
       G4MaterialCutsCouple* couple = region->FindCouple(*itrMat);
       int indxMCC = hepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[couple->GetIndex()];
       hepEmData->fTheMatCutData->fMatCutData[indxMCC].fG4RegionIndex = indxRegion;

@@ -24,43 +24,15 @@ public:
 
   G4HepEmHostDevice
   G4HepEmTrack(const G4HepEmTrack& o) {
-    fPosition[0]   = o.fPosition[0];
-    fPosition[1]   = o.fPosition[1];
-    fPosition[2]   = o.fPosition[2];
+    CopyFrom(o);
+  }
 
-    fDirection[0]  = o.fDirection[0];
-    fDirection[1]  = o.fDirection[1];
-    fDirection[2]  = o.fDirection[2];
-
-    fEKin          = o.fEKin;
-    fLogEKin       = o.fLogEKin;
-
-    fCharge        = o.fCharge;
-
-    fEDeposit      = o.fEDeposit;
-
-    fGStepLength   = o.fGStepLength;
-
-    fMFPs[0]       = o.fMFPs[0];
-    fMFPs[1]       = o.fMFPs[1];
-    fMFPs[2]       = o.fMFPs[2];
-    fMFPs[3]       = o.fMFPs[3];
-
-    fNumIALeft[0] = o.fNumIALeft[0];
-    fNumIALeft[1] = o.fNumIALeft[1];
-    fNumIALeft[2] = o.fNumIALeft[2];
-    fNumIALeft[3] = o.fNumIALeft[3];
-
-    fSafety       = o.fSafety;
-
-    fID           = o.fID;
-    fIDParent     = o.fIDParent;
-
-    fMCIndex      = o.fMCIndex;
-
-    fPIndxWon     = o.fPIndxWon;
-
-    fOnBoundary   = o.fOnBoundary;
+  G4HepEmHostDevice
+  G4HepEmTrack& operator=(const G4HepEmTrack& o) {
+    if (this != &o) {
+      CopyFrom(o);
+    }
+    return *this;
   }
 
   // Position
@@ -211,11 +183,8 @@ public:
 
     fEKin         = 0.0;
     fLogEKin      = 100.0;
-
     fCharge       = 0.0;
-
     fEDeposit     = 0.0;
-
     // step length along the original direction
     fGStepLength  = 0.0;
 
@@ -231,14 +200,45 @@ public:
 
     fID           =  -1;
     fIDParent     =  -1;
-
     fMCIndex      =  -1;
-
     fPIndxWon     =  -1;
-
     fOnBoundary   = false;
   }
 
+  // Helper to be used inside the copy constructor and assigment operator 
+  G4HepEmHostDevice
+  void CopyFrom(const G4HepEmTrack& o) {
+    fPosition[0] = o.fPosition[0];
+    fPosition[1] = o.fPosition[1];
+    fPosition[2] = o.fPosition[2];
+
+    fDirection[0] = o.fDirection[0];
+    fDirection[1] = o.fDirection[1];
+    fDirection[2] = o.fDirection[2];
+
+    fEKin        = o.fEKin;
+    fLogEKin     = o.fLogEKin;
+    fCharge      = o.fCharge;
+    fEDeposit    = o.fEDeposit;
+    fGStepLength = o.fGStepLength;
+
+    fMFPs[0] = o.fMFPs[0];
+    fMFPs[1] = o.fMFPs[1];
+    fMFPs[2] = o.fMFPs[2];
+    fMFPs[3] = o.fMFPs[3];
+
+    fNumIALeft[0] = o.fNumIALeft[0];
+    fNumIALeft[1] = o.fNumIALeft[1];
+    fNumIALeft[2] = o.fNumIALeft[2];
+    fNumIALeft[3] = o.fNumIALeft[3];
+
+    fSafety     = o.fSafety;
+    fID         = o.fID;
+    fIDParent   = o.fIDParent;
+    fMCIndex    = o.fMCIndex;
+    fPIndxWon   = o.fPIndxWon;
+    fOnBoundary = o.fOnBoundary;
+  }
 
 
 private:

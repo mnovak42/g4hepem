@@ -11,8 +11,8 @@ class G4LogicalVolume;
 class G4VPhysicalVolume;
 class G4Track;
 
-class G4HepEmData;
-class G4HepEmMatCutData;
+struct G4HepEmData;
+struct G4HepEmMatCutData;
 class G4HepEmGammaTrack;
 
 #include <map>

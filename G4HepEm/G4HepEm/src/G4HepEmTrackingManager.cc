@@ -217,7 +217,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void G4HepEmTrackingManager::PreparePhysicsTable(
-    const G4ParticleDefinition &part) {
+    const G4ParticleDefinition& /*part*/) {
   // obtain the cut values in energy
   auto *theCoupleTable = G4ProductionCutsTable::GetProductionCutsTable();
   theCutsGamma = theCoupleTable->GetEnergyCutsVector(idxG4GammaCut);
@@ -1341,10 +1341,10 @@ double G4HepEmTrackingManager::StackG4Secondaries(G4VParticleChange* particleCha
   }
 
   G4TrackVector& secondaries    = *theStep->GetfSecondary();
-  G4StepPoint&   postStepPoint  = *theStep->GetPostStepPoint();
+  //G4StepPoint&   postStepPoint  = *theStep->GetPostStepPoint();
 
-  const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
-  const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
+  //const G4ThreeVector&     theG4PostStepPointPosition = postStepPoint.GetPosition();
+  //const G4double           theG4PostStepGlobalTime    = postStepPoint.GetGlobalTime();
   const G4TouchableHandle& theG4TouchableHandle       = aG4PrimaryTrack->GetTouchableHandle();
   const double             theG4ParentTrackWeight     = aG4PrimaryTrack->GetWeight();
   const int                theG4ParentTrackID         = aG4PrimaryTrack->GetTrackID();

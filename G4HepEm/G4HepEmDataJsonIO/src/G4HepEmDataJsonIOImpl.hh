@@ -321,7 +321,7 @@ namespace nlohmann
       {
         G4HepEmElementData* p = nullptr;
         AllocateElementData(&p);
-        if(j.size() > p->fMaxZet + 1)
+        if(j.size() > static_cast<std::size_t>(p->fMaxZet + 1))
         {
           FreeElementData(&p);
           throw std::runtime_error(

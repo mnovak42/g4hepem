@@ -62,7 +62,7 @@ G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionName
       //          << numRootLVolume << " root logical volumes."
       //          << std::endl;
       std::vector<G4LogicalVolume*>::const_iterator itrLV = wdtRegion->GetRootLogicalVolumeIterator();
-      for (std::size_t ilv = 0; ilv<numRootLVolume; ++ilv) {
+      for (int ilv = 0; ilv<numRootLVolume; ++ilv) {
         G4LogicalVolume* rootLogVol = (*itrLV);
         // std::cout << " The [ " << ilv << " ]-th root logical volume is "
         //          << rootLogVol->GetName() << std::endl;

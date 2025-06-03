@@ -363,7 +363,7 @@ void BuildLambdaTables(G4MollerBhabhaModel* mbModel, G4SeltzerBergerModel* sbMod
 
 
 void BuildNuclearLambdaTables(G4CrossSectionDataStore* hadENucXSDataStore, struct G4HepEmData* hepEmData,
-                              struct G4HepEmParameters* hepEmParams, bool iselectron) {
+                              struct G4HepEmParameters* /*hepEmParams*/, bool iselectron) {
   // get the pointer to the already allocated G4HepEmElectronData from the HepEmData
   struct G4HepEmElectronData* elData = iselectron
                                        ? hepEmData->fTheElectronData
@@ -699,12 +699,12 @@ void BuildSBBremSTables(struct G4HepEmData* hepEmData, struct G4HepEmParameters*
     // #elments of the material in this material cut couple
     numElemsInMC += theMatData->fMaterialData[theMCData->fMatCutData[imc].fHepEmMatIndex].fNumOfElement;
   }
-  int numElemsUnique  = 0;
-  for (int iz=1; iz<theElemData->fMaxZet; ++iz) {
-    if (theElemData->fElementData[iz].fZet > -1.0) {
-      ++numElemsUnique;
-    }
-  }
+//  int numElemsUnique  = 0;
+//  for (int iz=1; iz<theElemData->fMaxZet; ++iz) {
+//    if (theElemData->fElementData[iz].fZet > -1.0) {
+//      ++numElemsUnique;
+//    }
+//  }
 
   // loop over the elements used in the geometry
   int numSBData = 0;
