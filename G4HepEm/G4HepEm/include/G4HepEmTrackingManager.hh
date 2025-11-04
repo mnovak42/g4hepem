@@ -42,6 +42,17 @@ public:
   // Needed if the random engine was swapped after construction of the HepEm TM
   void RebindG4RandomEngine();
 
+  // Returns whether the region for the given region index is using woodcock tracking
+  G4bool IsWDTRegion(G4int regionId) const;
+
+  // returns the Woodcock tracking kinetic energy limit
+  G4double GetWDTKineticEnergyLimit() const;
+
+  // For a given region index with Woodcock tracking and root logical volume index, 
+  // this function returns the G4HepEm material cut couple index of that volume if it is indeed 
+  // a root logical volume of a Woodcock tracking region, -1 otherwise 
+  G4int GetWDTCoupleHepEmIndex(G4int regionId, G4int logicalVolumeId) const;
+
   // Returns the vector of e-/e+ G4HepEmNoProcess pointers used only to set a
   // creator and step limiter G4VProcess of the G4Step with an appropriate
   // name and EM process type.

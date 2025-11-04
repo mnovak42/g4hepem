@@ -297,6 +297,26 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   return isWDTReachedBoundary;
 }
 
+G4bool G4HepEmWoodcockHelper::IsWDTRegion(G4int regionId) const {
+  auto itrRegion = fWDTData.find(regionId);
+  return itrRegion != fWDTData.end() && itrRegion->second;
+}
+
+G4int G4HepEmWoodcockHelper::GetWDTCoupleHepEmIndex(G4int regionId, G4int logicalVolumeId) const {
+  // check whether the provided region is a Woodcock tracking region
+  auto itrRegion = fWDTData.find(regionId);
+  if (itrRegion == fWDTData.end() || !itrRegion->second) {
+    return -1;
+  } 
+  // check whether the provided logicalVolumeId corresponds to an entry in the root logical volumes map
+  const auto& WDTmap = itrRegion->second->fWDTDataRegion;
+  auto itrRootVol = WDTmap.find(logicalVolumeId);
+  if (itrRootVol == WDTmap.end() || !itrRootVol->second) {
+    return -1;
+  }
+  return itrRootVol->second->fG4CoupleHepEmIndex;
+}
+
 
 void G4HepEmWoodcockHelper::ClearData() {
   // iterate over the `fWDTData` map

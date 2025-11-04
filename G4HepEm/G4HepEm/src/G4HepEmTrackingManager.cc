@@ -157,6 +157,20 @@ void G4HepEmTrackingManager::RebindG4RandomEngine() {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+G4bool G4HepEmTrackingManager::IsWDTRegion(G4int regionId) const { 
+  return (fWDTHelper) ? fWDTHelper->IsWDTRegion(regionId) : false;
+}
+
+G4double G4HepEmTrackingManager::GetWDTKineticEnergyLimit() const {
+  return (fWDTHelper) ? fWDTHelper->GetKineticEnergyLimit() : 0.0;
+}
+
+G4int G4HepEmTrackingManager::GetWDTCoupleHepEmIndex(G4int regionId, G4int logicalVolumeId) const { 
+  return (fWDTHelper) ? fWDTHelper->GetWDTCoupleHepEmIndex(regionId, logicalVolumeId) : -1;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part) {
   if (&part == G4Electron::Definition()) {
     int particleID = 0;
