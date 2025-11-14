@@ -61,7 +61,7 @@ public:
   }
   // Same as above for gamma.
   std::vector<G4HepEmNoProcess *>& GetGammaNoProcessVector() {
-    return fElectronNoProcessVector;
+    return fGammaNoProcessVector;
   }
   // Same as above for transportation.
   G4HepEmNoProcess* GetTransportNoProcess() { return fTransportNoProcess; }
