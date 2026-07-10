@@ -305,16 +305,6 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     aTrack->SetOriginTouchableHandle(aTrack->GetTouchableHandle());
   }
 
-  // Set vertex information: in normal tracking this is done in
-  //  `G4TrackingManager::ProcessOneTrack` when calling
-  //  `G4SteppingManager::SetInitialStep`
-  if (aTrack->GetCurrentStepNumber() == 0) {
-    aTrack->SetVertexPosition(aTrack->GetPosition());
-    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
-    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
-    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
-  }
-
   // Prepare data structures used while tracking.
   G4Step &step = *fStep;
   G4TrackVector& secondaries = *step.GetfSecondary();
@@ -323,10 +313,20 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
 
-  // Start of tracking: Inform user and processes.
-  if(userTrackingAction)
-  {
-    userTrackingAction->PreUserTrackingAction(aTrack);
+  // Start of tracking: set vertex information and inform user and processes. 
+  if (aTrack->GetCurrentStepNumber() == 0) {
+    // Set vertex information: in normal tracking this is done in
+    //  `G4TrackingManager::ProcessOneTrack` when calling
+    //  `G4SteppingManager::SetInitialStep`
+    aTrack->SetVertexPosition(aTrack->GetPosition());
+    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
+    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
+    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
+  
+    // Inform user and processes.
+    if(userTrackingAction) {
+      userTrackingAction->PreUserTrackingAction(aTrack);
+    }
   }
 
   // Store the trajectory only if the user requested in the G4TrackingManager
@@ -860,16 +860,6 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     aTrack->SetOriginTouchableHandle(aTrack->GetTouchableHandle());
   }
 
-  // Set vertex information: in normal tracking this is done in
-  //  `G4TrackingManager::ProcessOneTrack` when calling
-  //  `G4SteppingManager::SetInitialStep`
-  if (aTrack->GetCurrentStepNumber() == 0) {
-    aTrack->SetVertexPosition(aTrack->GetPosition());
-    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
-    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
-    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
-  }
-
   // Prepare data structures used while tracking.
   G4Step&        step          = *fStep;
   G4TrackVector& secondaries   = *step.GetfSecondary();
@@ -878,9 +868,20 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
 
-  // Start of tracking: Inform user and processes.
-  if(userTrackingAction) {
-    userTrackingAction->PreUserTrackingAction(aTrack);
+  // Start of tracking: set vertex information and inform user and processes. 
+  if (aTrack->GetCurrentStepNumber() == 0) {
+    // Set vertex information: in normal tracking this is done in
+    //  `G4TrackingManager::ProcessOneTrack` when calling
+    //  `G4SteppingManager::SetInitialStep`
+    aTrack->SetVertexPosition(aTrack->GetPosition());
+    aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
+    aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
+    aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
+  
+    // Inform user and processes.
+    if(userTrackingAction) {
+      userTrackingAction->PreUserTrackingAction(aTrack);
+    }
   }
 
   // Store the trajectory only if the user requested to store the trajectory in
