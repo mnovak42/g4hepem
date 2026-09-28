@@ -71,7 +71,7 @@ G4HepEmTrackingManager::G4HepEmTrackingManager(G4int verbose) {
       new G4HepEmNoProcess("eBrem", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fBremsstrahlung));
   fElectronNoProcessVector.push_back(
-      new G4HepEmNoProcess("annihl", G4ProcessType::fElectromagnetic,
+      new G4HepEmNoProcess("annihil", G4ProcessType::fElectromagnetic,
                            G4EmProcessSubType::fAnnihilation));
   fElectronNoProcessVector.push_back(
       new G4HepEmNoProcess("msc", G4ProcessType::fElectromagnetic,

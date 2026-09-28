@@ -55,7 +55,7 @@ G4HepEmProcess::G4HepEmProcess()
   // construct fake G4VProcess-es with the proper name and indices matching the hepEm process indices
   fElectronNoProcessVector.push_back(new G4HepEmNoProcess("eIoni",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fIonisation));
   fElectronNoProcessVector.push_back(new G4HepEmNoProcess("eBrem",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fBremsstrahlung));
-  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("annihl", G4ProcessType::fElectromagnetic, G4EmProcessSubType::fAnnihilation));
+  fElectronNoProcessVector.push_back(new G4HepEmNoProcess("annihil", G4ProcessType::fElectromagnetic, G4EmProcessSubType::fAnnihilation));
   fElectronNoProcessVector.push_back(new G4HepEmNoProcess("msc",    G4ProcessType::fElectromagnetic, G4EmProcessSubType::fMultipleScattering));
   fGammaNoProcessVector.push_back(new G4HepEmNoProcess("conv",   G4ProcessType::fElectromagnetic, G4EmProcessSubType::fGammaConversion));
   fGammaNoProcessVector.push_back(new G4HepEmNoProcess("compt",  G4ProcessType::fElectromagnetic, G4EmProcessSubType::fComptonScattering));
