@@ -678,6 +678,18 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         // check if there is nuclear interaction process and not delta interaction happens
         G4VProcess* theNucProcess = isElectron ? fENucProcess : fPNucProcess;
         if (theNucProcess != nullptr && !G4HepEmElectronManager::CheckDelta(theHepEmData, thePrimaryTrack, theTLData->GetRNGEngine()->flat())) {
+          // After displacement and deflection via MSC and the continuous energy loss,
+          // the updated position, direction, and energy must be stored in the G4Track,
+          // as the track's data is used in the PostStepDoIt of the nuclear reaction.
+          // The position of the track must be updated, as the UpdateStepForPostStep
+          // of the nuclear reaction writes the position back to the step and
+          // would otherwise undo the MSC displacement.
+          //
+          // Update kinetic energy (position and direction in the postStepPoint are already updated by MSC)
+          postStepPoint.SetKineticEnergy(thePrimaryTrack->GetEKin());
+          // Synchronize G4Track with G4Step, so that the G4 nuclear process sees it.
+          step.UpdateTrack();
+
           // Invoke the electron/positron-nuclear interaction using the Geant4 process
           // (step is updated and secondaries are stacked to the vector of the step)
           int particleID = isElectron ? 0 : 1;
