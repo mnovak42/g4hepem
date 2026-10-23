@@ -10,6 +10,7 @@ class G4Material;
 class G4LogicalVolume;
 class G4VPhysicalVolume;
 class G4Track;
+class G4Step;
 
 struct G4HepEmData;
 struct G4HepEmMatCutData;
@@ -47,13 +48,13 @@ public:
     G4bool  FindWDTVolume(int regionID, const G4Track& aTrack);
 
     // Keeps "Woodock" tracking inside an envelop, found and set up in `FindWDTVolume`,
-    // till the photon gets close to this volume boundary (returns `true`) or
-    // reaches a point of interaction (returns `false`). The accumulated step length
-    // during the tracking is written to the field of the input G4HepEmTrack while
-    // all relevant pre-step point infomatin is set to thier post-step point value
+    // till the photon hits this volume boundary (returns `true`) or
+    // reaches a point of interaction (returns `false`). In case of a physics interaction,
+    // all relevant pre-step point information is set to their post-step point value
     // (as several volume boundaries might have been crossed between the pre- and
     // post step points and interaction can only happen at the post step point if any).
-    G4bool KeepTracking(const struct G4HepEmData* theHepEmData, G4HepEmGammaTrack* theGammaTrack, G4Track& aTrack);
+    // In case the bounding volume is hit, the navigation is updated to the new volume
+    G4bool KeepTracking(const struct G4HepEmData* theHepEmData, G4HepEmGammaTrack* theGammaTrack, G4Track& aTrack, G4Step& aStep);
 
     // Returns whether the region for the given region index is using woodcock tracking
     G4bool IsWDTRegion(G4int regionId) const;
@@ -107,6 +108,7 @@ private:
    G4MaterialCutsCouple* fWDTCouple;
    G4int                 fWDTHepEmIMC;
    G4AffineTransform     fWDTTransform;  // transformation of the actual phy. vol.
+   G4TouchableHandle     fWDTTouchableHandle; // touchableHandle of the actual phy. vol.
 
    // A navigator used to locate points (not to mess with the navigator for tarcking)
    G4Navigator           fWDTNavigator;

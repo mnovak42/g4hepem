@@ -129,6 +129,14 @@ G4bool G4HepEmWoodcockHelper::FindWDTVolume(int regionID, const G4Track& aTrack)
   fWDTHepEmIMC  = wdtDataRootLogVol->fG4CoupleHepEmIndex;
   fWDTSolid     = wdtDataRootLogVol->fSolid;
   fWDTCouple    = wdtDataRootLogVol->fG4Couple;
+
+  // Create a copy of the history to shorten it to the level of the WDT root volume
+  G4NavigationHistory rootHistory(*navHistory);
+  rootHistory.BackLevel(navHistory->GetDepth() - currentDepth);
+  // Save the touchableHistory into a touchableHandle
+  fWDTTouchableHandle = new G4TouchableHistory(rootHistory);
+  assert(fWDTTouchableHandle->GetVolume() == navHistory->GetVolume(currentDepth));
+
   //
   // Check if the current pre-step point is indeed inside. If distance to
   // the root volume boundary is zero (or very small) then just do normal
@@ -138,19 +146,19 @@ G4bool G4HepEmWoodcockHelper::FindWDTVolume(int regionID, const G4Track& aTrack)
   const G4ThreeVector& v0 = aTrack.GetMomentumDirection();
   const G4ThreeVector localPoint     = fWDTTransform.TransformPoint(r0);
   const G4ThreeVector localDirection = fWDTTransform.TransformAxis(v0);
-  G4double distToBoundary = std::max(fWDTSolid->DistanceToOut(localPoint, localDirection)-1.0E-3, 0.0 );
+  G4double distToBoundary = fWDTSolid->DistanceToOut(localPoint, localDirection);
   return (distToBoundary < 1.0E-6) ? false : true;
 }
 
 
-G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmData, G4HepEmGammaTrack* theGammaTrack, G4Track& aTrack) {
+G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmData, G4HepEmGammaTrack* theGammaTrack, G4Track& aTrack, G4Step& aStep) {
   // Calculate the distance to boundary and the physics length keep eating up
-  // the distance to boundary till: 1. interaction is reached or close to boundary.
+  // the distance to boundary till: 1. interaction is reached or the boundary is hit.
   // In both cases, locate the point before going further, then either make
   // a boundary step (case 2.) or let it go to selecting and performing the
   // physics interaction.
-  G4StepPoint& preStepPoint  = *(aTrack.GetStep()->GetPreStepPoint());
-  G4StepPoint& postStepPoint = *(aTrack.GetStep()->GetPostStepPoint());
+  G4StepPoint& preStepPoint  = *aStep.GetPreStepPoint();
+  G4StepPoint& postStepPoint = *aStep.GetPostStepPoint();
 
   // Compute the distance to the boundary of the actual root volume.
   // - get direction and start position
@@ -158,9 +166,8 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   const G4ThreeVector& v0 = preStepPoint.GetMomentumDirection();
   const G4ThreeVector localPoint     = fWDTTransform.TransformPoint(r0);
   const G4ThreeVector localDirection = fWDTTransform.TransformAxis(v0);
-  G4double distToBoundary = std::max( fWDTSolid->DistanceToOut(localPoint, localDirection)-1.0E-3, 0.0 );
-  // When `distToBoundary = 0`, we are within 1.0E-3 to the the boundary.
-  //
+  G4double distToBoundary = fWDTSolid->DistanceToOut(localPoint, localDirection);
+
   // Compute the WDT reference mxsec (i.e. maximum total mxsec along this setp).
   // (need to set only the MC index as ekin has alrady been set above).
   G4HepEmTrack* thePrimaryTrack = theGammaTrack->GetTrack();
@@ -174,7 +181,7 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   G4int prevHepEmIMC = -1;
   G4bool doStop = false;
 
-  // While either interacts or gets close to the boundary of the actual root volume:
+  // While either interacts or hits the boundary of the actual root volume:
   const G4int* g4MCIndexToHepEmMCIndex = theHepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex;
   G4double wdtStepLength = 0.0;
   G4bool isWDTReachedBoundary = false;
@@ -183,7 +190,7 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
     const G4double pstep = wdtMFP < DBL_MAX ? -G4Log( G4UniformRand() )*wdtMFP : DBL_MAX;
     // Take the minimum of this and the distance to the WDT root volume boundary
     // while checking if this step ends up close to the volume boundary
-    if (distToBoundary < pstep) {
+    if (distToBoundary <= pstep) {
       wdtStepLength += distToBoundary;
       isWDTReachedBoundary = true;
       doStop = true;
@@ -240,59 +247,95 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
       }
     }
 
-    if (doStop) {
-      // Reached the end, i.e. either interaction happens at the current post
-      // step point or it is locating close to the WDT volume boundary
-      // (wdtRegionBoundary=true in this case).
-      // Update the track with its final position and locate the track properly.
-      postStepPoint.SetPosition(r0+wdtStepLength*v0);
-      G4TouchableHandle touchableHandle = aTrack.GetTouchableHandle();
-      G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->LocateGlobalPointAndUpdateTouchableHandle(postStepPoint.GetPosition(), postStepPoint.GetMomentumDirection(), touchableHandle, false);
-      aTrack.SetTouchableHandle(touchableHandle);
-      aTrack.SetNextTouchableHandle(touchableHandle);
-      // Set pre/post step point location and touchable to be the same (as we
-      // might have moved the track from a far away volume).
-      // NOTE: as energy deposit happens only at discrete interactions for gamma,
-      // in case of non-zero energy deposit, i.e. when SD codes are invoked,
-      // the track is never on boundary. So all SD code should work fine with
-      // identical pre- and post-step points.
-      postStepPoint.SetTouchableHandle(touchableHandle);
-      preStepPoint.SetTouchableHandle(touchableHandle);
-      preStepPoint.SetPosition(postStepPoint.GetPosition());
-      // NOTE: some (e.g. calibration) SD codes might be called even in case of zero
-      // energy deposit so set the SD pointer in all cases.
-      const G4LogicalVolume* postStepLogVol = touchableHandle->GetVolume()->GetLogicalVolume();
-      preStepPoint.SetSensitiveDetector(postStepLogVol->GetSensitiveDetector());
-
-      // Set all track properteis needed later: all pre-step point information are
-      // actually set to be their post step point values!
-      // lvol = aTrack.GetTouchable()->GetVolume()->GetLogicalVolume();
-      // MCC  = lvol->GetMaterialCutsCouple();
-      preStepPoint.SetMaterial(postStepLogVol->GetMaterial());
-      preStepPoint.SetMaterialCutsCouple(postStepLogVol->GetMaterialCutsCouple());
-
-      postStepPoint.SetMaterial(postStepLogVol->GetMaterial());
-      postStepPoint.SetMaterialCutsCouple(postStepLogVol->GetMaterialCutsCouple());
-
-      // NOTE: the number of interaction length left will be cleared in all
-      // cases when WDT tracking happened (see below).
-    }
     // If the WDT region boundary has not been reached in this step then delta
     // interaction happend so just keep moving the post-step point toward the
     // WDT (root) volume boundary.
   };  // END OF WHILE ON WDT
 
-  // Update the time based on the accumulated WDT step length
-  // step.SetStepLength(wdtStepLength);
-  // aTrack->SetStepLength(wdtStepLength);
+
+  // Reached the end, i.e. either interaction happens at the current post
+  // step point or the WDT volume boundary is hit. (wdtRegionBoundary=true in this case)
+  // Update the track with its final position and locate track properly, if WDT boundary volume is hit,
+  // the touchable can be set directly. 
+  postStepPoint.SetPosition(r0+wdtStepLength*v0);
+  G4TouchableHandle touchableHandle     = aTrack.GetTouchableHandle();
+  G4TouchableHandle nextTouchableHandle = aTrack.GetNextTouchableHandle();
+  auto* linearNavigator = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
+  if (!isWDTReachedBoundary) {
+    // Hit interaction
+    linearNavigator->LocateGlobalPointAndSetup(postStepPoint.GetPosition(), &postStepPoint.GetMomentumDirection(), /*relativeSearch=*/true, /*ignoreDirection=*/true);
+    touchableHandle = linearNavigator->CreateTouchableHistory();
+
+    // Set pre/post step point location and touchable to be the same (as we
+    // might have moved the track from a far away volume).
+    // NOTE: as energy deposit happens only at discrete interactions for gamma,
+    // in case of non-zero energy deposit, i.e. when SD codes are invoked,
+    // the track is never on boundary. So all SD code should work fine with
+    // identical pre- and post-step points.
+    nextTouchableHandle = touchableHandle;
+  } else {
+    // Leaving WDT boundary volume. Current touchable is WDT boundary volume, 
+    // next touchable needs to be located with point on boundary + direction
+
+    G4VPhysicalVolume* newTopVolume =
+      linearNavigator->ResetHierarchyAndLocate(postStepPoint.GetPosition(), postStepPoint.GetMomentumDirection(), *fWDTTouchableHandle());
+    auto* destinationTouchable = linearNavigator->CreateTouchableHistory();
+
+    // Check if the track is going out or outside of the world volume then update touchable and kill.
+    if (newTopVolume == nullptr) {
+      destinationTouchable->UpdateYourself(nullptr, destinationTouchable->GetHistory());
+      postStepPoint.SetStepStatus(fWorldBoundary);
+    } else {
+      postStepPoint.SetStepStatus(fGeomBoundary);
+    }
+
+    // Update touchables
+    touchableHandle = fWDTTouchableHandle;
+    nextTouchableHandle = destinationTouchable;
+  }
+
+  aTrack.SetTouchableHandle(touchableHandle);
+  aTrack.SetNextTouchableHandle(nextTouchableHandle); 
+  preStepPoint.SetTouchableHandle(touchableHandle);
+  preStepPoint.SetPosition(postStepPoint.GetPosition());
+  postStepPoint.SetTouchableHandle(nextTouchableHandle);
+
+  const G4LogicalVolume* preStepLogVol = touchableHandle->GetVolume()->GetLogicalVolume();
+  const G4VPhysicalVolume* postStepPVol = nextTouchableHandle->GetVolume();
+
+  // Set all track properties needed later. 
+  // Note: in case of a physics interaction, all pre-step point information are
+  // actually set to be their post step point values!
+  // Some (e.g. calibration) SD codes might be called even in case of zero
+  // energy deposit so set the SD pointer in all cases.
+  preStepPoint.SetSensitiveDetector(preStepLogVol->GetSensitiveDetector());
+  preStepPoint.SetMaterial(preStepLogVol->GetMaterial());
+  preStepPoint.SetMaterialCutsCouple(preStepLogVol->GetMaterialCutsCouple());
+  if (postStepPVol) {
+    const G4LogicalVolume* postStepLogVol = postStepPVol->GetLogicalVolume();
+    postStepPoint.SetSensitiveDetector(postStepLogVol->GetSensitiveDetector());
+    postStepPoint.SetMaterial(postStepLogVol->GetMaterial());
+    postStepPoint.SetMaterialCutsCouple(postStepLogVol->GetMaterialCutsCouple());
+  } else {
+    // Track has left the world, clear SD and materials
+    postStepPoint.SetSensitiveDetector(nullptr);
+    postStepPoint.SetMaterial(nullptr);
+    postStepPoint.SetMaterialCutsCouple(nullptr);
+  }
+ 
+  // Reset safety, as Woodcock tracking does not use the TrackingManagerHelper
+  G4TransportationManager::GetTransportationManager()->GetSafetyHelper()->SetCurrentSafety(0., postStepPoint.GetPosition());
+  postStepPoint.SetSafety(0.);
+
+  // Update the step and the time based on the accumulated WDT step length
+  aStep.SetStepLength(wdtStepLength);
   const G4double preStepVelocity = preStepPoint.GetVelocity();
   const G4double deltaTime = preStepVelocity > 0 ? wdtStepLength/preStepVelocity : 0;
   postStepPoint.AddGlobalTime(deltaTime);
   postStepPoint.AddLocalTime(deltaTime);
 
-  // Store the total Woodcock tracking step length in the HepEmTrack field and
-  // return with the flag that indicates if boundary has been reached.
-  thePrimaryTrack->SetGStepLength(wdtStepLength);
+  // Synchronize the track to be ready for interaction.
+  aStep.UpdateTrack();
 
   return isWDTReachedBoundary;
 }
