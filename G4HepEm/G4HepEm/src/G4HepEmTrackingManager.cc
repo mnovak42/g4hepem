@@ -216,8 +216,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
       }
       fWDTHelper = new G4HepEmWoodcockHelper;
       fWDTHelper->SetKineticEnergyLimit(fConfig->GetWDTEnergyLimit());
-      G4VPhysicalVolume* worldVolume = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume();
-      G4bool hasBeenFound = fWDTHelper->Initialize(wdtRegionNames, fRunManager->GetHepEmData()->fTheMatCutData, worldVolume);
+      G4bool hasBeenFound = fWDTHelper->Initialize(wdtRegionNames, fRunManager->GetHepEmData()->fTheMatCutData);
       if (!hasBeenFound) {
         delete fWDTHelper;
         fWDTHelper = nullptr;
@@ -1053,7 +1052,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       // the post-step point to the newly relocated volume
       // The track and step are fully updated
       // (NOTE: `isWDTOn` can be `true` only if `fWDTHelper != nulltr`!)
-      const G4bool isWDTReachedBoundary = fWDTHelper->KeepTracking(theHepEmData, theGammaTrack, *aTrack, step);
+      isWDTOn = fWDTHelper->KeepTracking(theHepEmData, theGammaTrack, *aTrack, step);
 
       // Set the logical volume and g4 couple used later ()
       lvol = aTrack->GetTouchable()->GetVolume()->GetLogicalVolume();
@@ -1073,10 +1072,6 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       // only in non-WDT step and only when boundary limits the step (when
       // invoking `UpdateNumIALeft`).
       thePrimaryTrack->SetGStepLength(0.0);
-
-      if (isWDTReachedBoundary) { // WDT hit the boundary of the envelop volume
-        isWDTOn = false;      // turn it off: triggers finding the WDT branch in the next step
-      } // else: WDT reached an interaction point, invoke physics interaction
     }
 
     // Check if the track left the world.

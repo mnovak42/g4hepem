@@ -34,7 +34,7 @@ G4HepEmWoodcockHelper::~G4HepEmWoodcockHelper() {
 }
 
 
-G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData, G4VPhysicalVolume* worldVolume) {
+G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData) {
   // make sure that all data are cleared
   ClearData();
   // NOTE: I will alway know that a given region is Woodcock region or not by
@@ -87,11 +87,6 @@ G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionName
       //          << wdtRegionName << " was NOT found!"
       //          << std::endl;
     }
-  }
-  //
-  if (oneHasBeenFound) {
-    // Set the world volume of the WDT navigator
-    fWDTNavigator.SetWorldVolume(worldVolume);
   }
   return oneHasBeenFound;
 }
@@ -160,6 +155,9 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   G4StepPoint& preStepPoint  = *aStep.GetPreStepPoint();
   G4StepPoint& postStepPoint = *aStep.GetPostStepPoint();
 
+  // Get navigator used for location and boundary crossing if the envelope volume is hit
+  auto* linearNavigator = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
+
   // Compute the distance to the boundary of the actual root volume.
   // - get direction and start position
   const G4ThreeVector& r0 = preStepPoint.GetPosition();
@@ -190,7 +188,7 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
     const G4double pstep = wdtMFP < DBL_MAX ? -G4Log( G4UniformRand() )*wdtMFP : DBL_MAX;
     // Take the minimum of this and the distance to the WDT root volume boundary
     // while checking if this step ends up close to the volume boundary
-    if (distToBoundary <= pstep) {
+    if (distToBoundary < pstep) {
       wdtStepLength += distToBoundary;
       isWDTReachedBoundary = true;
       doStop = true;
@@ -202,7 +200,7 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
       // Locate the actual post step point in order to get the real material.
       // NOTE: we might start here from a certain depth (i.e. from the depth of
       //       the actual root logical volume)
-      const G4VPhysicalVolume* pVol = fWDTNavigator.LocateGlobalPointAndSetup(r0+wdtStepLength*v0, nullptr, true, true);
+      const G4VPhysicalVolume* pVol = linearNavigator->LocateGlobalPointAndSetup(r0+wdtStepLength*v0, nullptr, true, true);
       const G4LogicalVolume*   lVol = pVol->GetLogicalVolume();
       const G4Material* postStepMat = lVol->GetMaterial();
       // Check if the real material of the post-step point is the WDT one?
@@ -260,10 +258,9 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   postStepPoint.SetPosition(r0+wdtStepLength*v0);
   G4TouchableHandle touchableHandle     = aTrack.GetTouchableHandle();
   G4TouchableHandle nextTouchableHandle = aTrack.GetNextTouchableHandle();
-  auto* linearNavigator = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
   if (!isWDTReachedBoundary) {
-    // Hit interaction
-    linearNavigator->LocateGlobalPointAndSetup(postStepPoint.GetPosition(), &postStepPoint.GetMomentumDirection(), /*relativeSearch=*/true, /*ignoreDirection=*/true);
+    // Hit interaction: the navigator has already located the particle correctly,
+    // create touchable to update the step and track accordingly
     touchableHandle = linearNavigator->CreateTouchableHistory();
 
     // Set pre/post step point location and touchable to be the same (as we
@@ -337,7 +334,9 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
   // Synchronize the track to be ready for interaction.
   aStep.UpdateTrack();
 
-  return isWDTReachedBoundary;
+  // Return whether one needs to continue with Woodcock tracking
+  // (true if physics interaction is hit, false if boundary volume was hit)
+  return !isWDTReachedBoundary;
 }
 
 G4bool G4HepEmWoodcockHelper::IsWDTRegion(G4int regionId) const {

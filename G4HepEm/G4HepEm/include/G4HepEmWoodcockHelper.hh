@@ -34,7 +34,7 @@ public:
    ~G4HepEmWoodcockHelper();
 
     // Returns true only if at least one Woodcock tracking region has been found
-    G4bool Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData, G4VPhysicalVolume* worldVolume);
+    G4bool Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData);
 
 
     void     SetKineticEnergyLimit(G4double val) { fWDTKineticEnergyLimit = val; }
@@ -48,8 +48,8 @@ public:
     G4bool  FindWDTVolume(int regionID, const G4Track& aTrack);
 
     // Keeps "Woodock" tracking inside an envelop, found and set up in `FindWDTVolume`,
-    // till the photon hits this volume boundary (returns `true`) or
-    // reaches a point of interaction (returns `false`). In case of a physics interaction,
+    // till the photon hits this volume boundary (returns `false`) or
+    // reaches a point of interaction (returns `true`). In case of a physics interaction,
     // all relevant pre-step point information is set to their post-step point value
     // (as several volume boundaries might have been crossed between the pre- and
     // post step points and interaction can only happen at the post step point if any).
@@ -109,9 +109,6 @@ private:
    G4int                 fWDTHepEmIMC;
    G4AffineTransform     fWDTTransform;  // transformation of the actual phy. vol.
    G4TouchableHandle     fWDTTouchableHandle; // touchableHandle of the actual phy. vol.
-
-   // A navigator used to locate points (not to mess with the navigator for tarcking)
-   G4Navigator           fWDTNavigator;
 
    // A kinetic energy limit below which Woodcock tracking is turned off.
    G4double              fWDTKineticEnergyLimit;
