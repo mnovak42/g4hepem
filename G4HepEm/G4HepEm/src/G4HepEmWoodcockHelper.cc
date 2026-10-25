@@ -275,7 +275,9 @@ G4bool G4HepEmWoodcockHelper::KeepTracking(const struct G4HepEmData* theHepEmDat
     // next touchable needs to be located with point on boundary + direction
 
     G4VPhysicalVolume* newTopVolume =
-      linearNavigator->ResetHierarchyAndLocate(postStepPoint.GetPosition(), postStepPoint.GetMomentumDirection(), *fWDTTouchableHandle());
+      linearNavigator->ResetHierarchyAndLocate(
+        postStepPoint.GetPosition(), postStepPoint.GetMomentumDirection(),
+        *static_cast<const G4TouchableHistory*>(fWDTTouchableHandle()));
     auto* destinationTouchable = linearNavigator->CreateTouchableHistory();
 
     // Check if the track is going out or outside of the world volume then update touchable and kill.
