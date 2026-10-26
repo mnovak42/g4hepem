@@ -216,8 +216,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
       }
       fWDTHelper = new G4HepEmWoodcockHelper;
       fWDTHelper->SetKineticEnergyLimit(fConfig->GetWDTEnergyLimit());
-      G4VPhysicalVolume* worldVolume = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume();
-      G4bool hasBeenFound = fWDTHelper->Initialize(wdtRegionNames, fRunManager->GetHepEmData()->fTheMatCutData, worldVolume);
+      G4bool hasBeenFound = fWDTHelper->Initialize(wdtRegionNames, fRunManager->GetHepEmData()->fTheMatCutData);
       if (!hasBeenFound) {
         delete fWDTHelper;
         fWDTHelper = nullptr;
@@ -1019,17 +1018,11 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
 
     int g4IMC = MCC->GetIndex();
 
-    // Init the value of the physical step length and the flag to indicate if
+    // Init the flag to indicate if
     // number of interaction length left should be updated in case of boundary
     // limited step (will be turned off in case WDT step).
-    G4double physicalStep = 0;
     G4bool updateNumIALeft = true;
 
-    // Init the acumulated WDT step length and the flag that indicates if boundary
-    // has been reached at the end of WDT (interaction otherwise).
-    // NOTE: these stay as initialised if no WDT i.e. when `isWDTOn = false`
-    G4double wdtStepLength = 0.0;
-    G4bool isWDTReachedBoundary = false;
     if (!isWDTOn) {
       // Normal, i.e. NOT Woodcock tracking:
       // Query step lengths from pyhsics
@@ -1037,79 +1030,49 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       thePrimaryTrack->SetMCIndex(hepEmIMC);
 
       G4HepEmGammaManager::HowFar(theHepEmData, theHepEmPars, theTLData);
-      physicalStep = thePrimaryTrack->GetGStepLength();
+      const G4double physicalStep = thePrimaryTrack->GetGStepLength();
+
+      // Query step lengths from geometry, decide on limit.
+      const G4double finalStep = navigation.MakeStep(*aTrack, step, physicalStep);
+      thePrimaryTrack->SetGStepLength(finalStep);
+
+      step.SetStepLength(finalStep);
+   
+      step.UpdateTrack();
+
+      navigation.FinishStep(*aTrack, step);
+
     } else {
       // Keep "Woodock" tracking of the gamma till either it gets to a point
-      // where physics interaction happens or gets close to the boundary of the
-      // Woodock tracking volume envelop. All pre-step point information is set
-      // to be the same as the post-step point one (as we might cross multiple
-      // volume boundaries).
+      // where physics interaction happens or hits the boundary of the
+      // Woodock tracking volume enveloppe. In case of an physics interaction,
+      // all pre-step point information is set to be the same as the 
+      // post-step point one (as we might cross multiple volume boundaries).
+      // If the WDT volume envelope is hit, the pre-step point is set to the envelope volume,
+      // the post-step point to the newly relocated volume
+      // The track and step are fully updated
       // (NOTE: `isWDTOn` can be `true` only if `fWDTHelper != nulltr`!)
-      isWDTReachedBoundary = fWDTHelper->KeepTracking(theHepEmData, theGammaTrack, *aTrack);
-      wdtStepLength = thePrimaryTrack->GetGStepLength();
+      isWDTOn = fWDTHelper->KeepTracking(theHepEmData, theGammaTrack, *aTrack, step);
 
       // Set the logical volume and g4 couple used later ()
       lvol = aTrack->GetTouchable()->GetVolume()->GetLogicalVolume();
       MCC  = lvol->GetMaterialCutsCouple();
       g4IMC = MCC->GetIndex();
 
-      // Update the track to be ready for the zero/small step to either interact
-      // or to get to the volume boundary.
-      step.UpdateTrack();
-
       // After Woodock tracking: interacts or about to reach the volume boundary
       // In both cases: reset the number of interaction length left to trigger
       // resampling in the next call to `HowFar` and prevent its update in this step.
       updateNumIALeft = false;
       thePrimaryTrack->SetNumIALeft(-1, 0);
-      if (isWDTReachedBoundary) { // WDT got close to the boundary of the envelop volume
-        physicalStep = 10.0;  // large enough to reach the boundary (>> 1E-3)
-        isWDTOn = false;      // turn it off: triggers finding the WDT branch in the next step
-      } // else: WDT reached an interaction point (so zero additional step)
+
+      // The track and the step always have the WDT step length 
+      // However, `thePrimaryTrack` has only the normal
+      // one or zero which results in: the number of interaction length left is
+      // updated only by using the normal, i.e. non-WDT related, step length (i.e.
+      // only in non-WDT step and only when boundary limits the step (when
+      // invoking `UpdateNumIALeft`).
+      thePrimaryTrack->SetGStepLength(0.0);
     }
-
-    // Query step lengths from geometry, decide on limit.
-    G4double geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
-
-    bool geometryLimitedStep = geometryStep < physicalStep;
-    G4double finalStep = geometryLimitedStep ? geometryStep : physicalStep;
-
-    // The track and the step always have the total, i.e. WDT plus normal (if any)
-    // step lengths (see below). However, `thePrimaryTrack` has only the normal
-    // one or zero which results in: the number of interaction length left is
-    // updated only by using the normal, i.e. non-WDT related, step length (i.e.
-    // only in non-WDT step and only when boundary limits the step (when
-    // invoking `UpdateNumIALeft`).
-    const G4double normalStepLength = updateNumIALeft ? finalStep : 0.0;
-    thePrimaryTrack->SetGStepLength(normalStepLength);
-
-    // If WDT reached the boundary then expecting a geometry limited step. If
-    // this is not the case then "overshooting" happend: i.e. got logically
-    // outside of the WDT volume (e.g. got within tolerance to boundary).
-    // So just keep continue with a normal step already outside in that case.
-    if (isWDTReachedBoundary && !geometryLimitedStep) {
-      // Update the number of interaction legth left but using only the post
-      // WDT volume step length
-      G4HepEmGammaManager::HowFar(theHepEmData, theHepEmPars, theTLData);
-      physicalStep = thePrimaryTrack->GetGStepLength();
-      geometryStep = navigation.MakeStep(*aTrack, step, physicalStep);
-      geometryLimitedStep = geometryStep < physicalStep;
-      finalStep = geometryLimitedStep ? geometryStep : physicalStep;
-
-      // This is a normal step so `finalStep` needs to be used to update the
-      // number of interacion length left (only if boundary limited the step)
-      updateNumIALeft = true;
-      thePrimaryTrack->SetGStepLength(finalStep);
-    }
-
-    // The track and the step always have the total, i.e. WDT plus normal (if any)
-    // step lengths but `thePrimaryTrack` has only the normal one or zero (see above).
-    step.SetStepLength(finalStep+wdtStepLength);
-    aTrack->SetStepLength(finalStep+wdtStepLength);
-
-    step.UpdateTrack();
-
-    navigation.FinishStep(*aTrack, step);
 
     // Check if the track left the world.
     if (aTrack->GetNextVolume() == nullptr) {
