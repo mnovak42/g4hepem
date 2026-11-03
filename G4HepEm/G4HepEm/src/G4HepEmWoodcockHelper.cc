@@ -21,6 +21,8 @@
 
 #include "G4HepEmGammaManager.hh"
 
+#include <algorithm>
+
 G4HepEmWoodcockHelper::G4HepEmWoodcockHelper()
 : fWDTSolid(nullptr),
   fWDTCouple(nullptr),
@@ -34,7 +36,7 @@ G4HepEmWoodcockHelper::~G4HepEmWoodcockHelper() {
 }
 
 
-G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData) {
+G4bool G4HepEmWoodcockHelper::Initialize(const std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData) {
   // make sure that all data are cleared
   ClearData();
   // NOTE: I will alway know that a given region is Woodcock region or not by
@@ -67,10 +69,10 @@ G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionName
         // std::cout << " The [ " << ilv << " ]-th root logical volume is "
         //          << rootLogVol->GetName() << std::endl;
         G4double maxDensity = -1.0;
-        G4Material*  wdtMat = nullptr;
+        const G4MaterialCutsCouple*  wdtCouple = nullptr;
         // find the material with maximum density in this root logical volume branch
-        FindWDTMaterial(rootLogVol, maxDensity, &wdtMat);
-        G4MaterialCutsCouple* wdtCouple = wdtRegion->FindCouple(wdtMat);
+        std::set<G4int> subRegionIDs;
+        FindWDTMaterial(rootLogVol, maxDensity, &wdtCouple, wdtRegionNames, wdtRegion, subRegionIDs);
         // std::cout << " The heaviest material in this branch is " << wdtMat->GetName()
         //          << " wdtCouple indx = " << wdtCouple->GetIndex()
         //          << " wdTMat name = " << wdtMat->GetName()
@@ -78,8 +80,21 @@ G4bool G4HepEmWoodcockHelper::Initialize(std::vector<std::string>& wdtRegionName
         // Create a `WDTDataPerRootLogVol`structure for this root logical volume
         // set all required fields and store in the map indexed(key) by the log. vol. ID
         const int hepEmIMC = hepEmMatCutData->fG4MCIndexToHepEmMCIndex[wdtCouple->GetIndex()];
+        const G4int rootID = rootLogVol->GetInstanceID();
         WDTDataPerRootLogVol* wdtDataRootLogVol = new WDTDataPerRootLogVol(rootLogVol->GetSolid(), wdtCouple, hepEmIMC);
-        wdtDataRegion->fWDTDataRegion[rootLogVol->GetInstanceID()] = wdtDataRootLogVol;
+        wdtDataRegion->fWDTDataRegion[rootID] = wdtDataRootLogVol;
+
+        // Loop through subRegions within this WDT envelope volume
+        for (G4int subRegionID : subRegionIDs) {
+          // Get the data for the subregion. If it does not yet exist, create it
+          auto& subRegionData = fWDTData[subRegionID];
+          if (subRegionData == nullptr) {
+            subRegionData = new WDTDataForARegion();
+          }
+          // Assign the same root WDT volume to the subregion
+          subRegionData->fWDTDataRegion[rootID] = new WDTDataPerRootLogVol(rootLogVol->GetSolid(), wdtCouple, hepEmIMC);
+        }
+
         ++itrLV;
       }
     } else {
@@ -112,7 +127,11 @@ G4bool G4HepEmWoodcockHelper::FindWDTVolume(int regionID, const G4Track& aTrack)
     // moving one level up in the geometry tree
     --currentDepth;
   };
-  // Don't do WDT if the volume was not found
+  // Don't do WDT if the volume was not found.
+  // Note: this could happen if region B is a sub-region of the WDT region A but not
+  // fully contained in A. Then, region B is also set for Woodcock tracking,
+  // but the parts of region B outside of A would not find a root volume
+  // and fall back to normal tracking.
   if (currentDepth < 0) {
     return false;
   }
@@ -381,26 +400,36 @@ void G4HepEmWoodcockHelper::ClearData() {
 }
 
 
-void G4HepEmWoodcockHelper::FindWDTMaterial(G4LogicalVolume* lvol, double& maxDensity, G4Material** maxDensityMat) {
+void G4HepEmWoodcockHelper::FindWDTMaterial(G4LogicalVolume* lvol, double& maxDensity, const G4MaterialCutsCouple** maxDensityCouple,
+                                            const std::vector<std::string>& wdtRegionNames, const G4Region* rootWDTRegion, std::set<G4int>& subRegionIDs) {
   G4Material*  mat = lvol->GetMaterial();
   G4double density = mat->GetDensity();
   if (density > maxDensity) {
     maxDensity = density;
-    *maxDensityMat = mat;
+    *maxDensityCouple = lvol->GetMaterialCutsCouple();
   }
   // recurse
   int numDaughters = lvol->GetNoDaughters();
   for (int id=0; id<numDaughters; ++id) {
       G4LogicalVolume* lv = lvol->GetDaughter(id)->GetLogicalVolume();
-      // detect sub-region and stop if found: Woodcock tracking can be used only in leaf regions
-      if (lvol->GetRegion() != lv->GetRegion()) {
+      // detect sub-region and stop if the sub-region is itself flagged as WDT region:
+      // The sub-region will automatically be flagged for Woodcock tracking, flagging it additionally,
+      // would confuse the root volume search, as the sub-region uses the parent regions root volume
+      if (lv->GetRegion() != rootWDTRegion &&
+          std::find(wdtRegionNames.begin(), wdtRegionNames.end(), lv->GetRegion()->GetName()) != wdtRegionNames.end() ) {
+
         std::cerr << "\n *** G4HepEmWoodcockHelper::FindWDTMaterial \n"
-                  << "     Woodcock tracking cannot be applied in this region: " << lvol->GetRegion()->GetName() << "\n"
-                  << "     A sub-region has been found: " <<  lv->GetRegion()->GetName() << "\n"
-                  << "     Note: Woodcock tracking requires leaf region!\n"
+                  << "     Woodcock tracking cannot be applied in this region: " << lv->GetRegion()->GetName() << "\n"
+                  << "     It is a sub-region to this Woodcock tracking region: " <<  rootWDTRegion->GetName() << "\n"
+                  << "     Sub-regions of Woodcock tracking regions are using Woodcock tracking automatically!\n"
+                  << "     Additionally configuring the sub-regions is not allowed, as it would confuse the WDT boundary volume search\n"
                   << std::endl;
         exit(1);
       }
-      FindWDTMaterial(lv, maxDensity, maxDensityMat);
+      // Add new subregion
+      if (lv->GetRegion() != rootWDTRegion) {
+        subRegionIDs.insert(lv->GetRegion()->GetInstanceID());
+      }
+      FindWDTMaterial(lv, maxDensity, maxDensityCouple, wdtRegionNames, rootWDTRegion, subRegionIDs);
   }
 }

@@ -44,10 +44,14 @@ public:
   void Dump();
 
   // Activate/deactivate Woodcock-tracking of photons in a given detector region
-  // NOTE: this must be done before the initialissation of the run, i.e. right
+  // NOTE: this must be done before the initialisation of the run, i.e. right
   //       after the construction of the `G4HepEmTrackinManager` !!!
+  // In case the selected region has sub-regions, those also use Woodcock tracking,
+  // at least in the part that is within the selected parent region.
+  // Additionally selecting these sub-regions is forbidden, as it would mess up the
+  // root bounding volume configuration.
   void SetWoodcockTrackingRegion(const std::string& regionName, G4bool val=true);
-  std::vector<std::string>& GetWoodcockTrackingRegionNames() {
+  const std::vector<std::string>& GetWoodcockTrackingRegionNames() {
     return fWDTRegionNames;
   }
 

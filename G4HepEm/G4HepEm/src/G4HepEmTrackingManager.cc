@@ -208,7 +208,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     // Find the fast simulation manager process for gamma (if has been attached)
     InitFastSimRelated(particleID);
     // Init Woodcock tracking data (if any, keep `fWDTHelper` nulltr otherwise)
-    std::vector<std::string>& wdtRegionNames = fConfig->GetWoodcockTrackingRegionNames();
+    const std::vector<std::string>& wdtRegionNames = fConfig->GetWoodcockTrackingRegionNames();
     const int numWDTRegion = wdtRegionNames.size();
     if (numWDTRegion > 0) {
       if (fWDTHelper != nullptr) {

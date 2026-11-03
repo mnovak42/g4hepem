@@ -256,7 +256,7 @@ void G4HepEmConfig::Dump() {
 
   std::vector<G4String> names = {" FinalRange (mm)", " DRoverRange", " Energy loss fluctuation",
         " MSC Range factor",  " MSC Safety factor", " MSC minimal step limit",
-        " Multiple steps in MSC+Trans.", " Woodcock-tracking", " Apply cuts"};
+        " Multiple steps in MSC+Trans.", " Woodcock-tracking (explicit)", " Apply cuts"};
   const int numParams  = names.size();
 
   for (int ip=0; ip<numParams; ++ip) {

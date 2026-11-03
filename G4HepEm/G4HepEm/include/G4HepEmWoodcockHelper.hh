@@ -11,12 +11,14 @@ class G4LogicalVolume;
 class G4VPhysicalVolume;
 class G4Track;
 class G4Step;
+class G4Region;
 
 struct G4HepEmData;
 struct G4HepEmMatCutData;
 class G4HepEmGammaTrack;
 
 #include <map>
+#include <set>
 
 /**
  * @file    G4HepEmWoodcockHelper.hh
@@ -34,7 +36,7 @@ public:
    ~G4HepEmWoodcockHelper();
 
     // Returns true only if at least one Woodcock tracking region has been found
-    G4bool Initialize(std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData);
+    G4bool Initialize(const std::vector<std::string>& wdtRegionNames, struct G4HepEmMatCutData* hepEmMatCutData);
 
 
     void     SetKineticEnergyLimit(G4double val) { fWDTKineticEnergyLimit = val; }
@@ -42,7 +44,7 @@ public:
 
 
     // Checks if this step will be done in a WDT region with high enough kinetic energy.
-    // Finds the root volume of the region in chich this step will be done and
+    // Finds the root volume of the region in which this step will be done and
     // sets the following fileds: fWDTTransform, fWDTHepEmIMC, fWDTSolid, fWDTCouple
     // Returns `false` is the step is not in a WDT region or the energy is too low.
     G4bool  FindWDTVolume(int regionID, const G4Track& aTrack);
@@ -68,7 +70,8 @@ private:
 
    void ClearData();
 
-   void FindWDTMaterial(G4LogicalVolume* lvol, double& maxDensity, G4Material** maxDensityMat);
+   void FindWDTMaterial(G4LogicalVolume* lvol, double& maxDensity, const G4MaterialCutsCouple** maxDensityCouple,
+                        const std::vector<std::string>& wdtRegionNames, const G4Region* rootWDTRegion, std::set<G4int>& subRegionIDs);
 
 
    // One `WDTDataPerRootLogVol` data is structured for each root logical volume
@@ -78,16 +81,18 @@ private:
    struct WDTDataPerRootLogVol {
      WDTDataPerRootLogVol()
      : fSolid(nullptr), fG4Couple(nullptr), fG4CoupleHepEmIndex(-1) {}
-     WDTDataPerRootLogVol(G4VSolid* solid, G4MaterialCutsCouple* couple, G4int hepEmIMC)
+     WDTDataPerRootLogVol(G4VSolid* solid, const G4MaterialCutsCouple* couple, G4int hepEmIMC)
      : fSolid(solid),   fG4Couple(couple),  fG4CoupleHepEmIndex(hepEmIMC) {}
-     G4VSolid*              fSolid;              // solid of the root logical vol.
-     G4MaterialCutsCouple*  fG4Couple;           // couple with the heaviest material
-     G4int                  fG4CoupleHepEmIndex; // G4HepEm mat-cut index of that
+     G4VSolid*                    fSolid;              // solid of the root logical vol.
+     const G4MaterialCutsCouple*  fG4Couple;           // couple with the heaviest material
+     G4int                        fG4CoupleHepEmIndex; // G4HepEm mat-cut index of that
    };
 
    // All `WDTDataPerRootLogVol` that belongs to one Woodcock tracking region, i.e.
    // as many as root logical volume of that region. Indexed by the ID of the
    // root logical volume (i.e. that's the key).
+   // This also includeds sub-regions of selected Woodcock tracking regions,
+   // which still point to the root logical volume of their parent region.
    struct WDTDataForARegion {
      std::map<G4int, WDTDataPerRootLogVol*> fWDTDataRegion;
    };
@@ -104,11 +109,11 @@ private:
    // (stored for all root logical volumes of all Woodcock tracking regions)
    // inside the `FindRootVolume` method.
    // NOTE: none of these objects are owned
-   G4VSolid*             fWDTSolid;
-   G4MaterialCutsCouple* fWDTCouple;
-   G4int                 fWDTHepEmIMC;
-   G4AffineTransform     fWDTTransform;  // transformation of the actual phy. vol.
-   G4TouchableHandle     fWDTTouchableHandle; // touchableHandle of the actual phy. vol.
+   G4VSolid*                   fWDTSolid;
+   const G4MaterialCutsCouple* fWDTCouple;
+   G4int                       fWDTHepEmIMC;
+   G4AffineTransform           fWDTTransform;  // transformation of the actual phy. vol.
+   G4TouchableHandle           fWDTTouchableHandle; // touchableHandle of the actual phy. vol.
 
    // A kinetic energy limit below which Woodcock tracking is turned off.
    G4double              fWDTKineticEnergyLimit;
