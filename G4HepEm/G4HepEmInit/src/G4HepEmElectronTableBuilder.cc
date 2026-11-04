@@ -642,9 +642,14 @@ void BuildElementSelector(double minEKin, double maxEKin, int numBinsPerDecade, 
   data[indxCont++]   = numElem;
   data[indxCont++]   = logMinEKin;
   data[indxCont++]   = invLEDelta;
+  // get the g4 material fro `SetupForMaterial`
+  const G4Material* g4Mat = (*G4Material::GetMaterialTable())[matData.fG4MatIndex];
   // loop over the kinetic energy grid
   for (int ie=0; ie<numEKins; ++ie) {
     double      ekin = egridData[ie];
+    // the models might need the material to be set (e.g. material dependent correction) to give
+    // atomic cross sections that are correct in absolute units (though we normalise them anyway)
+    emModel->SetupForMaterial(g4PartDef, g4Mat, ekin);
     data[indxCont++] = ekin;
     int          ist = indxCont;
     double       sum = 0.0;
