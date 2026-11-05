@@ -157,7 +157,7 @@ void G4HepEmTrackingManager::RebindG4RandomEngine() {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4bool G4HepEmTrackingManager::IsWDTRegion(G4int regionId) const { 
+G4bool G4HepEmTrackingManager::IsWDTRegion(G4int regionId) const {
   return (fWDTHelper) ? fWDTHelper->IsWDTRegion(regionId) : false;
 }
 
@@ -165,7 +165,7 @@ G4double G4HepEmTrackingManager::GetWDTKineticEnergyLimit() const {
   return (fWDTHelper) ? fWDTHelper->GetKineticEnergyLimit() : 0.0;
 }
 
-G4int G4HepEmTrackingManager::GetWDTCoupleHepEmIndex(G4int regionId, G4int logicalVolumeId) const { 
+G4int G4HepEmTrackingManager::GetWDTCoupleHepEmIndex(G4int regionId, G4int logicalVolumeId) const {
   return (fWDTHelper) ? fWDTHelper->GetWDTCoupleHepEmIndex(regionId, logicalVolumeId) : -1;
 }
 
@@ -312,7 +312,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
 
-  // Start of tracking: set vertex information and inform user and processes. 
+  // Start of tracking: set vertex information and inform user and processes.
   if (aTrack->GetCurrentStepNumber() == 0) {
     // Set vertex information: in normal tracking this is done in
     //  `G4TrackingManager::ProcessOneTrack` when calling
@@ -321,7 +321,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
     aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
     aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
-  
+
     // Inform user and processes.
     if(userTrackingAction) {
       userTrackingAction->PreUserTrackingAction(aTrack);
@@ -614,6 +614,10 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
           // Also reduce the range accordingly.
           const double range = theElTrack->GetRange() - pStepLength;
           theElTrack->SetRange(range);
+
+          // Ensure an up-to-date safety (used by the MSC step limit in the next step)
+          const double postSafety = fSafetyHelper->ComputeSafety(postStepPoint.GetPosition());
+          thePrimaryTrack->SetSafety(postSafety);
         }
 
       }
@@ -879,7 +883,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
   step.InitializeStep(aTrack);
   aTrack->SetStep(&step);
 
-  // Start of tracking: set vertex information and inform user and processes. 
+  // Start of tracking: set vertex information and inform user and processes.
   if (aTrack->GetCurrentStepNumber() == 0) {
     // Set vertex information: in normal tracking this is done in
     //  `G4TrackingManager::ProcessOneTrack` when calling
@@ -888,7 +892,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
     aTrack->SetVertexMomentumDirection(aTrack->GetMomentumDirection());
     aTrack->SetVertexKineticEnergy(aTrack->GetKineticEnergy());
     aTrack->SetLogicalVolumeAtVertex(aTrack->GetVolume()->GetLogicalVolume());
-  
+
     // Inform user and processes.
     if(userTrackingAction) {
       userTrackingAction->PreUserTrackingAction(aTrack);
@@ -1037,7 +1041,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       thePrimaryTrack->SetGStepLength(finalStep);
 
       step.SetStepLength(finalStep);
-   
+
       step.UpdateTrack();
 
       navigation.FinishStep(*aTrack, step);
@@ -1046,7 +1050,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       // Keep "Woodock" tracking of the gamma till either it gets to a point
       // where physics interaction happens or hits the boundary of the
       // Woodock tracking volume enveloppe. In case of an physics interaction,
-      // all pre-step point information is set to be the same as the 
+      // all pre-step point information is set to be the same as the
       // post-step point one (as we might cross multiple volume boundaries).
       // If the WDT volume envelope is hit, the pre-step point is set to the envelope volume,
       // the post-step point to the newly relocated volume
@@ -1065,7 +1069,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       updateNumIALeft = false;
       thePrimaryTrack->SetNumIALeft(-1, 0);
 
-      // The track and the step always have the WDT step length 
+      // The track and the step always have the WDT step length
       // However, `thePrimaryTrack` has only the normal
       // one or zero which results in: the number of interaction length left is
       // updated only by using the normal, i.e. non-WDT related, step length (i.e.
