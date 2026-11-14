@@ -1,0 +1,73 @@
+# Run the ctest tests with their CUDA (device) halves on a simulated NVIDIA H100.
+#
+# cpu_build.yml configures without G4HepEm_CUDA_BUILD, so the .cu parts of the
+# tests (which compare device lookups against the host values) never run. This
+# job builds with CUDA and runs ctest under PantheonSim
+# (https://github.com/pantheongpu/pantheonsim), a functional GPU simulator.
+name: gpu-sim
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'G4HepEm/**'
+      - 'testing/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/gpu-sim.yml'
+
+concurrency:
+  group: gpu-sim-${{ github.event.number || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cuda-h100:
+    name: cuda-13.0-simulated-h100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up the simulated H100 and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@a1b9d4237411f9b2b0e0bb895b4d83377f336a7b # v0.1.9
+        with:
+          gpu: nvidia/h100
+          cuda-toolkit: "13.0"
+
+      - name: Install dependencies
+        run: sudo apt-get install -y --no-install-recommends libxerces-c-dev
+
+      - name: Install Geant4
+        run: |
+          wget -nv https://github.com/hahnjo/geant4-actions-binaries/releases/download/geant4-v11.2.2/geant4-v11.2.2-binaries.tar.gz
+          tar xf geant4-v11.2.2-binaries.tar.gz -C $HOME
+
+      # The simulator runs PTX (90-virtual embeds PTX only) and needs a shared
+      # CUDA runtime; the test executables contain .cu files, so CMake would
+      # otherwise default them to the static runtime.
+      - name: Configure
+        run: |
+          source ~/Geant4/bin/geant4.sh
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON \
+            -DG4HepEm_CUDA_BUILD=ON \
+            -DCMAKE_CUDA_ARCHITECTURES=90-virtual \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared
+
+      - name: Build
+        run: |
+          source ~/Geant4/bin/geant4.sh
+          vgpu run --preload cmake --build build -j3
+
+      - name: Test on the simulated H100
+        run: |
+          source ~/Geant4/bin/geant4.sh
+          cd build
+          vgpu run ctest --verbose --output-on-failure
