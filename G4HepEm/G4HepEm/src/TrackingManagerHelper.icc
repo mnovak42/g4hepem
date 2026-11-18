@@ -489,6 +489,15 @@ void TrackingManagerHelper::ChargedNavigation::FinishStep(G4Track& track,
 
   postStepPoint.SetTouchableHandle(touchableHandle);
   track.SetNextTouchableHandle(touchableHandle);
+  // Set the post-step point material, cuts couple and sensitive detector of the
+  // (new) volume as G4Transportation does.
+  if (const G4VPhysicalVolume* postVolume = touchableHandle->GetVolume())
+  {
+    const G4LogicalVolume* postLogVolume = postVolume->GetLogicalVolume();
+    postStepPoint.SetMaterial(postLogVolume->GetMaterial());
+    postStepPoint.SetMaterialCutsCouple(postLogVolume->GetMaterialCutsCouple());
+    postStepPoint.SetSensitiveDetector(postLogVolume->GetSensitiveDetector());
+  }
 }
 
 template <typename PhysicsImpl>
@@ -607,6 +616,15 @@ void TrackingManagerHelper::NeutralNavigation::FinishStep(G4Track& track,
 
   postStepPoint.SetTouchableHandle(touchableHandle);
   track.SetNextTouchableHandle(touchableHandle);
+  // Set the post-step point material, cuts couple and sensitive detector of the
+  // (new) volume as G4Transportation does.
+  if (const G4VPhysicalVolume* postVolume = touchableHandle->GetVolume())
+  {
+    const G4LogicalVolume* postLogVolume = postVolume->GetLogicalVolume();
+    postStepPoint.SetMaterial(postLogVolume->GetMaterial());
+    postStepPoint.SetMaterialCutsCouple(postLogVolume->GetMaterialCutsCouple());
+    postStepPoint.SetSensitiveDetector(postLogVolume->GetSensitiveDetector());
+  }
 }
 
 template <typename PhysicsImpl>
