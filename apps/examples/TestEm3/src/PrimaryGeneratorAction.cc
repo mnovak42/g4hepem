@@ -35,7 +35,6 @@
 
 #include "PrimaryGeneratorMessenger.hh"
 #include "DetectorConstruction.hh"
-#include "HistoManager.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleGun.hh"

@@ -27,7 +27,6 @@ set(sources
   src/EmAcceptance.cc
   src/EventAction.cc
   src/G4HepEmProcess.cc
-  src/HistoManager.cc
   src/PhysicsList.cc
   src/PhysicsListMessenger.cc
   src/PhysListEmStandard.cc

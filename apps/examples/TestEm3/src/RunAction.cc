@@ -36,7 +36,6 @@
 #include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
 #include "RunActionMessenger.hh"
-#include "HistoManager.hh"
 #include "Run.hh"
 #include "G4Timer.hh"
 #include "G4RunManager.hh"
@@ -47,10 +46,9 @@
 
 RunAction::RunAction(DetectorConstruction* det, PrimaryGeneratorAction* prim)
 :G4UserRunAction(), fIsPerformance(false), fDetector(det), fPrimary(prim), fRun(0), fRunMessenger(0),
- fHistoManager(0), fTimer(0)
+ fTimer(0)
 {
   fRunMessenger = new RunActionMessenger(this);
-  fHistoManager = new HistoManager();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -94,14 +92,6 @@ void RunAction::BeginOfRunAction(const G4Run*)
     G4double energy = fPrimary->GetParticleGun()->GetParticleEnergy();
     fRun->SetPrimary(particle, energy);
   }
-
-  //histograms
-  //
-  G4AnalysisManager* analysis = G4AnalysisManager::Instance();
-  if (analysis->IsActive()) analysis->OpenFile();
-
-  // save Rndm status and open the timer
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -121,15 +111,6 @@ void RunAction::EndOfRunAction(const G4Run*)
       return;
     }
   }
-  //save histograms
-  G4AnalysisManager* analysis = G4AnalysisManager::Instance();
-  if (analysis->IsActive()) {
-    analysis->Write();
-    analysis->CloseFile();
-  }
-
-  // show Rndm status
-  //  if (isMaster)  G4Random::showEngineStatus();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

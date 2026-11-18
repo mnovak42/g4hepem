@@ -43,7 +43,6 @@ class Run;
 class DetectorConstruction;
 class PrimaryGeneratorAction;
 class RunActionMessenger;
-class HistoManager;
 class G4Timer;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -71,7 +70,6 @@ private:
   PrimaryGeneratorAction* fPrimary;
   Run*                    fRun;
   RunActionMessenger*     fRunMessenger;
-  HistoManager*           fHistoManager;
   G4Timer*                fTimer;
 };
 

@@ -34,7 +34,6 @@
 #include "EventAction.hh"
 
 #include "Run.hh"
-#include "HistoManager.hh"
 
 #include "G4RunManager.hh"
 #include "G4Event.hh"
@@ -71,8 +70,6 @@ void EventAction::EndOfEventAction(const G4Event*)
              
   for (G4int k=1; k<=fDetector->GetNbOfAbsor(); k++) {
      run->FillPerEvent(k,fEnergyDeposit[k],fTrackLengthCh[k]);
-     if (fEnergyDeposit[k] > 0.)
-             G4AnalysisManager::Instance()->FillH1(k, fEnergyDeposit[k]);
   }
 }
 

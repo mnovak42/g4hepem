@@ -36,7 +36,6 @@
 #include "DetectorConstruction.hh"
 #include "Run.hh"
 #include "EventAction.hh"
-#include "HistoManager.hh"
 
 #include "G4Positron.hh"
 #include "G4RunManager.hh"
@@ -95,11 +94,6 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   // sum up per event
   fEventAct->SumEnergy(absorNum,edep,stepl);
   
-  //longitudinal profile of edep per absorber
-  if (edep>0.) {
-    G4AnalysisManager::Instance()->FillH1(kMaxAbsor+absorNum, 
-                                          G4double(layerNum+1), edep);
-  }
   //energy flow
   //
   // unique identificator of layer+absorber
