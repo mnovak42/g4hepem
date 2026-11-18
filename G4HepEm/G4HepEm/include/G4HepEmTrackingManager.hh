@@ -13,9 +13,11 @@ class G4SafetyHelper;
 class G4Step;
 class G4VProcess;
 class G4VParticleChange;
+class G4VTrajectory;
 class G4Region;
 class G4HepEmWoodcockHelper;
 class G4HepEmConfig;
+class G4Cerenkov;
 
 #include <vector>
 
@@ -109,7 +111,26 @@ private:
                             const G4VProcess* aG4CreatorProcess, int aG4IMC,
                             bool isApplyCuts);
 
+  // Stops the track in a zero-length step at its current position, depositing
+  // its kinetic energy (e+ annihilates at rest), and invokes the SD and the
+  // stepping actions. Used when the track is at or below the tracking cut of its
+  // region at the start of a step.
+  void StopAtTrackingCut(G4Track* aTrack, int g4IMC, bool isApplyCuts,
+                         bool isPositron, G4VTrajectory* theTrajectory);
+
   void InitNuclearProcesses(int particleID);
+
+  // Finds the step limiter process (G4StepLimiter) of e- (0) or e+ (1), if any.
+  // If attached, the e-/e+ step is limited by the G4UserLimits of the volume.
+  void InitStepLimiter(int particleID);
+
+  // Finds the Cerenkov process of e- (0) or e+ (1), if any, and builds its table.
+  void InitCerenkov(int particleID);
+
+  // The step limit of the Cerenkov process for an e-/e+ track. Computed as in
+  // G4Cerenkov but from the G4HepEm range and dE/dx (G4Cerenkov takes them from
+  // the Geant4 e-/e+ energy loss tables, which are not built).
+  double CerenkovStepLimit(const G4Track* aTrack, int hepEmIMC, bool isElectron, double logEkin);
 
   // Checks if the particles has fast simulation maanger process attached and
   // stores in the local `fFastSimProcess` array (indexed by HepEm particle ID)
@@ -154,6 +175,8 @@ private:
   std::vector<G4HepEmNoProcess *> fElectronNoProcessVector;
   std::vector<G4HepEmNoProcess *> fGammaNoProcessVector;
   G4HepEmNoProcess* fTransportNoProcess;
+  // Process set when a step is limited by the tracking cut at the step start
+  G4HepEmNoProcess* fTrackingCutNoProcess;
 
   // Pointers to the Gamma-nuclear process (if any)
   G4VProcess* fGNucProcess;
@@ -161,6 +184,12 @@ private:
   // Pointers to the Electron/Positron-nuclear processes (if any)
   G4VProcess* fENucProcess;
   G4VProcess* fPNucProcess;
+
+  // Pointers to the step limiter processes of e- and e+ (if any)
+  G4VProcess* fStepLimiterProcess[2];
+
+  // Pointers to the Cerenkov processes of e- and e+ (if any)
+  G4Cerenkov* fCerenkovProcess[2];
 
   // ATLAS XTR RELATED:
   // Fields to store ptrs to the ATLAS XTR (transition radiation) process and

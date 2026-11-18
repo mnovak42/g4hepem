@@ -42,24 +42,44 @@ void InitHepEmParameters(struct G4HepEmParameters* hepEmPars) {
   hepEmPars->fParametersPerRegion = new G4HepEmRegionParmeters[numRegions];
 
   // set default values for all regions (might be changed after this init)
-  for (std::size_t i=0; i<G4RegionStore::GetInstance()->size(); ++i) {
-    G4HepEmRegionParmeters& rDat = hepEmPars->fParametersPerRegion[i];
-    // std::cout << " [" << i << "] Regin name = " << (*G4RegionStore::GetInstance())[i]->GetName() << std::endl;
-
-    // NOTE: these values are hidden inside G4EmParameters::G4EmExtraParameters!!!
-    rDat.fFinalRange    = 1.0*CLHEP::mm;
-    rDat.fDRoverRange   = 0.2;
-    rDat.fLinELossLimit = G4EmParameters::Instance()->LinearLossLimit();
-
-    rDat.fMSCRangeFactor  = G4EmParameters::Instance()->MscRangeFactor();
-    rDat.fMSCSafetyFactor = G4EmParameters::Instance()->MscSafetyFactor();
-
-    rDat.fIsMSCMinimalStepLimit = (G4MscStepLimitType::fMinimal == G4EmParameters::Instance()->MscStepLimitType());
-
-    rDat.fIsELossFluctuation = G4EmParameters::Instance()->LossFluctuation();
-
-    rDat.fIsMultipleStepsInMSCTrans = true;
-
-    rDat.fIsApplyCuts = G4EmParameters::Instance()->ApplyCuts();
+  for (int i=0; i<numRegions; ++i) {
+    InitHepEmRegionParameters(hepEmPars, hepEmPars->fParametersPerRegion[i]);
   }
+}
+
+void InitHepEmRegionParameters(const struct G4HepEmParameters* hepEmPars, struct G4HepEmRegionParmeters& rDat) {
+  // NOTE: these values are hidden inside G4EmParameters::G4EmExtraParameters!!!
+  rDat.fFinalRange    = 1.0*CLHEP::mm;
+  rDat.fDRoverRange   = 0.2;
+  rDat.fLinELossLimit = G4EmParameters::Instance()->LinearLossLimit();
+
+  rDat.fMSCRangeFactor  = G4EmParameters::Instance()->MscRangeFactor();
+  rDat.fMSCSafetyFactor = G4EmParameters::Instance()->MscSafetyFactor();
+
+  rDat.fIsMSCMinimalStepLimit = (G4MscStepLimitType::fMinimal == G4EmParameters::Instance()->MscStepLimitType());
+
+  rDat.fIsELossFluctuation = G4EmParameters::Instance()->LossFluctuation();
+
+  rDat.fIsMultipleStepsInMSCTrans = true;
+
+  rDat.fIsApplyCuts = G4EmParameters::Instance()->ApplyCuts();
+
+  rDat.fElectronTrackingCut = hepEmPars->fElectronTrackingCut;
+  rDat.fGammaTrackingCut    = hepEmPars->fGammaTrackingCut;
+}
+
+bool ExtendHepEmRegionParameters(struct G4HepEmParameters* hepEmPars,
+                                 const struct G4HepEmRegionParmeters& defaults) {
+  const int numRegions = G4RegionStore::GetInstance()->size();
+  if (numRegions <= hepEmPars->fNumRegions) {
+    return false;
+  }
+  G4HepEmRegionParmeters* newPars = new G4HepEmRegionParmeters[numRegions];
+  for (int i=0; i<numRegions; ++i) {
+    newPars[i] = i < hepEmPars->fNumRegions ? hepEmPars->fParametersPerRegion[i] : defaults;
+  }
+  delete[] hepEmPars->fParametersPerRegion;
+  hepEmPars->fParametersPerRegion = newPars;
+  hepEmPars->fNumRegions = numRegions;
+  return true;
 }

@@ -87,7 +87,8 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
   }
   // Check if the final kinetic energy drops below the tracking cut and stop.
   const double finalEkin = theTrack->GetEKin();
-  if (finalEkin > 0.0 && finalEkin <= hepEmPars->fGammaTrackingCut) {
+  const int iregion = hepEmData->fTheMatCutData->fMatCutData[theTrack->GetMCIndex()].fG4RegionIndex;
+  if (finalEkin > 0.0 && finalEkin <= hepEmPars->fParametersPerRegion[iregion].fGammaTrackingCut) {
     theTrack->SetEKin(0.0);
     theTrack->AddEnergyDeposit(finalEkin);
   }

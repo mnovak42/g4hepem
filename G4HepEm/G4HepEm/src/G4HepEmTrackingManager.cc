@@ -43,6 +43,12 @@
 #include "G4HadronicProcess.hh"
 #include "G4ProcessType.hh"
 #include "G4TransportationProcessType.hh"
+#include "G4UserLimits.hh"
+#include "G4Cerenkov.hh"
+#include "G4MaterialPropertiesTable.hh"
+#include "G4HepEmMath.hh"
+#include "G4HepEmElectronData.hh"
+#include "G4ProcessManager.hh"
 
 #include "G4RegionStore.hh"
 
@@ -50,8 +56,33 @@
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
 
+#include "G4PhysicalConstants.hh"
+
+#include <algorithm>
+#include <cmath>
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+namespace {
+// The velocity of an e-/e+ with the given kinetic energy.
+G4double ElectronVelocity(G4double ekin) {
+  const G4double gamma = 1.0 + ekin / CLHEP::electron_mass_c2;
+  return CLHEP::c_light * std::sqrt(std::max(0.0, 1.0 - 1.0 / (gamma * gamma)));
+}
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+namespace {
+// A nuclear process is used only while it is active: the application can
+// inactivate it after the tables are built (eg. on the worker threads)
+G4bool IsActive(const G4ParticleDefinition* particleDef, G4VProcess* process) {
+  const G4ProcessManager* processManager = particleDef->GetProcessManager();
+  const G4int index = processManager->GetProcessIndex(process);
+  return index < 0 || processManager->GetProcessActivation(index);
+}
+}  // namespace
 
 G4HepEmTrackingManager::G4HepEmTrackingManager(G4int verbose) {
   fRunManager = new G4HepEmRunManager(G4Threading::IsMasterThread());
@@ -99,11 +130,20 @@ G4HepEmTrackingManager::G4HepEmTrackingManager(G4int verbose) {
   fTransportNoProcess = new G4HepEmNoProcess(
       "Transportation", G4ProcessType::fTransportation, TRANSPORTATION);
 
+  fTrackingCutNoProcess = new G4HepEmNoProcess(
+      "hepEmTrackingCut", G4ProcessType::fGeneral, USER_SPECIAL_CUTS);
+
   // Init the gamma-nuclear process
   fGNucProcess = nullptr;
   // Init the electron/positron-nuclear processes
   fENucProcess = nullptr;
   fPNucProcess = nullptr;
+  // Init the step limiter processes of e-/e+
+  fStepLimiterProcess[0] = nullptr;
+  fStepLimiterProcess[1] = nullptr;
+  // Init the Cerenkov processes of e-/e+
+  fCerenkovProcess[0] = nullptr;
+  fCerenkovProcess[1] = nullptr;
 
   // Init the fast sim mamanger process ptrs of the 3 particles
   fFastSimProcess[0] = nullptr;
@@ -174,9 +214,14 @@ G4int G4HepEmTrackingManager::GetWDTCoupleHepEmIndex(G4int regionId, G4int logic
 void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part) {
   if (&part == G4Electron::Definition()) {
     int particleID = 0;
+    fConfig->UpdateRegions();
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
     // Find the electron-nuclear process if has been attached
     InitNuclearProcesses(particleID);
+    // Find the step limiter process if has been attached
+    InitStepLimiter(particleID);
+    // Find the Cerenkov process if has been attached
+    InitCerenkov(particleID);
     // Find the fast simulation manager process for e- (if has been attached)
     InitFastSimRelated(particleID);
     // Find the ATLAS specific trans. rad. (XTR) process (if has been attached)
@@ -187,9 +232,14 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     }
   } else if (&part == G4Positron::Definition()) {
     int particleID = 1;
+    fConfig->UpdateRegions();
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
     // Find the positron-nuclear process if has been attached
     InitNuclearProcesses(particleID);
+    // Find the step limiter process if has been attached
+    InitStepLimiter(particleID);
+    // Find the Cerenkov process if has been attached
+    InitCerenkov(particleID);
     // Find the fast simulation manager process for e+ (if has been attached)
     InitFastSimRelated(particleID);
     // Report extra process configuration
@@ -202,6 +252,7 @@ void G4HepEmTrackingManager::BuildPhysicsTable(const G4ParticleDefinition &part)
     }
   } else if (&part == G4Gamma::Definition()) {
     int particleID = 2;
+    fConfig->UpdateRegions();
     fRunManager->Initialize(fRandomEngine, particleID, fConfig->GetG4HepEmParameters());
     // Find the gamma-nuclear process if has been attached
     InitNuclearProcesses(particleID);
@@ -435,6 +486,17 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     const int hepEmIMC =
         theHepEmData->fTheMatCutData->fG4MCIndexToHepEmMCIndex[g4IMC];
     thePrimaryTrack->SetMCIndex(hepEmIMC);
+
+    const int indxRegion  = lvol->GetRegion()->GetInstanceID();
+    bool  isApplyCuts = theHepEmPars->fParametersPerRegion[indxRegion].fIsApplyCuts;
+
+    // Stop here if at or below the tracking cut of this region (optional).
+    if (theHepEmPars->fIsTrackingCutAtStepStart &&
+        preStepEkin <= theHepEmPars->fParametersPerRegion[indxRegion].fElectronTrackingCut) {
+      StopAtTrackingCut(aTrack, g4IMC, isApplyCuts, !isElectron, theTrajectory);
+      continue;
+    }
+
     bool preStepOnBoundary =
         preStepPoint.GetStepStatus() == G4StepStatus::fGeomBoundary;
     thePrimaryTrack->SetOnBoundary(preStepOnBoundary);
@@ -443,8 +505,6 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
                    : fSafetyHelper->ComputeSafety(aTrack->GetPosition());
     thePrimaryTrack->SetSafety(preSafety);
 
-    const int indxRegion  = lvol->GetRegion()->GetInstanceID();
-    bool  isApplyCuts = theHepEmPars->fParametersPerRegion[indxRegion].fIsApplyCuts;
     bool  continueStepping = theHepEmPars->fParametersPerRegion[indxRegion].fIsMultipleStepsInMSCTrans;
 
     // Sample the `number-of-interaction-left`
@@ -455,6 +515,32 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     }
     // True distance to discrete interaction.
     G4HepEmElectronManager::HowFarToDiscreteInteraction(theHepEmData, theHepEmPars, theElTrack);
+    // Limit the step by the user limits (if a step limiter is attached); no
+    // discrete interaction happens in such a step (winner process index -3).
+    const G4VProcess* limitingProc = nullptr;
+    {
+      const G4VProcess* stepLimiter = fStepLimiterProcess[isElectron ? 0 : 1];
+      G4UserLimits* userLimits = lvol->GetUserLimits();
+      if (stepLimiter != nullptr && userLimits != nullptr) {
+        const double maxStep = userLimits->GetMaxAllowedStep(*aTrack);
+        if (maxStep < theElTrack->GetPStepLength()) {
+          theElTrack->SetPStepLength(maxStep);
+          thePrimaryTrack->SetGStepLength(maxStep);
+          thePrimaryTrack->SetWinnerProcessIndex(-3);
+          limitingProc = stepLimiter;
+        }
+      }
+      G4Cerenkov* cerenkov = fCerenkovProcess[isElectron ? 0 : 1];
+      if (cerenkov != nullptr) {
+        const double cerenkovStep = CerenkovStepLimit(aTrack, hepEmIMC, isElectron, preStepLogEkin);
+        if (cerenkovStep < theElTrack->GetPStepLength()) {
+          theElTrack->SetPStepLength(cerenkovStep);
+          thePrimaryTrack->SetGStepLength(cerenkovStep);
+          thePrimaryTrack->SetWinnerProcessIndex(-3);
+          limitingProc = cerenkov;
+        }
+      }
+    }
     // Remember which process was selected - MSC might limit the sub-steps.
     const int iDProc = thePrimaryTrack->GetWinnerProcessIndex();
 
@@ -642,6 +728,18 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     // (e.g. XTR) might need below in their DoIt
     step.SetStepLength(totalTruePathLength);
 
+    // Cerenkov photons along this step (if the Cerenkov process is attached).
+    // NOTE: G4Cerenkov's option to track the photons first (fSuspend) is ignored.
+    G4VParticleChange* particleChangeCerenkov = nullptr;
+    G4Cerenkov* cerenkovProc = fCerenkovProcess[isElectron ? 0 : 1];
+    if (cerenkovProc != nullptr && totalTruePathLength > 0.0 &&
+        lvol->GetMaterial()->GetMaterialPropertiesTable() != nullptr) {
+      // G4Cerenkov uses the post-step velocity after the continuous energy loss
+      postStepPoint.SetKineticEnergy(thePrimaryTrack->GetEKin());
+      postStepPoint.SetVelocity(ElectronVelocity(thePrimaryTrack->GetEKin()));
+      particleChangeCerenkov = cerenkovProc->PostStepDoIt(*aTrack, step);
+    }
+
     const G4VProcess *proc = nullptr;
     if (stopped) {
       // call annihilation for e+ !!!
@@ -667,6 +765,9 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         if (iDProc == -1) {
           // ionization
           proc = fElectronNoProcessVector[0];
+        } else if (iDProc == -3) {
+          // step limiter (or Cerenkov)
+          proc = limitingProc;
         } else if (iDProc == -2) {
           proc = fElectronNoProcessVector[3];
         } else {
@@ -680,7 +781,8 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         thePrimaryTrack->SetNumIALeft(-1.0, iDProc);
         // check if there is nuclear interaction process and not delta interaction happens
         G4VProcess* theNucProcess = isElectron ? fENucProcess : fPNucProcess;
-        if (theNucProcess != nullptr && !G4HepEmElectronManager::CheckDelta(theHepEmData, thePrimaryTrack, theTLData->GetRNGEngine()->flat())) {
+        if (theNucProcess != nullptr && IsActive(aTrack->GetDefinition(), theNucProcess) &&
+            !G4HepEmElectronManager::CheckDelta(theHepEmData, thePrimaryTrack, theTLData->GetRNGEngine()->flat())) {
           // After displacement and deflection via MSC and the continuous energy loss,
           // the updated position, direction, and energy must be stored in the G4Track,
           // as the track's data is used in the PostStepDoIt of the nuclear reaction.
@@ -734,6 +836,7 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
     const double ekin = thePrimaryTrack->GetEKin();
     double edep = thePrimaryTrack->GetEnergyDeposit();
     postStepPoint.SetKineticEnergy(ekin);
+    postStepPoint.SetVelocity(ElectronVelocity(ekin));
     if (ekin <= 0.0) {
       aTrack->SetTrackStatus(fStopAndKill);
     }
@@ -760,6 +863,18 @@ bool G4HepEmTrackingManager::TrackElectron(G4Track *aTrack) {
         secondaries.push_back(secTrack);
       }
       particleChangeXTR->Clear();
+    }
+
+    // Stack the Cerenkov photons (if any)
+    if (particleChangeCerenkov != nullptr) {
+      const int numPhotons = particleChangeCerenkov->GetNumberOfSecondaries();
+      for (int i = 0; i < numPhotons; i++) {
+        G4Track *secTrack = particleChangeCerenkov->GetSecondary(i);
+        secTrack->SetCreatorProcess(cerenkovProc);
+        secTrack->SetWeight(aTrack->GetWeight());
+        secondaries.push_back(secTrack);
+      }
+      particleChangeCerenkov->Clear();
     }
 
     step.AddTotalEnergyDeposit(edep);
@@ -994,6 +1109,13 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
       continue;
     }
 
+    // Stop here if at or below the tracking cut of this region (optional).
+    if (theHepEmPars->fIsTrackingCutAtStepStart &&
+        theG4DPart->GetKineticEnergy() <= theHepEmPars->fParametersPerRegion[lvol->GetRegion()->GetInstanceID()].fGammaTrackingCut) {
+      StopAtTrackingCut(aTrack, MCC->GetIndex(), false, false, theTrajectory);
+      continue;
+    }
+
     // If any Woodcock tracking region was found at initialization and the gamma
     // is not already under Woodcock tracking, then check:
     // - this step will be done in one of the Woodcock tracking regions with
@@ -1132,7 +1254,7 @@ bool G4HepEmTrackingManager::TrackGamma(G4Track *aTrack) {
           // NOTE: it's destructive i.e. stopps and kills the gammma when the
           //    interaction happens.
           thePrimaryTrack->SetEnergyDeposit(0.0);
-          if (fGNucProcess != nullptr) {
+          if (fGNucProcess != nullptr && IsActive(G4Gamma::Definition(), fGNucProcess)) {
             // Invoke the gamma-nuclear interaction using the Geant4 process
             // (step is updated and secondaries are stacked to the vector of the step)
             const int partileID = 2;
@@ -1254,6 +1376,53 @@ double G4HepEmTrackingManager::PerformNuclear(G4Track* aG4Track, G4Step* theG4St
   return edep;
 }
 
+
+// Stops the track at the tracking cut in a zero-length step
+void G4HepEmTrackingManager::StopAtTrackingCut(G4Track* aTrack, int g4IMC, bool isApplyCuts,
+                                               bool isPositron, G4VTrajectory* theTrajectory) {
+  G4Step&      step          = *fStep;
+  G4StepPoint& postStepPoint = *step.GetPostStepPoint();
+
+  double edep = aTrack->GetKineticEnergy();
+  const G4VProcess* proc = fTrackingCutNoProcess;
+  if (isPositron) {
+    // annihilation at rest (the two gammas are stacked below)
+    G4HepEmPositronInteractionAnnihilation::Perform(fRunManager->GetTheTLData(), true);
+    proc = fElectronNoProcessVector[2];
+  }
+  step.SetStepLength(0.0);
+  postStepPoint.SetStepStatus(fPostStepDoItProc);
+  postStepPoint.SetProcessDefinedStep(proc);
+  postStepPoint.SetKineticEnergy(0.0);
+  postStepPoint.SetVelocity(0.0);
+  aTrack->SetTrackStatus(fStopAndKill);
+  step.UpdateTrack();
+
+  edep += StackSecondaries(fRunManager->GetTheTLData(), aTrack, proc, g4IMC, isApplyCuts);
+  step.AddTotalEnergyDeposit(edep);
+
+  // End of this step: call the SD and stepping actions.
+  auto* lvol = aTrack->GetTouchable()->GetVolume()->GetLogicalVolume();
+  if (step.GetControlFlag() != AvoidHitInvocation) {
+    auto* sensitive = lvol->GetSensitiveDetector();
+    if (sensitive) {
+      sensitive->Hit(&step);
+    }
+  }
+  auto* userSteppingAction = G4EventManager::GetEventManager()->GetUserSteppingAction();
+  if (userSteppingAction) {
+    userSteppingAction->UserSteppingAction(&step);
+  }
+  auto* regionalAction = lvol->GetRegion()->GetRegionalSteppingAction();
+  if (regionalAction) {
+    regionalAction->UserSteppingAction(&step);
+  }
+  if (theTrajectory != nullptr) {
+    theTrajectory->AppendStep(&step);
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 // Helper that can be used to stack secondary e-/e+ and gamma i.e. everything
 // that HepEm physics can produce
@@ -1435,6 +1604,97 @@ void G4HepEmTrackingManager::InitNuclearProcesses(int particleID) {
       }
     }
   }
+}
+
+
+namespace {
+// The e- (0) or e+ (1) particle definition
+G4ParticleDefinition* ElectronOrPositron(int particleID) {
+  if (particleID == 0) return G4Electron::Definition();
+  return G4Positron::Definition();
+}
+
+// The first process of the given subtype attached to the particle, or nullptr
+G4VProcess* FindProcess(const G4ParticleDefinition* particleDef, int subType) {
+  const G4ProcessVector* processVector = particleDef->GetProcessManager()->GetProcessList();
+  for (std::size_t ip=0; ip<processVector->entries(); ip++) {
+    if ((*processVector)[ip]->GetProcessSubType() == subType) {
+      return (*processVector)[ip];
+    }
+  }
+  return nullptr;
+}
+}  // namespace
+
+// Try to get the step limiter process for e- (0) or e+ (1)
+void G4HepEmTrackingManager::InitStepLimiter(int particleID) {
+  fStepLimiterProcess[particleID] = FindProcess(ElectronOrPositron(particleID), STEP_LIMITER);
+}
+
+
+// Try to get the Cerenkov process for e- (0) or e+ (1)
+void G4HepEmTrackingManager::InitCerenkov(int particleID) {
+  G4ParticleDefinition* particleDef = ElectronOrPositron(particleID);
+  fCerenkovProcess[particleID] = dynamic_cast<G4Cerenkov*>(FindProcess(particleDef, fCerenkov));
+  if (fCerenkovProcess[particleID] != nullptr) {
+    // Geant4 does not build the tables of processes of particles with a tracking
+    // manager; build it here (it is built only once if shared with other particles)
+    fCerenkovProcess[particleID]->PreparePhysicsTable(*particleDef);
+    fCerenkovProcess[particleID]->BuildPhysicsTable(*particleDef);
+  }
+}
+
+
+double G4HepEmTrackingManager::CerenkovStepLimit(const G4Track* aTrack, int hepEmIMC, bool isElectron, double logEkin) {
+  const G4Material* material = aTrack->GetMaterial();
+  G4MaterialPropertiesTable* mpt = material->GetMaterialPropertiesTable();
+  G4MaterialPropertyVector* rindex = mpt != nullptr ? mpt->GetProperty(kRINDEX) : nullptr;
+  if (rindex == nullptr) {
+    return DBL_MAX;
+  }
+  const double betaMin = 1.0 / rindex->GetMaxValue();
+  if (betaMin >= 1.0) {
+    return DBL_MAX;
+  }
+  const G4DynamicParticle* dp = aTrack->GetDynamicParticle();
+  const double mass  = CLHEP::electron_mass_c2;
+  const double ekin  = dp->GetKineticEnergy();
+  const double beta  = dp->GetTotalMomentum() / dp->GetTotalEnergy();
+  const double gamma = dp->GetTotalEnergy() / mass;
+  const double gammaMin = 1.0 / std::sqrt(1.0 - betaMin * betaMin);
+  if (gamma < gammaMin) {
+    return DBL_MAX;
+  }
+  const G4HepEmData* hepEmData = fRunManager->GetHepEmData();
+  const G4HepEmElectronData* elData = isElectron ? hepEmData->fTheElectronData : hepEmData->fThePositronData;
+  const double ekinMin = mass * (gammaMin - 1.0);
+  const double range    = G4HepEmElectronManager::GetRestRange(elData, hepEmIMC, ekin, logEkin);
+  const double rangeMin = G4HepEmElectronManager::GetRestRange(elData, hepEmIMC, ekinMin, G4HepEmLog(ekinMin));
+  // as in G4Cerenkov: no limit if the particle would not move
+  double step = range - rangeMin;
+  if (step < G4ThreeVector::getTolerance()) {
+    return DBL_MAX;
+  }
+  double stepLimit = step;
+  G4Cerenkov* cerenkov = fCerenkovProcess[isElectron ? 0 : 1];
+  if (cerenkov->GetMaxNumPhotonsPerStep() > 0) {
+    const double meanNumPhotons = cerenkov->GetAverageNumberOfPhotons(dp->GetDefinition()->GetPDGCharge(), beta, material, rindex);
+    if (meanNumPhotons > 0.0) {
+      stepLimit = std::min(stepLimit, cerenkov->GetMaxNumPhotonsPerStep() / meanNumPhotons);
+    }
+  }
+  const double maxBetaChange = cerenkov->GetMaxBetaChangePerStep();
+  if (maxBetaChange > 0.0) {
+    const double dedx = G4HepEmElectronManager::GetRestDEDX(elData, hepEmIMC, ekin, logEkin);
+    const double deltaGamma = gamma - 1.0 / std::sqrt(1.0 - beta * beta * (1.0 - maxBetaChange) * (1.0 - maxBetaChange));
+    if (dedx > 0.0) {
+      step = mass * deltaGamma / dedx;
+      if (step > 0.0) {
+        stepLimit = std::min(stepLimit, step);
+      }
+    }
+  }
+  return stepLimit;
 }
 
 

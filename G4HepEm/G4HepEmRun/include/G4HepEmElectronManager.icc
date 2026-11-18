@@ -333,9 +333,9 @@ bool G4HepEmElectronManager::SampleLossFluctuations(struct G4HepEmData* hepEmDat
   // result into the track.
   double finalEkin = theTrack->GetEKin();
   double eloss     = theTrack->GetEnergyDeposit();
+  const int iregion = hepEmData->fTheMatCutData->fMatCutData[theIMC].fG4RegionIndex;
   // sample energy loss fluctuations
 #ifndef NOFLUCTUATION
-  const int iregion = hepEmData->fTheMatCutData->fMatCutData[theIMC].fG4RegionIndex;;
   const int isFluctuation = hepEmPars->fParametersPerRegion[iregion].fIsELossFluctuation;
   const double kFluctParMinEnergy  = 1.E-5; // 10 eV
   if (isFluctuation && eloss > kFluctParMinEnergy) {
@@ -355,7 +355,10 @@ bool G4HepEmElectronManager::SampleLossFluctuations(struct G4HepEmData* hepEmDat
 #endif
   //
   // Check if the final kinetic energy drops below the tracking cut and stop.
-  if (finalEkin <= hepEmPars->fElectronTrackingCut) {
+  // When the cuts are also applied at the step start, a track that has just left
+  // the volume is not stopped here: the cut of the region it enters decides.
+  if (finalEkin <= hepEmPars->fParametersPerRegion[iregion].fElectronTrackingCut &&
+      !(hepEmPars->fIsTrackingCutAtStepStart && theTrack->GetOnBoundary())) {
     eloss     = thePreStepEkin;
     finalEkin = 0.0;
     theTrack->SetEKin(finalEkin);
