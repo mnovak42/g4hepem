@@ -34,7 +34,6 @@
 #include "Run.hh"
 #include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
-#include "HistoManager.hh"
 #include "EmAcceptance.hh"
 
 #include "G4ParticleTable.hh"
@@ -286,21 +285,13 @@ void Run::EndOfRun()
   G4cout << " Mean number of neutral steps  " << fNeutralStep << G4endl;
   G4cout << "------------------------------------------------------------\n";
 
-  //Energy flow
-  //
-  G4AnalysisManager* analysis = G4AnalysisManager::Instance();
-  G4int Idmax = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor());
-  for (G4int Id=1; Id<=Idmax+1; Id++) {
-    analysis->FillH1(2*kMaxAbsor+1, (G4double)Id, fEnergyFlow[Id]);
-    analysis->FillH1(2*kMaxAbsor+2, (G4double)Id, fLateralEleak[Id]);
-  }
-
   //Energy deposit from energy flow balance
   //
   G4double EdepTot[kMaxAbsor];
   for (G4int k=0; k<kMaxAbsor; k++) EdepTot[k] = 0.;
 
   G4int nbOfAbsor = fDetector->GetNbOfAbsor();
+  G4int Idmax = (fDetector->GetNbOfLayers())*nbOfAbsor;
   for (G4int Id=1; Id<=Idmax; Id++) {
    G4int iAbsor = Id%nbOfAbsor; if (iAbsor==0) iAbsor = nbOfAbsor;
    EdepTot[iAbsor] += (fEnergyFlow[Id] - fEnergyFlow[Id+1] - fLateralEleak[Id]);
@@ -339,12 +330,6 @@ void Run::EndOfRun()
     }
   }
   if(isStarted) acc.EndOfAcceptance();
-
-  //normalize histograms
-  //
-  for (G4int ih = kMaxAbsor+1; ih < kMaxHisto; ih++) {
-    analysis->ScaleH1(ih,norm/MeV);
-  }
 
   // print layer by layer data
   //
