@@ -25,6 +25,12 @@ endif()
 # and to transport CUDA architecture flags)
 set(G4HepEm_cuda_FOUND @G4HepEm_CUDA_BUILD@)
 
+# HIP: the device data uses the HIP runtime
+set(G4HepEm_hip_FOUND @G4HepEm_HIP_BUILD@)
+if(G4HepEm_hip_FOUND)
+  find_dependency(hip REQUIRED)
+endif()
+
 # - Project targets
 include(${CMAKE_CURRENT_LIST_DIR}/G4HepEmTargets.cmake)
 

@@ -28,6 +28,16 @@ if(BUILD_SHARED_LIBS)
   target_link_libraries(g4HepEmData PRIVATE $<$<BOOL:${G4HepEm_CUDA_BUILD}>:CUDA::cudart>)
 endif()
 
+# HIP: the device data code (G4HepEm_CUDA_BUILD) on the HIP runtime (G4HepEm_HIP_BUILD)
+if(G4HepEm_HIP_BUILD)
+  foreach(_target g4HepEmData g4HepEmData-static)
+    if(TARGET ${_target})
+      target_compile_definitions(${_target} PUBLIC G4HepEm_CUDA_BUILD G4HepEm_HIP_BUILD)
+      target_link_libraries(${_target} PUBLIC hip::host)
+    endif()
+  endforeach()
+endif()
+
 if(BUILD_STATIC_LIBS)
   target_compile_definitions(g4HepEmData-static PUBLIC $<$<BOOL:${G4HepEm_CUDA_BUILD}>:G4HepEm_CUDA_BUILD>)
   # TODO: Determine when/if to use CUDA::cudart_static

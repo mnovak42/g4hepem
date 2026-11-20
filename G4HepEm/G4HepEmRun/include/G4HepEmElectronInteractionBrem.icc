@@ -70,6 +70,7 @@ void G4HepEmElectronInteractionBrem::Perform(G4HepEmTLData* tlData, struct G4Hep
 }
 
 
+G4HepEmHostDevice
 double G4HepEmElectronInteractionBrem::SampleETransferSB(struct G4HepEmData* hepEmData, double thePrimEkin,
                                                          double theLogEkin, int theMCIndx,
                                                          G4HepEmRandomEngine* rnge, bool iselectron) {
@@ -181,6 +182,7 @@ double G4HepEmElectronInteractionBrem::SampleETransferSB(struct G4HepEmData* hep
    return eGamma;
 }
 
+G4HepEmHostDevice
 double G4HepEmElectronInteractionBrem::SampleETransferRB(struct G4HepEmData* hepEmData, double thePrimEkin,
                                                              double theLogEkin, int theMCIndx,
                                                              G4HepEmRandomEngine* rnge, bool iselectron) {
@@ -263,6 +265,7 @@ double G4HepEmElectronInteractionBrem::SampleETransferRB(struct G4HepEmData* hep
 
 
 // should be called only for mat-cuts with more than one elements in their material
+G4HepEmHostDevice
 int G4HepEmElectronInteractionBrem::SelectTargetAtom(const struct G4HepEmElectronData* elData, const int imc,
                                                      const double ekin, const double lekin, const double urndn,
                                                      const bool isbremSB) {
@@ -296,6 +299,7 @@ int G4HepEmElectronInteractionBrem::SelectTargetAtom(const struct G4HepEmElectro
 }
 
 
+G4HepEmHostDevice
 void G4HepEmElectronInteractionBrem::SampleDirections(const double thePrimEkin, const double theSecGammaEkin,
                                                       double* theSecGammaDir, double* thePrimElecDir,
                                                       G4HepEmRandomEngine* rnge) {
@@ -325,6 +329,7 @@ void G4HepEmElectronInteractionBrem::SampleDirections(const double thePrimEkin, 
 // find lower bin index of value: used in acse of CDF values i.e. val in [0,1)
 // while vector elements in [0,1]
 // note: every 3rd value of the vect contains the kappa-cumulutaive values
+G4HepEmHostDevice
 int G4HepEmElectronInteractionBrem::LinSearch(const double* vect, const int size, const double val) {
   int i = 0;
   const int size3 = 3*size;

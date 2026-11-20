@@ -202,6 +202,16 @@ if(G4HepEm_CUDA_BUILD)
 endif()
 
 #----------------------------------------------------------------------------
+# HIP: the device data is uploaded through the HIP runtime instead of CUDA
+option(G4HepEm_HIP_BUILD "BUILD with HIP support" OFF)
+if(G4HepEm_HIP_BUILD)
+  if(G4HepEm_CUDA_BUILD)
+    message(FATAL_ERROR "G4HepEm_CUDA_BUILD and G4HepEm_HIP_BUILD are exclusive")
+  endif()
+  find_package(hip REQUIRED)
+endif()
+
+#----------------------------------------------------------------------------
 # Build G4HepEm libraries
 add_subdirectory(G4HepEm)
 

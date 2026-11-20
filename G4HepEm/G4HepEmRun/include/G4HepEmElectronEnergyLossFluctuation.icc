@@ -8,6 +8,7 @@
 #include "G4HepEmMath.hh"
 
 
+G4HepEmHostDevice
 double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double /*ekin*/, double tcut, double /*tmax*/,
        double excEner, double /*stepLength*/, double meanELoss, G4HepEmRandomEngine* rnge) {
   const double scaling  = G4HepEmMin(1. + 5.E-4/tcut, 1.5);
@@ -97,6 +98,7 @@ double G4HepEmElectronEnergyLossFluctuation::SampleEnergyLossFLuctuation(double 
 }
 
 
+G4HepEmHostDevice
 double G4HepEmElectronEnergyLossFluctuation::SampleGaussianLoss(double meane, double sig2e, G4HepEmRandomEngine* rnge) {
   const double twom = 2.*meane;
   if (meane*meane < 0.0625*sig2e) {

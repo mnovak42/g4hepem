@@ -22,7 +22,6 @@ void FreeG4HepEmParameters (struct G4HepEmParameters* theHepEmParams) {
 
 
 #ifdef G4HepEm_CUDA_BUILD
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 void CopyG4HepEmParametersToGPU(struct G4HepEmParameters* onCPU) {
@@ -30,14 +29,14 @@ void CopyG4HepEmParametersToGPU(struct G4HepEmParameters* onCPU) {
   // clean away previous (if any)
   FreeG4HepEmParametersOnGPU (onCPU);
   // allocate memory on device for the G4HepEmRegionParmeters array
-  gpuErrchk ( cudaMalloc ( &(onCPU->fParametersPerRegion_gpu), sizeof( struct G4HepEmRegionParmeters )*onCPU->fNumRegions ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &(onCPU->fParametersPerRegion_gpu), sizeof( struct G4HepEmRegionParmeters )*onCPU->fNumRegions ) );
   // copy the `fParametersPerRegion` G4HepEmRegionParmeters array from host to device
-  gpuErrchk ( cudaMemcpy ( onCPU->fParametersPerRegion_gpu, onCPU->fParametersPerRegion, sizeof( struct G4HepEmRegionParmeters )*onCPU->fNumRegions, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( onCPU->fParametersPerRegion_gpu, onCPU->fParametersPerRegion, sizeof( struct G4HepEmRegionParmeters )*onCPU->fNumRegions, G4HepEmDeviceAPI(MemcpyHostToDevice) ) );
 }
 
 void FreeG4HepEmParametersOnGPU(struct G4HepEmParameters* onHost) {
   if (onHost != nullptr && onHost->fParametersPerRegion_gpu != nullptr) {
-    cudaFree (onHost->fParametersPerRegion_gpu);
+    gpuErrchk ( G4HepEmDeviceAPI(Free) (onHost->fParametersPerRegion_gpu) );
     onHost->fParametersPerRegion_gpu = nullptr;
   }
 }

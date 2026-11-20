@@ -64,6 +64,7 @@ void G4HepEmGammaInteractionCompton::Perform(G4HepEmTLData* tlData, struct G4Hep
   thePrimaryTrack->SetEnergyDeposit(theEnergyDeposit);
 }
 
+G4HepEmHostDevice
 double G4HepEmGammaInteractionCompton::SamplePhotonEnergyAndDirection(
     const double thePrimGmE, double* thePrimGmDir, const double* theOrgPrimGmDir, G4HepEmRandomEngine* rnge) {
   // sample the post interaction reduced photon energy according to the KN DCS
