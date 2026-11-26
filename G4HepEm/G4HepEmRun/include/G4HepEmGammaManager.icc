@@ -35,6 +35,7 @@ void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmPa
 }
 
 
+G4HepEmHostDevice
 void G4HepEmGammaManager::HowFar(struct G4HepEmData* hepEmData, struct G4HepEmParameters* /*hepEmPars*/, G4HepEmGammaTrack* theGammaTrack) {
   G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
   // get the total macroscopic cross section and use this to sample the actual step length
@@ -94,6 +95,7 @@ void G4HepEmGammaManager::Perform(struct G4HepEmData* hepEmData, struct G4HepEmP
 }
 
 
+G4HepEmHostDevice
 void   G4HepEmGammaManager::UpdateNumIALeft(G4HepEmTrack* theTrack) {
   const double pStepLength = theTrack->GetGStepLength();
   // NOTE: only one `number of interaction length left` is used from now on
@@ -105,6 +107,7 @@ void   G4HepEmGammaManager::UpdateNumIALeft(G4HepEmTrack* theTrack) {
 }
 
 
+G4HepEmHostDevice
 double  G4HepEmGammaManager::GetTotalMacXSec(const struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack) {
   G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
   const double   theEkin = theTrack->GetEKin();
@@ -152,6 +155,7 @@ double  G4HepEmGammaManager::GetTotalMacXSec(const struct G4HepEmData* hepEmData
 }
 
 
+G4HepEmHostDevice
 double G4HepEmGammaManager::GetMacXSecPE(const struct G4HepEmData* hepEmData, const int imat, const double ekin) {
   const G4HepEmMatData* matData = &hepEmData->fTheMaterialData->fMaterialData[imat];
   int interval = 0;
@@ -184,6 +188,7 @@ void G4HepEmGammaManager::SelectInteraction(const struct G4HepEmData* hepEmData,
 // pid = 1 --> Compton scattering
 // pid = 2 --> Photoelectric effect
 // pid = 3 --> Gamma nuclear interaction
+G4HepEmHostDevice
 void G4HepEmGammaManager::SampleInteraction(const struct G4HepEmData* hepEmData, G4HepEmGammaTrack* theGammaTrack, const double urnd) {
   G4HepEmTrack* theTrack = theGammaTrack->GetTrack();
   const double   theEkin = theTrack->GetEKin();

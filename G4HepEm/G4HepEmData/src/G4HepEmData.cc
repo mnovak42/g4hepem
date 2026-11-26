@@ -72,7 +72,6 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
 }
 
 #ifdef G4HepEm_CUDA_BUILD
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {

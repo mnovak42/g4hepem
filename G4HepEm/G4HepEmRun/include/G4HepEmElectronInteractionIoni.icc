@@ -47,6 +47,7 @@ void G4HepEmElectronInteractionIoni::Perform(G4HepEmTLData* tlData, struct G4Hep
 }
 
 
+G4HepEmHostDevice
 double G4HepEmElectronInteractionIoni::SampleETransferMoller(const double elCut, const double primEkin,
                                                              G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
@@ -73,6 +74,7 @@ double G4HepEmElectronInteractionIoni::SampleETransferMoller(const double elCut,
   return deltaEkin * primEkin;
 }
 
+G4HepEmHostDevice
 double G4HepEmElectronInteractionIoni::SampleETransferBhabha(const double elCut, const double primEkin,
                                                              G4HepEmRandomEngine* rnge) {
   const double tmin    = elCut;
@@ -108,6 +110,7 @@ double G4HepEmElectronInteractionIoni::SampleETransferBhabha(const double elCut,
 }
 
 
+G4HepEmHostDevice
 void G4HepEmElectronInteractionIoni::SampleDirections(const double thePrimEkin, const double deltaEkin,
                                                       double* theSecElecDir, double* thePrimElecDir,
                                                       G4HepEmRandomEngine* rnge) {

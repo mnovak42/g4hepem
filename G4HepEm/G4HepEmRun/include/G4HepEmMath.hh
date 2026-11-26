@@ -34,18 +34,18 @@ T G4HepEmLog(T x) {
  return std::log(x);
 }
 // use the specialisations only on the host
-#ifndef __CUDA_ARCH__
+#ifndef G4HepEm_DEVICE_COMPILE
 template < >
-inline
+G4HepEmHostDevice inline
 double G4HepEmLog(double x) {
  return VDTLog(x);
 }
 template < >
-inline
+G4HepEmHostDevice inline
 float G4HepEmLog(float x) {
  return VDTLogf(x);
 }
-#endif // ndef __CUDA_ARCH__
+#endif // ndef G4HepEm_DEVICE_COMPILE
 
 // --- Exp function with VDT (G4Exp) specialisations for double and float
 template <typename T>
@@ -54,18 +54,18 @@ T G4HepEmExp(T x) {
  return std::exp(x);
 }
 // use the specialisations only on the host
-#ifndef __CUDA_ARCH__
+#ifndef G4HepEm_DEVICE_COMPILE
 template < >
-inline
+G4HepEmHostDevice inline
 double G4HepEmExp(double x) {
  return VDTExp(x);
 }
 template < >
-inline
+G4HepEmHostDevice inline
 float G4HepEmExp(float x) {
  return VDTExpf(x);
 }
-#endif // ndef __CUDA_ARCH__
+#endif // ndef G4HepEm_DEVICE_COMPILE
 
 // --- Pow(x,a) function with the VDT (G4) Exp and Log specialisations for double and float
 template <typename T>
@@ -74,17 +74,17 @@ T G4HepEmPow(T x, T a) {
  return std::pow(x, a);
 }
 // use the specialisations only on the host
-#ifndef __CUDA_ARCH__
+#ifndef G4HepEm_DEVICE_COMPILE
 template < >
-inline
+G4HepEmHostDevice inline
 double G4HepEmPow(double x, double a) {
  return VDTExp(a*VDTLog(x));
 }
 template < >
-inline
+G4HepEmHostDevice inline
 float G4HepEmPow(float x, float a) {
  return VDTExpf(a*VDTLogf(x));
 }
-#endif // ndef __CUDA_ARCH__
+#endif // ndef G4HepEm_DEVICE_COMPILE
 
 #endif // G4HepEmMath_HH

@@ -37,7 +37,6 @@ void FreeMatCutData (struct G4HepEmMatCutData** theMatCutData) {
 }
 
 #ifdef G4HepEm_CUDA_BUILD
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 #include <cstring>
@@ -49,9 +48,9 @@ void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutDa
   }
   // allocate array of G4HepEmMCCData structures on _d (its pointer adress will on _h)
   struct G4HepEmMCCData* arrayHto_d;
-  gpuErrchk ( cudaMalloc ( &arrayHto_d, sizeof( struct G4HepEmMCCData )*onCPU->fNumMatCutData ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &arrayHto_d, sizeof( struct G4HepEmMCCData )*onCPU->fNumMatCutData ) );
   // - copy the array of G4HepEmMCCData structures from the _h to _d
-  gpuErrchk ( cudaMemcpy ( arrayHto_d, onCPU->fMatCutData, onCPU->fNumMatCutData*sizeof( struct G4HepEmMCCData ), cudaMemcpyHostToDevice ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( arrayHto_d, onCPU->fMatCutData, onCPU->fNumMatCutData*sizeof( struct G4HepEmMCCData ), G4HepEmDeviceAPI(MemcpyHostToDevice) ) );
   // now create a helper G4HepEmMatCutData and set only its fNumMatCutData and
   // `struct G4HepEmMCCData* fMaterialData` array member, then copy to the
   // corresponding structure
@@ -59,8 +58,8 @@ void CopyMatCutDataToGPU(struct G4HepEmMatCutData* onCPU, struct G4HepEmMatCutDa
   // Set non-pointer members via a memcpy of the entire structure.
   memcpy(mcData_h, onCPU, sizeof(G4HepEmMatCutData));
   mcData_h->fMatCutData    = arrayHto_d;
-  gpuErrchk ( cudaMalloc ( onGPU, sizeof( struct G4HepEmMatCutData ) ) );
-  gpuErrchk ( cudaMemcpy ( *onGPU, mcData_h, sizeof( struct G4HepEmMatCutData ), cudaMemcpyHostToDevice ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( onGPU, sizeof( struct G4HepEmMatCutData ) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( *onGPU, mcData_h, sizeof( struct G4HepEmMatCutData ), G4HepEmDeviceAPI(MemcpyHostToDevice) ) );
   // Free the auxilary G4HepEmMatCutData object
   delete mcData_h;
 }
@@ -70,13 +69,13 @@ void FreeMatCutDataOnGPU ( struct G4HepEmMatCutData** onGPU ) {
   if ( *onGPU != nullptr ) {
     // copy the struct G4HepEmMatCutData` struct, including its `struct G4HepEmMCCData* fMatCutData`
     // pointer member, from _d to _h in order to be able to free the _d sice memory
-    // pointed by `fMatCutData` by calling to cudaFree from the host.
+    // pointed by `fMatCutData` by calling to G4HepEmDeviceAPI(Free) from the host.
     struct G4HepEmMatCutData* mcData_h = new G4HepEmMatCutData;
-    gpuErrchk ( cudaMemcpy ( mcData_h, *onGPU, sizeof( struct G4HepEmMatCutData ), cudaMemcpyDeviceToHost ) );
-    cudaFree( mcData_h->fMatCutData );
+    gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( mcData_h, *onGPU, sizeof( struct G4HepEmMatCutData ), G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+    gpuErrchk ( G4HepEmDeviceAPI(Free)( mcData_h->fMatCutData ) );
     // free the whole remaining device side memory (after cleaning all dynamically
     // allocated members)
-    cudaFree( *onGPU );
+    gpuErrchk ( G4HepEmDeviceAPI(Free)( *onGPU ) );
     *onGPU = nullptr;
   }
 }

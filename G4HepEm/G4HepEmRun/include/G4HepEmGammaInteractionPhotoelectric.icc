@@ -36,6 +36,7 @@ void G4HepEmGammaInteractionPhotoelectric::Perform(G4HepEmTLData* tlData, struct
   thePrimaryTrack->SetEKin(0.0);
 }
 
+G4HepEmHostDevice
 double G4HepEmGammaInteractionPhotoelectric::SelectElementBindingEnergy(const struct G4HepEmData* hepEmData, const int imc, const double mxsec, const double ekin, G4HepEmRandomEngine *rnge) {
   const int theMatIndx = hepEmData->fTheMatCutData->fMatCutData[imc].fHepEmMatIndex;
   const G4HepEmMatData& theMData = hepEmData->fTheMaterialData->fMaterialData[theMatIndx];
@@ -77,6 +78,7 @@ double G4HepEmGammaInteractionPhotoelectric::SelectElementBindingEnergy(const st
   return hepEmData->fTheElementData->fElementData[theMData.fElementVect[ielem]].fKShellBindingEnergy;
 }
 
+G4HepEmHostDevice
 void G4HepEmGammaInteractionPhotoelectric::SamplePhotoElectronDirection(const double kinE, const double* theGammaDir, double* theDir, G4HepEmRandomEngine* rnge) {
   // -- Sample from SauterGavrila angular distribution, code taken from Geant4:
   // Initial algorithm according Penelope 2008 manual and

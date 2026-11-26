@@ -3,7 +3,14 @@
 
 #ifdef G4HepEm_CUDA_BUILD
 
+// G4HepEm_CUDA_BUILD enables the device data; G4HepEm_HIP_BUILD selects HIP instead of CUDA for it
+#ifdef G4HepEm_HIP_BUILD
+#include <hip/hip_runtime_api.h>
+#define G4HepEmDeviceAPI(TOK) hip##TOK
+#else
 #include <cuda_runtime.h>
+#define G4HepEmDeviceAPI(TOK) cuda##TOK
+#endif
 #include <cstdio>
 #include <cstdlib>
 
@@ -17,10 +24,10 @@
 
 
 #define gpuErrchk(ans) { cuAssert((ans), __FILE__, __LINE__); }
-  inline void cuAssert(cudaError_t code, const char *file, int line, bool abort=true){
-      if (code != cudaSuccess) {
+  inline void cuAssert(G4HepEmDeviceAPI(Error_t) code, const char *file, int line, bool abort=true){
+      if (code != G4HepEmDeviceAPI(Success)) {
           fprintf(stderr,"CUAassert: %s %s %d\n",
-          cudaGetErrorString(code), file, line);
+          G4HepEmDeviceAPI(GetErrorString)(code), file, line);
           if (abort) exit(code);
       }
   }

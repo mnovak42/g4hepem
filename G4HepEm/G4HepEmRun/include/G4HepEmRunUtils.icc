@@ -13,6 +13,7 @@
 // original direction, the real original direction [u1,u2,u3] in the lab frame
 // needs to be accounted and the final new direction, i.e. in the lab frame is
 // computed.
+G4HepEmHostDevice
 void RotateToReferenceFrame(double &u, double &v, double &w, const double* refDir) {
   double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
   if (up>0.) {
@@ -29,6 +30,7 @@ void RotateToReferenceFrame(double &u, double &v, double &w, const double* refDi
   }
 }
 
+G4HepEmHostDevice
 void RotateToReferenceFrame(double* dir, const double* refDir) {
   double up = refDir[0]*refDir[0] + refDir[1]*refDir[1];
   if (up>0.) {
@@ -46,6 +48,7 @@ void RotateToReferenceFrame(double* dir, const double* refDir) {
 }
 
 // use the improved, robust spline interpolation that I put in G4 10.6
+G4HepEmHostDevice
 double GetSpline(double x1, double x2, double y1, double y2, double secderiv1, double secderiv2, double x)
 {
   // Unchecked precondition: x1 < x < x2
@@ -60,6 +63,7 @@ double GetSpline(double x1, double x2, double y1, double y2, double secderiv1, d
   return y1 + b*(y2 - y1) + (b*(b-1.0))*(c0+c1)*(dl*dl*os);
 }
 
+G4HepEmHostDevice
 double GetLinear(double x1, double x2, double y1, double y2, double x) {
   // Unchecked precondition: x1 < x < x2
   const double dl = x2 - x1;
@@ -72,6 +76,7 @@ double GetLinear(double x1, double x2, double y1, double y2, double x) {
 
 
 // use the improved, robust spline interpolation that I put in G4 10.6
+G4HepEmHostDevice
 double GetSplineLog(int ndata, double* xdata, double* ydata, double* secderiv, double x, double logx, double logxmin, double invLDBin) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   const double xv = G4HepEmMax(xdata[0], G4HepEmMin(xdata[ndata-1], x));
@@ -81,6 +86,7 @@ double GetSplineLog(int ndata, double* xdata, double* ydata, double* secderiv, d
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
+G4HepEmHostDevice
 double GetSplineLog(int ndata, double* xdata, double* ydata, double x, double logx, double logxmin, double invLDBin) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   const double xv = G4HepEmMax(xdata[0], G4HepEmMin(xdata[ndata-1], x));
@@ -92,6 +98,7 @@ double GetSplineLog(int ndata, double* xdata, double* ydata, double x, double lo
 
 
 // same as above but all xdata, ydata and secderiv are stored in data array
+G4HepEmHostDevice
 double GetSplineLog(int ndata, double* data, double x, double logx, double logxmin, double invLDBin) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   const double xv = G4HepEmMax(data[0], G4HepEmMin(data[3*(ndata-1)], x));
@@ -103,17 +110,20 @@ double GetSplineLog(int ndata, double* data, double x, double logx, double logxm
 
 
 // this is used for getting inverse-range on host
+G4HepEmHostDevice
 double GetSpline(double* xdata, double* ydata, double* secderiv, double x, int idx, int step) {
   return GetSpline(xdata[step*idx], xdata[step*(idx+1)], ydata[idx], ydata[idx+1], secderiv[idx], secderiv[idx+1], x);
 }
 
 // same as above but both ydata and secderiv are stored in ydata array
+G4HepEmHostDevice
 double GetSpline(double* xdata, double* ydata, double x, int idx) {
   const int  idx2 = 2*idx;
   return GetSpline(xdata[idx], xdata[idx+1], ydata[idx2], ydata[idx2+2], ydata[idx2+1], ydata[idx2+3], x);
 }
 
 // same as above but both xdata, ydata and secderiv are stored in data array
+G4HepEmHostDevice
 double GetSpline(double* data, double x, int idx) {
   const int  idx3 = 3*idx;
   return GetSpline(data[idx3], data[idx3+3], data[idx3+1], data[idx3+4], data[idx3+2], data[idx3+5], x);
@@ -122,6 +132,7 @@ double GetSpline(double* data, double x, int idx) {
 
 
 
+G4HepEmHostDevice
 double GetLinearLog(int ndata, double* data, double x, double logx, double logxmin, double invLDBin) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   //const double xv = G4HepEmMax(data[0], G4HepEmMin(data[2*(ndata-1)], x));
@@ -133,6 +144,7 @@ double GetLinearLog(int ndata, double* data, double x, double logx, double logxm
 }
 
 // interpolates one data out of the 2 specifed by the `iwhich=1,2` parameter
+G4HepEmHostDevice
 double GetLinearLog2(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   //const double xv = G4HepEmMax(data[0], G4HepEmMin(data[3*(ndata-1)], x));
@@ -143,6 +155,7 @@ double GetLinearLog2(int ndata, double* data, double x, double logx, double logx
   return GetLinear(data[idx3_0], data[idx3_1], data[idx3_0+iwhich], data[idx3_1+iwhich], x);
 }
 // interpolates all the 2 data at once
+G4HepEmHostDevice
 void GetLinearLog2(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, double res[2]) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   //const double xv = G4HepEmMax(data[0], G4HepEmMin(data[3*(ndata-1)], x));
@@ -160,6 +173,7 @@ void GetLinearLog2(int ndata, double* data, double x, double logx, double logxmi
   }
 }
 /*
+G4HepEmHostDevice
 double GetLinearLogN(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich, int shift) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   const double xv = G4HepEmMax(data[0], G4HepEmMin(data[shift*(ndata-1)], x));
@@ -175,6 +189,7 @@ double GetLinearLogN(int ndata, double* data, double x, double logx, double logx
 
 
 // interpolates one out of the 4 data at once, specififed by `iwhich =1,2,3 or 4`
+G4HepEmHostDevice
 double GetSplineLog4(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   //const double xv = G4HepEmMax(data[0], G4HepEmMin(data[9*(ndata-1)], x));
@@ -186,6 +201,7 @@ double GetSplineLog4(int ndata, double* data, double x, double logx, double logx
   return GetSpline(data[idx9_0], data[idx9_1], data[idx9_0+iwhich], data[idx9_1+iwhich], data[idx9_0+iwhich+1], data[idx9_1+iwhich+1], x);
 }
 // interpolates all the 4 data at once
+G4HepEmHostDevice
 void GetSplineLog4(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, double res[4]) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   //const double xv = G4HepEmMax(data[0], G4HepEmMin(data[9*(ndata-1)], x));
@@ -208,6 +224,7 @@ void GetSplineLog4(int ndata, double* data, double x, double logx, double logxmi
   }
 }
 /*
+G4HepEmHostDevice
 double GetSplineLogN(int ndata, double* data, double x, double logx, double logxmin, double invLDBin, int iwhich, int shift) {
   // make sure that $x \in  [x[0],x[ndata-1]]$
   const double xv = G4HepEmMax(data[0], G4HepEmMin(data[shift*(ndata-1)], x));
@@ -224,6 +241,7 @@ double GetSplineLogN(int ndata, double* data, double x, double logx, double logx
 // this is used to get index for inverse range on host
 // NOTE: it is assumed that x[0] <= x and x < x[step*(num-1)]
 // step: the delta with which   the x values are located in xdata (i.e. =1 by default)
+G4HepEmHostDevice
 int    FindLowerBinIndex(double* xdata, int num, double x, int step) {
   // Perform a binary search to find the interval val is in
   int ml = -1;
