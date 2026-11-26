@@ -3,7 +3,6 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmSBTableData.hh"
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 #include <cstdio>
@@ -56,39 +55,39 @@ bool TestSBTableData(const struct G4HepEmData* hepEmData) {
   // integers in theIData1: fMaxZet, fNumElEnergy, fNumKappa, fNumHepEmMatCuts, fNumElemsInMatCuts, fNumSBTableData
   int  theIData1[6];
   int* theIData1_d;
-  gpuErrchk ( cudaMalloc ( &theIData1_d, sizeof( int ) * 6 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theIData1_d, sizeof( int ) * 6 ) );
   // integers in theIData2: fSBTablesStartPerZ[121]
   int  theIData2[121];
   int* theIData2_d;
-  gpuErrchk ( cudaMalloc ( &theIData2_d, sizeof( int ) * 121 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theIData2_d, sizeof( int ) * 121 ) );
   // integers in theIData3: fGammaCutIndxStartIndexPerMC[fNumHepEmMatCuts]
   int* theIData3 = new int[ theSBTables->fNumHepEmMatCuts ];
   int* theIData3_d;
-  gpuErrchk ( cudaMalloc ( &theIData3_d, sizeof( int ) * theSBTables->fNumHepEmMatCuts ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theIData3_d, sizeof( int ) * theSBTables->fNumHepEmMatCuts ) );
   // integers in theIData4: fGammaCutIndices[fNumElemsInMatCuts]
   int* theIData4 = new int[ theSBTables->fNumElemsInMatCuts ];
   int* theIData4_d;
-  gpuErrchk ( cudaMalloc ( &theIData4_d, sizeof( int ) * theSBTables->fNumElemsInMatCuts ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theIData4_d, sizeof( int ) * theSBTables->fNumElemsInMatCuts ) );
   // doubles  in theDData1: fElEnergyVect[65]
   double  theDData1[65];
   double* theDData1_d;
-  gpuErrchk ( cudaMalloc ( &theDData1_d, sizeof( double ) * 65 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theDData1_d, sizeof( double ) * 65 ) );
   // doubles  in theDData2: fLElEnergyVect[65]
   double  theDData2[65];
   double* theDData2_d;
-  gpuErrchk ( cudaMalloc ( &theDData2_d, sizeof( double ) * 65 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theDData2_d, sizeof( double ) * 65 ) );
   // doubles  in theDData3: fKappaVect[54]
   double  theDData3[54];
   double* theDData3_d;
-  gpuErrchk ( cudaMalloc ( &theDData3_d, sizeof( double ) * 54 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theDData3_d, sizeof( double ) * 54 ) );
   // doubles  in theDData4: fLKappaVect[54]
   double  theDData4[54];
   double* theDData4_d;
-  gpuErrchk ( cudaMalloc ( &theDData4_d, sizeof( double ) * 54 ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theDData4_d, sizeof( double ) * 54 ) );
   // doubles  in theDData5: fSBTableData[fNumSBTableData]
   double* theDData5 = new double[ theSBTables->fNumSBTableData ];
   double* theDData5_d;
-  gpuErrchk ( cudaMalloc ( &theDData5_d, sizeof( double ) * theSBTables->fNumSBTableData ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theDData5_d, sizeof( double ) * theSBTables->fNumSBTableData ) );
   //
   // --- Launch the kernel to obtain the data on device
   int numThreads = 32;
@@ -97,17 +96,17 @@ bool TestSBTableData(const struct G4HepEmData* hepEmData) {
                                                        theIData1_d, theIData2_d, theIData3_d, theIData4_d,
                                                        theDData1_d, theDData2_d, theDData3_d, theDData4_d, theDData5_d);
   // --- Synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   // copy results from device to host
-  gpuErrchk ( cudaMemcpy ( theIData1, theIData1_d, sizeof( int )    *   6, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theIData2, theIData2_d, sizeof( int )    * 121, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theIData3, theIData3_d, sizeof( int )    * theSBTables->fNumHepEmMatCuts, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theIData4, theIData4_d, sizeof( int )    * theSBTables->fNumElemsInMatCuts, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theDData1, theDData1_d, sizeof( double ) *  65, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theDData2, theDData2_d, sizeof( double ) *  65, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theDData3, theDData3_d, sizeof( double ) *  54, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theDData4, theDData4_d, sizeof( double ) *  54, cudaMemcpyDeviceToHost) );
-  gpuErrchk ( cudaMemcpy ( theDData5, theDData5_d, sizeof( double ) *  theSBTables->fNumSBTableData, cudaMemcpyDeviceToHost) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theIData1, theIData1_d, sizeof( int )    *   6, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theIData2, theIData2_d, sizeof( int )    * 121, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theIData3, theIData3_d, sizeof( int )    * theSBTables->fNumHepEmMatCuts, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theIData4, theIData4_d, sizeof( int )    * theSBTables->fNumElemsInMatCuts, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theDData1, theDData1_d, sizeof( double ) *  65, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theDData2, theDData2_d, sizeof( double ) *  65, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theDData3, theDData3_d, sizeof( double ) *  54, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theDData4, theDData4_d, sizeof( double ) *  54, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theDData5, theDData5_d, sizeof( double ) *  theSBTables->fNumSBTableData, G4HepEmDeviceAPI(MemcpyDeviceToHost)) );
   //
   // --- Check results
   bool isPassing = true;
@@ -149,15 +148,15 @@ bool TestSBTableData(const struct G4HepEmData* hepEmData) {
   delete [] theIData3;
   delete [] theIData4;
   delete [] theDData5;
-  cudaFree ( theIData1_d );
-  cudaFree ( theIData2_d );
-  cudaFree ( theIData3_d );
-  cudaFree ( theIData4_d );
-  cudaFree ( theDData1_d );
-  cudaFree ( theDData2_d );
-  cudaFree ( theDData3_d );
-  cudaFree ( theDData4_d );
-  cudaFree ( theDData5_d );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theIData1_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theIData2_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theIData3_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theIData4_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theDData1_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theDData2_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theDData3_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theDData4_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theDData5_d ) );
 
   return isPassing;
 }

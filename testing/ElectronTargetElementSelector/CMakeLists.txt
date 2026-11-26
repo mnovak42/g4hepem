@@ -1,7 +1,7 @@
 add_executable(TestElemSelectorData
   TestElemSelectorData.cc
-  src/Implementation.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/ElemSelector.cu>)
+  src/Implementation.cc)
+g4hepem_add_device_test_sources(TestElemSelectorData src/ElemSelector.cu)
 
 target_include_directories(TestElemSelectorData PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

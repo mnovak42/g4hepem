@@ -5,7 +5,12 @@
 
 // G4HepEm_CUDA_BUILD enables the device data; G4HepEm_HIP_BUILD selects HIP instead of CUDA for it
 #ifdef G4HepEm_HIP_BUILD
+#ifdef __HIP__
+// Device sources (the test drivers) also need the kernel built-ins
+#include <hip/hip_runtime.h>
+#else
 #include <hip/hip_runtime_api.h>
+#endif
 #define G4HepEmDeviceAPI(TOK) hip##TOK
 #else
 #include <cuda_runtime.h>

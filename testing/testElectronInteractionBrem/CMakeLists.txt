@@ -1,8 +1,8 @@
 add_executable(testBrem
   testBrem.cc
   src/Implementation.cc
-  src/TestBremArgs.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/SBTableData.cu>)
+  src/TestBremArgs.cc)
+g4hepem_add_device_test_sources(testBrem src/SBTableData.cu)
 
 target_include_directories(testBrem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

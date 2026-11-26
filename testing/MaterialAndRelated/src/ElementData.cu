@@ -9,7 +9,6 @@
 #include <cmath>
 #include <random>
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 
@@ -74,20 +73,20 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   int* theElemIndices_d = nullptr;
   double*   theResZet_d = nullptr;
   double* theResZet13_d = nullptr;
-  gpuErrchk ( cudaMalloc ( &theElemIndices_d, sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &theResZet_d,      sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &theResZet13_d,    sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theElemIndices_d, sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theResZet_d,      sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &theResZet13_d,    sizeof( double ) * numTestCases ) );
   // and copy the input test element indices from the host to the device memory
-  gpuErrchk ( cudaMemcpy ( theElemIndices_d, theElemIndices_h, sizeof( int ) * numTestCases, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theElemIndices_d, theElemIndices_h, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice) ) );
   //
   // --- Launch the kernel (one thread for each test element cases), synchronize cop the results from device to host
   //
   TestElementDataKernel <<<1, numTestCases>>> ( hepEmData->fTheElementData_gpu, theElemIndices_d, theResZet_d, theResZet13_d, numTestCases);
   // synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   // copy the resulted Z and Z^{1/3} from the device to the host
-  gpuErrchk ( cudaMemcpy ( theResZet_h,     theResZet_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( theResZet13_h, theResZet13_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theResZet_h,     theResZet_d, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( theResZet13_h, theResZet13_d, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
   //
   // --- Check the results for each test cases by comparing to the corresponding
   //     results obtained on the host side
@@ -118,9 +117,9 @@ bool TestElementDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   delete []  theElemIndices_h;
   delete []  theResZet_h;
   delete []  theResZet13_h;
-  cudaFree ( theElemIndices_d );
-  cudaFree ( theResZet_d      );
-  cudaFree ( theResZet13_d    );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theElemIndices_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theResZet_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( theResZet13_d ) );
   //
   return isPassed;
 }
