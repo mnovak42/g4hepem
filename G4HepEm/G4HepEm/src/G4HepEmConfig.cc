@@ -12,12 +12,15 @@ G4HepEmConfig::G4HepEmConfig() {
   fG4HepEmParameters = new G4HepEmParameters;
   fWDTEnergyLimit    = 0.2; // 200 keV by default
   InitHepEmParameters(fG4HepEmParameters);
+  fDefaultRegionParameters = new G4HepEmRegionParmeters;
+  InitHepEmRegionParameters(fG4HepEmParameters, *fDefaultRegionParameters);
 }
 
 
 G4HepEmConfig::~G4HepEmConfig() {
   FreeG4HepEmParameters(fG4HepEmParameters);
   delete fG4HepEmParameters;
+  delete fDefaultRegionParameters;
 }
 
 
@@ -39,11 +42,15 @@ void G4HepEmConfig::SetEnergyLossStepLimitFunctionParameters(G4double drRange, G
   if (nameRegion == "all") {
     SetEnergyLossStepLimitFunctionParameters(drRange, finRange);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fDRoverRange = drRange;
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fFinalRange  = finRange;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fDRoverRange = drRange;
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fFinalRange  = finRange;
   }
 }
 void G4HepEmConfig::SetEnergyLossStepLimitFunctionParameters(G4double drRange, G4double finRange) {
+  fDefaultRegionParameters->fDRoverRange = drRange;
+  fDefaultRegionParameters->fFinalRange  = finRange;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i) {
     fG4HepEmParameters->fParametersPerRegion[i].fDRoverRange = drRange;
     fG4HepEmParameters->fParametersPerRegion[i].fFinalRange  = finRange;
@@ -63,10 +70,13 @@ void G4HepEmConfig::SetMSCRangeFactor(G4double val, const G4String& nameRegion) 
   if (nameRegion == "all") {
     SetMSCRangeFactor(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fMSCRangeFactor = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fMSCRangeFactor = val;
   }
 }
 void G4HepEmConfig::SetMSCRangeFactor(G4double val) {
+  fDefaultRegionParameters->fMSCRangeFactor = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fMSCRangeFactor = val;
 }
@@ -82,10 +92,13 @@ void G4HepEmConfig::SetMSCSafetyFactor(G4double val, const G4String& nameRegion)
   if (nameRegion == "all") {
     SetMSCSafetyFactor(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fMSCSafetyFactor = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fMSCSafetyFactor = val;
   }
 }
 void G4HepEmConfig::SetMSCSafetyFactor(G4double val) {
+  fDefaultRegionParameters->fMSCSafetyFactor = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fMSCSafetyFactor = val;
 }
@@ -102,10 +115,13 @@ void G4HepEmConfig::SetEnergyLossFluctuation(G4bool val, const G4String& nameReg
   if (nameRegion == "all") {
     SetEnergyLossFluctuation(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fIsELossFluctuation = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fIsELossFluctuation = val;
   }
 }
 void G4HepEmConfig::SetEnergyLossFluctuation(G4bool val) {
+  fDefaultRegionParameters->fIsELossFluctuation = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fIsELossFluctuation = val;
 }
@@ -122,10 +138,13 @@ void G4HepEmConfig::SetMinimalMSCStepLimit(G4bool val, const G4String& nameRegio
   if (nameRegion == "all") {
     SetMinimalMSCStepLimit(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fIsMSCMinimalStepLimit = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fIsMSCMinimalStepLimit = val;
   }
 }
 void G4HepEmConfig::SetMinimalMSCStepLimit(G4bool val) {
+  fDefaultRegionParameters->fIsMSCMinimalStepLimit = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fIsMSCMinimalStepLimit = val;
 }
@@ -142,10 +161,13 @@ void G4HepEmConfig::SetMultipleStepsInMSCWithTransportation(G4bool val, const G4
   if (nameRegion == "all") {
     SetMultipleStepsInMSCWithTransportation(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fIsMultipleStepsInMSCTrans = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fIsMultipleStepsInMSCTrans = val;
   }
 }
 void G4HepEmConfig::SetMultipleStepsInMSCWithTransportation(G4bool val) {
+  fDefaultRegionParameters->fIsMultipleStepsInMSCTrans = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fIsMultipleStepsInMSCTrans = val;
 }
@@ -163,10 +185,13 @@ void G4HepEmConfig::SetApplyCuts(G4bool val, const G4String& nameRegion) {
   if (nameRegion == "all") {
     SetApplyCuts(val);
   } else {
-    fG4HepEmParameters->fParametersPerRegion[GetRegionIndex(nameRegion)].fIsApplyCuts = val;
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fIsApplyCuts = val;
   }
 }
 void G4HepEmConfig::SetApplyCuts(G4bool val) {
+  fDefaultRegionParameters->fIsApplyCuts = val;
   for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
     fG4HepEmParameters->fParametersPerRegion[i].fIsApplyCuts = val;
 }
@@ -179,7 +204,67 @@ G4bool G4HepEmConfig::GetApplyCuts(G4int indxRegion) {
 }
 
 
+void G4HepEmConfig::SetElectronTrackingCut(G4double val, const G4String& nameRegion) {
+  if (nameRegion == "all") {
+    SetElectronTrackingCut(val);
+  } else {
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fElectronTrackingCut = val;
+  }
+}
+void G4HepEmConfig::SetElectronTrackingCut(G4double val) {
+  fDefaultRegionParameters->fElectronTrackingCut = val;
+  for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
+    fG4HepEmParameters->fParametersPerRegion[i].fElectronTrackingCut = val;
+}
+G4double G4HepEmConfig::GetElectronTrackingCut(const G4String& nameRegion) {
+  return GetElectronTrackingCut(GetRegionIndex(nameRegion));
+}
+G4double G4HepEmConfig::GetElectronTrackingCut(G4int indxRegion) {
+  CheckRegionIndex(indxRegion);
+  return fG4HepEmParameters->fParametersPerRegion[indxRegion].fElectronTrackingCut;
+}
+
+
+void G4HepEmConfig::SetGammaTrackingCut(G4double val, const G4String& nameRegion) {
+  if (nameRegion == "all") {
+    SetGammaTrackingCut(val);
+  } else {
+    // get the index first: it might extend (reallocate) the per-region array
+    const G4int indxRegion = GetRegionIndex(nameRegion);
+    fG4HepEmParameters->fParametersPerRegion[indxRegion].fGammaTrackingCut = val;
+  }
+}
+void G4HepEmConfig::SetGammaTrackingCut(G4double val) {
+  fDefaultRegionParameters->fGammaTrackingCut = val;
+  for (int i=0; i<fG4HepEmParameters->fNumRegions; ++i)
+    fG4HepEmParameters->fParametersPerRegion[i].fGammaTrackingCut = val;
+}
+G4double G4HepEmConfig::GetGammaTrackingCut(const G4String& nameRegion) {
+  return GetGammaTrackingCut(GetRegionIndex(nameRegion));
+}
+G4double G4HepEmConfig::GetGammaTrackingCut(G4int indxRegion) {
+  CheckRegionIndex(indxRegion);
+  return fG4HepEmParameters->fParametersPerRegion[indxRegion].fGammaTrackingCut;
+}
+
+
+void G4HepEmConfig::SetTrackingCutsAtStepStart(G4bool val) {
+  fG4HepEmParameters->fIsTrackingCutAtStepStart = val;
+}
+G4bool G4HepEmConfig::GetTrackingCutsAtStepStart() {
+  return fG4HepEmParameters->fIsTrackingCutAtStepStart;
+}
+
+
+void G4HepEmConfig::UpdateRegions() {
+  ExtendHepEmRegionParameters(fG4HepEmParameters, *fDefaultRegionParameters);
+}
+
+
 G4int G4HepEmConfig::GetRegionIndex(const G4String& nameRegion) {
+  UpdateRegions();
   G4Region* region = G4RegionStore::GetInstance()->GetRegion(nameRegion, false);
   if (region == nullptr) {
     std::cerr << "*** ERROR in G4HepEmConfig::GetRegionIndex :\n"
@@ -192,6 +277,7 @@ G4int G4HepEmConfig::GetRegionIndex(const G4String& nameRegion) {
 }
 
 void  G4HepEmConfig::CheckRegionIndex(G4int indxRegion) {
+  UpdateRegions();
   if (indxRegion >= fG4HepEmParameters->fNumRegions) {
     std::cerr << "*** ERROR in G4HepEmConfig::CheckRegionIndex :\n"
               << "    Region index ( = " << indxRegion << " ) out of bounds! "
@@ -240,7 +326,11 @@ void G4HepEmConfig::Dump() {
   std::cout << std::left << std::setw(width) << " Linear loss limit " << " : "
             << std::setw(5) << std::right
             << fG4HepEmParameters->fParametersPerRegion[0].fLinELossLimit*100
-            << " [%] " << std::endl << std::endl;
+            << " [%] " << std::endl;
+  std::cout << std::left << std::setw(width) << " Tracking cuts at step start " << " : "
+            << std::setw(5) << std::right
+            << fG4HepEmParameters->fIsTrackingCutAtStepStart
+            << " (true/false) "<< std::endl << std::endl;
   std::cout << " REGION BASED Parameters: " << std::endl;
   std::cout << " --------------------------------------------------------------  " << std::endl;
   std::cout << std::left << std::setw(width) << " Parameter for region " << " : ";
@@ -256,7 +346,8 @@ void G4HepEmConfig::Dump() {
 
   std::vector<G4String> names = {" FinalRange (mm)", " DRoverRange", " Energy loss fluctuation",
         " MSC Range factor",  " MSC Safety factor", " MSC minimal step limit",
-        " Multiple steps in MSC+Trans.", " Woodcock-tracking (explicit)", " Apply cuts"};
+        " Multiple steps in MSC+Trans.", " Woodcock-tracking (explicit)", " Apply cuts",
+        " e-/e+ tracking cut (keV)", " Gamma tracking cut (keV)"};
   const int numParams  = names.size();
 
   for (int ip=0; ip<numParams; ++ip) {
@@ -295,6 +386,10 @@ void G4HepEmConfig::Dump() {
         case 7: std::cout << isWDT << " | ";
                 break;
         case 8: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fIsApplyCuts << " | ";
+                break;
+        case 9: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fElectronTrackingCut/CLHEP::keV << " | ";
+                break;
+        case 10: std::cout << fG4HepEmParameters->fParametersPerRegion[ir].fGammaTrackingCut/CLHEP::keV << " | ";
                 break;
 
       }

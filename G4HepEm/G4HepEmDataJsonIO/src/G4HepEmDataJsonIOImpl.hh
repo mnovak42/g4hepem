@@ -137,6 +137,9 @@ namespace nlohmann
       j["fIsELossFluctuation"]        = d.fIsELossFluctuation;
       j["fIsMultipleStepsInMSCTrans"] = d.fIsMultipleStepsInMSCTrans;
       j["fIsApplyCuts"]               = d.fIsApplyCuts;
+
+      j["fElectronTrackingCut"] = d.fElectronTrackingCut;
+      j["fGammaTrackingCut"]    = d.fGammaTrackingCut;
     }
 
     static G4HepEmRegionParmeters from_json(const json& j)
@@ -154,6 +157,10 @@ namespace nlohmann
       j.at("fIsELossFluctuation").get_to(d.fIsELossFluctuation);
       j.at("fIsMultipleStepsInMSCTrans").get_to(d.fIsMultipleStepsInMSCTrans);
       j.at("fIsApplyCuts").get_to(d.fIsApplyCuts);
+
+      // optional, so that data written before these fields existed still loads
+      d.fElectronTrackingCut = j.value("fElectronTrackingCut", d.fElectronTrackingCut);
+      d.fGammaTrackingCut    = j.value("fGammaTrackingCut", d.fGammaTrackingCut);
 
       return d;
     }
@@ -182,6 +189,7 @@ namespace nlohmann
         j["fElectronBremModelLim"] = d->fElectronBremModelLim;
         j["fIsMSCPositronCor"]     = d->fIsMSCPositronCor;
         j["fIsMSCDisplacement"]    = d->fIsMSCDisplacement;
+        j["fIsTrackingCutAtStepStart"] = d->fIsTrackingCutAtStepStart;
         j["fNumRegions"]           = d->fNumRegions;
         j["fParametersPerRegion"]  =
           make_span(d->fNumRegions, d->fParametersPerRegion);
@@ -206,6 +214,8 @@ namespace nlohmann
         d->fElectronBremModelLim = j.at("fElectronBremModelLim").get<double>();
         d->fIsMSCPositronCor     = j.at("fIsMSCPositronCor").get<bool>();
         d->fIsMSCDisplacement    = j.at("fIsMSCDisplacement").get<bool>();
+        // optional, so that data written before this field existed still loads
+        d->fIsTrackingCutAtStepStart = j.value("fIsTrackingCutAtStepStart", false);
         d->fNumRegions           = j.at("fNumRegions").get<int>();
 
         d->fParametersPerRegion  = new G4HepEmRegionParmeters[d->fNumRegions];
