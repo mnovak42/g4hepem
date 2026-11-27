@@ -1,7 +1,7 @@
 add_executable(TestEnergyLossData
   TestEnergyLossData.cc
-  src/Implementation.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/ELossData.cu>)
+  src/Implementation.cc)
+g4hepem_add_device_test_sources(TestEnergyLossData src/ELossData.cu)
 
 target_include_directories(TestEnergyLossData PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

@@ -1,7 +1,7 @@
 add_executable(TestGammaXSectionData
   TestGammaXSectionData.cc
-  src/Implementation.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/GammaMacXSecs.cu>)
+  src/Implementation.cc)
+g4hepem_add_device_test_sources(TestGammaXSectionData src/GammaMacXSecs.cu)
 
 target_include_directories(TestGammaXSectionData PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

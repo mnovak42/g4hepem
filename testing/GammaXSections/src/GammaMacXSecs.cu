@@ -6,7 +6,6 @@
 
 #include "G4HepEmGammaManager.hh"
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 // Pull in implementation
@@ -62,16 +61,16 @@ void TestMacXSecDataOnDevice( const struct G4HepEmData* hepEmData, int* tsInImat
   tmpHepEmData_d.fThePositronData = hepEmData->fThePositronData_gpu;
   tmpHepEmData_d.fTheSBTableData  = hepEmData->fTheSBTableData_gpu;
   tmpHepEmData_d.fTheGammaData    = hepEmData->fTheGammaData_gpu;
-  gpuErrchk ( cudaMemcpyToSymbol(hepEmData_d, &tmpHepEmData_d, sizeof(G4HepEmData) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(MemcpyToSymbol)(hepEmData_d, &tmpHepEmData_d, sizeof(G4HepEmData) ) );
 
   //
-  gpuErrchk ( cudaMalloc ( &tsInURand_d,   sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &gTracks_d,     sizeof( G4HepEmGammaTrack ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutMXTot_d,  sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutProcID_d, sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInURand_d,   sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &gTracks_d,     sizeof( G4HepEmGammaTrack ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutMXTot_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutProcID_d, sizeof( int )    * numTestCases ) );
   // --- Copy the input data from host to device (test material index, ekin and log-ekin arrays)
-  gpuErrchk ( cudaMemcpy ( tsInURand_d, tsInURand_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( gTracks_d,   gTracks_h,   sizeof( G4HepEmGammaTrack ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInURand_d, tsInURand_h, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( gTracks_d,   gTracks_h,   sizeof( G4HepEmGammaTrack ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
   //
   // --- Launch the kernels
   int numThreads = 512;
@@ -81,16 +80,16 @@ void TestMacXSecDataOnDevice( const struct G4HepEmData* hepEmData, int* tsInImat
   TestMacXSecDataKernel <<< numBlocks, numThreads >>> (gTracks_d, tsInURand_d, tsOutMXTot_d, tsOutProcID_d, numTestCases );
   //
   // --- Synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   //
   // --- Copy the results from the device to the host
-  gpuErrchk ( cudaMemcpy ( tsOutMXTot_h,  tsOutMXTot_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( tsOutProcID_h, tsOutProcID_d, sizeof( int ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutMXTot_h,  tsOutMXTot_d,  sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutProcID_h, tsOutProcID_d, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
 
   //
   // --- Free all dynamically allocated (device side) memory
-  cudaFree ( tsInURand_d   );
-  cudaFree ( gTracks_d     );
-  cudaFree ( tsOutMXTot_d  );
-  cudaFree ( tsOutProcID_d );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInURand_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( gTracks_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutMXTot_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutProcID_d ) );
 }

@@ -10,6 +10,22 @@ target_compile_features(TestUtils PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
 target_include_directories(TestUtils PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(TestUtils PUBLIC ${Geant4_LIBRARIES})
 
+## Device drivers of the data tests: CUDA sources, compiled as HIP in HIP builds
+if(G4HepEm_HIP_BUILD)
+  if(CMAKE_VERSION VERSION_LESS 3.21)
+    message(FATAL_ERROR "The HIP device tests need CMake 3.21 or later (HIP language support)")
+  endif()
+  enable_language(HIP)
+endif()
+function(g4hepem_add_device_test_sources target)
+  if(G4HepEm_CUDA_BUILD OR G4HepEm_HIP_BUILD)
+    target_sources(${target} PRIVATE ${ARGN})
+    if(G4HepEm_HIP_BUILD)
+      set_source_files_properties(${ARGN} PROPERTIES LANGUAGE HIP)
+    endif()
+  endif()
+endfunction()
+
 ## ----------------------------------------------------------------------------
 ## 2. Add the unit test applications
 ##

@@ -4,7 +4,6 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmElectronData.hh"
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 // Pull in implementation of Brem element selector
@@ -43,17 +42,17 @@ void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* ts
   double* tsInRngVals_d = nullptr;
   int*       tsOutRes_d = nullptr;
   //
-  gpuErrchk ( cudaMalloc ( &tsInImc_d,     sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInEkin_d,    sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInLogEkin_d, sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInRngVals_d, sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutRes_d,    sizeof( int ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInImc_d,     sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInEkin_d,    sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInLogEkin_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInRngVals_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutRes_d,    sizeof( int ) * numTestCases ) );
   //
   // --- Copy the input data from host to device (test material-cut index, ekin and log-ekin arrays)
-  gpuErrchk ( cudaMemcpy ( tsInImc_d,     tsInImc_h,     sizeof( int )    * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( tsInEkin_d,    tsInEkin_h,    sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( tsInLogEkin_d, tsInLogEkin_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( tsInRngVals_d, tsInRngVals_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInImc_d,     tsInImc_h,     sizeof( int )    * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInEkin_d,    tsInEkin_h,    sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInLogEkin_d, tsInLogEkin_h, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInRngVals_d, tsInRngVals_h, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
   //
   // --- Launch the kernels
   const struct G4HepEmElectronData* theElectronData_d = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
@@ -76,15 +75,15 @@ void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* ts
   }
   //
   // --- Synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   //
   // --- Copy the results from the device to the host
-  gpuErrchk ( cudaMemcpy ( tsOutRes_h, tsOutRes_d, sizeof( int ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutRes_h, tsOutRes_d, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
   //
   // --- Free all dynamically allocated (device side) memory
-  cudaFree ( tsInImc_d     );
-  cudaFree ( tsInEkin_d    );
-  cudaFree ( tsInLogEkin_d );
-  cudaFree ( tsInRngVals_d );
-  cudaFree ( tsOutRes_d    );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInImc_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInEkin_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInLogEkin_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInRngVals_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutRes_d ) );
 }

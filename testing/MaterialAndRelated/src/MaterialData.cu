@@ -7,7 +7,6 @@
 #include <iostream>
 #include <random>
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 
@@ -111,20 +110,20 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   double*  resElecDens_d = nullptr;
   double*    resRadLen_d = nullptr;
   //
-  gpuErrchk ( cudaMalloc ( &matIndices_d,   sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &indxStarts_d,   sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resNumElems_d,  sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resCompElems_d, sizeof( int )    * cumIndx ) );
-  gpuErrchk ( cudaMalloc ( &resCompADens_d, sizeof( double ) * cumIndx ) );
-  gpuErrchk ( cudaMalloc ( &resMassDens_d,  sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resElecDens_d,  sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resRadLen_d,    sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &matIndices_d,   sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &indxStarts_d,   sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resNumElems_d,  sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resCompElems_d, sizeof( int )    * cumIndx ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resCompADens_d, sizeof( double ) * cumIndx ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resMassDens_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resElecDens_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resRadLen_d,    sizeof( double ) * numTestCases ) );
 
   //
   // --- Copy the input data from host to device (test material index and start index arrays)
   //
-  gpuErrchk ( cudaMemcpy ( matIndices_d, matIndices_h, sizeof( int ) * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( indxStarts_d, indxStarts_h, sizeof( int ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( matIndices_d, matIndices_h, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( indxStarts_d, indxStarts_h, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
   //
   // --- Launch the kernel to evaluate the test cases on the device: one block for each test
   //     cases with 32x threads i.e. at leasr one for each element composition data
@@ -134,14 +133,14 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
     resCompADens_d, resCompElems_d, resNumElems_d, resMassDens_d, resElecDens_d, resRadLen_d, numTestCases);
   //
   // synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   // copy the results from the device to the host
-  gpuErrchk ( cudaMemcpy ( resNumElems_h,  resNumElems_d,  sizeof( int )    * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resCompElems_h, resCompElems_d, sizeof( int )    * cumIndx,      cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resCompADens_h, resCompADens_d, sizeof( double ) * cumIndx,      cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resMassDens_h,  resMassDens_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resElecDens_h,  resElecDens_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resRadLen_h,    resRadLen_d,    sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resNumElems_h,  resNumElems_d,  sizeof( int )    * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resCompElems_h, resCompElems_d, sizeof( int )    * cumIndx,      G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resCompADens_h, resCompADens_d, sizeof( double ) * cumIndx,      G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resMassDens_h,  resMassDens_d,  sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resElecDens_h,  resElecDens_d,  sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resRadLen_h,    resRadLen_d,    sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
 
   //
   // --- Check the results for each test cases by comparing to the corresponding
@@ -203,14 +202,14 @@ bool TestMaterialDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   delete []   resMassDens_h;
   delete []   resElecDens_h;
   delete []   resRadLen_h;
-  cudaFree (  matIndices_d   );
-  cudaFree (  indxStarts_d   );
-  cudaFree (  resNumElems_d  );
-  cudaFree (  resCompElems_d );
-  cudaFree (  resCompADens_d );
-  cudaFree (  resMassDens_d  );
-  cudaFree (  resElecDens_d  );
-  cudaFree (  resRadLen_d    );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( matIndices_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( indxStarts_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resNumElems_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resCompElems_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resCompADens_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resMassDens_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resElecDens_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resRadLen_d ) );
   //
   return isPassed;
 }

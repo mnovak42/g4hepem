@@ -1,7 +1,7 @@
 add_executable(TestGammaElemSelectorData
   TestGammaElemSelectorData.cc
-  src/Implementation.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/GammaElemSelector.cu>)
+  src/Implementation.cc)
+g4hepem_add_device_test_sources(TestGammaElemSelectorData src/GammaElemSelector.cu)
 
 target_include_directories(TestGammaElemSelectorData PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

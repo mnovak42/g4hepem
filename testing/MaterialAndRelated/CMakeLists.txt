@@ -1,7 +1,7 @@
 add_executable(TestMaterialAndRelated
   TestMaterialAndRelated.cc
-  src/Implementation.cc
-  $<$<BOOL:${G4HepEm_CUDA_BUILD}>:src/ElementData.cu src/MatCutData.cu src/MaterialData.cu>)
+  src/Implementation.cc)
+g4hepem_add_device_test_sources(TestMaterialAndRelated src/ElementData.cu src/MatCutData.cu src/MaterialData.cu)
 
 target_include_directories(TestMaterialAndRelated PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

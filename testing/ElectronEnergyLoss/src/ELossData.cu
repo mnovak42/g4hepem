@@ -7,7 +7,6 @@
 #define private public
 #include "G4HepEmElectronManager.hh"
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 // Pull in implementation
@@ -39,17 +38,17 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   double*    tsOutResRange_d = nullptr;
   double* tsOutResInvRange_d = nullptr;
   //
-  gpuErrchk ( cudaMalloc ( &tsInImc_d,          sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInEkin_d,         sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsInLogEkin_d,      sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutResDEDX_d,     sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutResRange_d,    sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &tsOutResInvRange_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInImc_d,          sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInEkin_d,         sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsInLogEkin_d,      sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutResDEDX_d,     sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutResRange_d,    sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &tsOutResInvRange_d, sizeof( double ) * numTestCases ) );
   //
   // --- Copy the input data from host to device (test material-cut index, ekin and log-ekin arrays)
-  gpuErrchk ( cudaMemcpy ( tsInImc_d,     tsInImc_h,     sizeof( int )    * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( tsInEkin_d,    tsInEkin_h,    sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
-  gpuErrchk ( cudaMemcpy ( tsInLogEkin_d, tsInLogEkin_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInImc_d,     tsInImc_h,     sizeof( int )    * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInEkin_d,    tsInEkin_h,    sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsInLogEkin_d, tsInLogEkin_h, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
   //
   // --- Launch the kernels
   int numThreads = 512;
@@ -59,18 +58,18 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   TestElossDataKernel <<< numBlocks, numThreads >>> (elData_d, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, tsOutResDEDX_d, tsOutResInvRange_d, numTestCases );
   //
   // --- Synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   //
   // --- Copy the results from the device to the host
-  gpuErrchk ( cudaMemcpy ( tsOutResDEDX_h,     tsOutResDEDX_d,     sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( tsOutResRange_h,    tsOutResRange_d,    sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( tsOutResInvRange_h, tsOutResInvRange_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutResDEDX_h,     tsOutResDEDX_d,     sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutResRange_h,    tsOutResRange_d,    sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( tsOutResInvRange_h, tsOutResInvRange_d, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
   //
   // --- Free all dynamically allocated (device side) memory
-  cudaFree ( tsInImc_d          );
-  cudaFree ( tsInEkin_d         );
-  cudaFree ( tsInLogEkin_d      );
-  cudaFree ( tsOutResDEDX_d     );
-  cudaFree ( tsOutResRange_d    );
-  cudaFree ( tsOutResInvRange_d );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInImc_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInEkin_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsInLogEkin_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutResDEDX_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutResRange_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( tsOutResInvRange_d ) );
 }

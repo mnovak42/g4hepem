@@ -6,7 +6,6 @@
 #include <iostream>
 #include <random>
 
-#include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
 
@@ -73,15 +72,15 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   double*  resSecPosCut_d = nullptr;
   double* resSecGamCut_d  = nullptr;
   //
-  gpuErrchk ( cudaMalloc ( &mcIndices_d,    sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resMatIndx_d,   sizeof( int )    * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resSecElCut_d,  sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resSecPosCut_d, sizeof( double ) * numTestCases ) );
-  gpuErrchk ( cudaMalloc ( &resSecGamCut_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &mcIndices_d,    sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resMatIndx_d,   sizeof( int )    * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resSecElCut_d,  sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resSecPosCut_d, sizeof( double ) * numTestCases ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Malloc) ( &resSecGamCut_d, sizeof( double ) * numTestCases ) );
   //
   // --- Copy the input data from host to device (test material-cut index arrays)
   //
-  gpuErrchk ( cudaMemcpy ( mcIndices_d, mcIndices_h, sizeof( int ) * numTestCases, cudaMemcpyHostToDevice) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( mcIndices_d, mcIndices_h, sizeof( int ) * numTestCases, G4HepEmDeviceAPI(MemcpyHostToDevice)) );
   //
   // --- Launch the kernel to evaluate the test cases on the device
   //
@@ -89,12 +88,12 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
                                                 resSecPosCut_d, resSecGamCut_d, resMatIndx_d, numTestCases);
   //
   // synchronize to make sure that completed on the device
-  cudaDeviceSynchronize();
+  gpuErrchk ( G4HepEmDeviceAPI(DeviceSynchronize)() );
   // copy the results from the device to the host
-  gpuErrchk ( cudaMemcpy ( resMatIndx_h,   resMatIndx_d,   sizeof( int )    * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resSecElCut_h,  resSecElCut_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resSecPosCut_h, resSecPosCut_d,  sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
-  gpuErrchk ( cudaMemcpy ( resSecGamCut_h, resSecGamCut_d, sizeof( double ) * numTestCases, cudaMemcpyDeviceToHost ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resMatIndx_h,   resMatIndx_d,   sizeof( int )    * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resSecElCut_h,  resSecElCut_d,  sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resSecPosCut_h, resSecPosCut_d,  sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Memcpy) ( resSecGamCut_h, resSecGamCut_d, sizeof( double ) * numTestCases, G4HepEmDeviceAPI(MemcpyDeviceToHost) ) );
   //
   // --- Check the results for each test cases by comparing to the corresponding
   //     results obtained on the host side
@@ -135,11 +134,11 @@ bool TestMatCutDataOnDevice ( const struct G4HepEmData* hepEmData ) {
   delete []   resSecElCut_h;
   delete []   resSecPosCut_h;
   delete []   resSecGamCut_h;
-  cudaFree (  mcIndices_d    );
-  cudaFree (  resMatIndx_d   );
-  cudaFree (  resSecElCut_d  );
-  cudaFree (  resSecPosCut_d  );
-  cudaFree (  resSecGamCut_d );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( mcIndices_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resMatIndx_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resSecElCut_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resSecPosCut_d ) );
+  gpuErrchk ( G4HepEmDeviceAPI(Free) ( resSecGamCut_d ) );
   //
   return isPassed;
 }
